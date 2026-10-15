@@ -1,0 +1,177 @@
+{
+  "title": "Stake Engine documentation reference",
+  "source": "https://stake-engine.com/docs/",
+  "retrieved": "2026-10-15",
+  "purpose": "Local working reference for creating a Stake Engine game. This is a distilled engineering summary with source links, not a replacement for the publisher's current documentation or contractual terms.",
+  "core_model": {
+    "platform": "Stake Engine uses the Carrot Remote Gaming Server (RGS) to host and run provider games.",
+    "sdk_parts": [
+      "Math SDK: Python-based game rules, simulations, optimization, analysis, and publication-file generation.",
+      "Frontend SDK: PixiJS/Svelte-based browser game rendering and interaction layer.",
+      "RGS integration: session, wallet, round, and event APIs used by the frontend."
+    ],
+    "publication_constraint": "Published games use static files. Game outcomes are precomputed into game books/events and lookup tables; a weighted lookup selects a simulation and the RGS returns its events through the play flow.",
+    "important_implication": "The frontend displays events produced by math output. It should not independently invent outcomes that are absent from the event payload."
+  },
+  "recommended_build_order": [
+    "Choose the game mechanic and target math profile (RTP, volatility, hit rate, max win, modes).",
+    "Set up the Math SDK and start from the closest sample/template game.",
+    "Implement game configuration, state, calculations, win logic, and events.",
+    "Run simulations, analysis, optimization, and format checks.",
+    "Inspect the generated books, lookup tables, indexes, and publish files.",
+    "Create the frontend app from a matching sample and render every emitted event.",
+    "Integrate the RGS wallet flow and resume in-progress rounds correctly.",
+    "Test locally in Storybook/dev mode, then package and submit through the applicable Engine workflow."
+  ],
+  "math_sdk": {
+    "setup": {
+      "python": ">=3.12 recommended by the setup documentation",
+      "rust_cargo": "Required only when using the optimization algorithm",
+      "repository": "git@github.com:engineio/math-sdk.git",
+      "recommended_commands": [
+        "make setup",
+        "make run GAME=<game_id>"
+      ],
+      "windows_note": "The docs note that Windows uses python rather than python3 and provides a Windows virtual-environment activation example."
+    },
+    "sample_games": [
+      "0_0_cluster: cascading cluster wins",
+      "0_0_lines: win-lines example",
+      "0_0_ways: ways-wins example",
+      "0_0_scatter: pay-anywhere cascading example",
+      "0_0_expwilds: expanding wild-reel and prize collection",
+      "fifty_fifty: minimal frontend/RGS integration example",
+      "template: empty starting point"
+    ],
+    "directory_roles": {
+      "games": "Game-specific configuration, calculations, executables, and run scripts.",
+      "src/calculations": "Reusable board, symbol, and win calculations.",
+      "src/config": "Configuration generation for RGS, frontend, and optimizer.",
+      "src/events": "Event data structures shared with the frontend.",
+      "src/state": "Game state tracking during simulations.",
+      "src/wins": "Win and wallet-related logic.",
+      "src/write_data": "Simulation output, compression, and force files.",
+      "utils": "Analysis, analytics, LUT tools, decompression, format checks, and helpers.",
+      "library/publish_files": "Generated files required for publication."
+    },
+    "win_methods": ["lines", "ways", "cluster", "scatter"],
+    "game_state": "GameState configuration commonly distinguishes basegame and freegame because rules, triggers, multipliers, and win-level handling can differ by game type.",
+    "events": {
+      "role": "Events are JSON snapshots returned by the play API and contain everything the frontend needs to display the round.",
+      "shape": {
+        "index": "integer event sequence number",
+        "type": "unique event keyword",
+        "other_fields": "game-specific values such as board, wins, counters, multipliers, or special actions"
+      },
+      "rules": [
+        "Append events to the book in sequence.",
+        "Emit an event whenever new player-visible state needs to be communicated.",
+        "Frontend must handle every event type emitted by the math output.",
+        "Win amounts are represented in the SDK event conventions; follow the current SDK types/examples rather than guessing units."
+      ]
+    },
+    "output_model": {
+      "lookup_table": "CSV summary mapping simulation number to selection weight/probability and payout multiplier.",
+      "book": "Compressed/static game logic and event data indexed by simulation.",
+      "index": "Publication index required by the RGS file format.",
+      "analysis": "Can produce RTP, hit-rate, win-distribution, and PAR-style statistics from lookup tables, force files, paytables, and events.",
+      "quick_start_example": "A sample run can generate files under library/publish_files and can be run with a small number of uncompressed results for inspection."
+    }
+  },
+  "frontend_sdk": {
+    "stack": ["PixiJS", "Svelte", "SvelteKit", "TypeScript", "Storybook", "TurboRepo", "XState", "pnpm"],
+    "getting_started": {
+      "node": "18.18.0",
+      "pnpm": "10.5.0",
+      "commands": [
+        "pnpm install",
+        "pnpm run storybook --filter=<MODULE_NAME>",
+        "pnpm run dev --filter=<MODULE_NAME>"
+      ]
+    },
+    "monorepo_shape": {
+      "apps": ["cluster", "lines", "price", "scatter", "ways"],
+      "packages": "Shared config, constants, state, fetchers, slot utilities, audio, event emitters, XState, Pixi/Svelte components, and UI packages.",
+      "entry_pattern": "Each app has a SvelteKit route and a Game component. Context must be initialized before rendering components that consume shared game context."
+    },
+    "integration_principle": "Use the generated math events as the source of truth and make the frontend animation/state machine consume them in order."
+  },
+  "rgs": {
+    "initialization": "Call POST /wallet/authenticate with sessionID before any other wallet endpoint.",
+    "basic_flow": [
+      "Authenticate session.",
+      "Call /wallet/play with sessionID, amount, and mode.",
+      "Animate/render the returned round events.",
+      "Call /wallet/end-round after the round is complete."
+    ],
+    "endpoints": {
+      "/wallet/authenticate": "Validates the session and returns balance, currency, bet configuration, jurisdiction, and active/last round information.",
+      "/wallet/balance": "Returns the current player balance.",
+      "/wallet/play": "Starts a round and debits the bet amount.",
+      "/wallet/end-round": "Completes the round and triggers payout.",
+      "/bet/event": "Stores an in-progress game event so a round can be resumed after disconnect/reload."
+    },
+    "resume_behavior": "If authenticate returns an active round, use its round.event state to resume the correct animation/game position.",
+    "url_parameters": ["sessionID", "lang", "device", "rgs_url"],
+    "url_rule": "Do not hardcode rgs_url; read it from the game URL/query context.",
+    "common_errors": {
+      "ERR_VAL": "Invalid request",
+      "ERR_IPB": "Insufficient balance",
+      "ERR_IS": "Invalid or expired session",
+      "ERR_ATE": "Authentication/token failure",
+      "ERR_GLE": "Gambling limits exceeded",
+      "ERR_LOC": "Invalid player location",
+      "ERR_GEN": "General server error",
+      "ERR_MAINTENANCE": "RGS planned maintenance"
+    }
+  },
+  "money_and_bets": {
+    "precision": "Engine monetary values are integers with six decimal places of precision; 1,000,000 represents 1.00 unit.",
+    "bet_rules": [
+      "Bet must be between minBet and maxBet returned by authenticate.",
+      "Bet must be divisible by stepBet.",
+      "Use returned betLevels to guide the UI."
+    ],
+    "minimum_bet_guidance": "New games should support small denominations such as 0.01, 0.02, 0.05, and 0.10 USD-equivalent levels where the game design permits.",
+    "currencies": "The docs describe fiat currencies plus social-casino currencies XGC, XSC, and XEC. Currency affects display; game logic uses the integer amount convention."
+  },
+  "distribution": {
+    "choice": "At first submission choose Only on Stake or Stake and the Engine Network.",
+    "locked_at_launch": true,
+    "notes": [
+      "Distribution choice is separate from the payment model.",
+      "Network distribution can use the whole network or selected operators.",
+      "Network games have different revenue shares and Stake promotion/placement conditions."
+    ],
+    "source": "https://stake-engine.com/docs/distribution"
+  },
+  "project_checklist": [
+    "Define original game concept and jurisdiction/compliance assumptions.",
+    "Select a sample game/template and confirm the SDK/repository version.",
+    "Define paytable, bet levels, target RTP, volatility, hit rate, feature triggers, and max win.",
+    "Implement deterministic event/state structures before polishing visuals.",
+    "Generate and inspect static books, lookup tables, indexes, and compressed files.",
+    "Run statistical analysis and format verification.",
+    "Implement all RGS error, loading, reconnect, and active-round states.",
+    "Test desktop/mobile and supported languages from the query parameters.",
+    "Review current submission, licensing, distribution, and payment terms before launch."
+  ],
+  "source_pages": [
+    {"topic":"overview","url":"https://stake-engine.com/docs/"},
+    {"topic":"math overview","url":"https://stake-engine.com/docs/math"},
+    {"topic":"math setup","url":"https://stake-engine.com/docs/math/setup"},
+    {"topic":"math quick start","url":"https://stake-engine.com/docs/math/quick-start"},
+    {"topic":"math SDK directory","url":"https://stake-engine.com/docs/math/sdk-directory"},
+    {"topic":"game state/config","url":"https://stake-engine.com/docs/math/game-state-structure/setup/configs"},
+    {"topic":"win calculations","url":"https://stake-engine.com/docs/math/game-state-structure/wins"},
+    {"topic":"events","url":"https://stake-engine.com/docs/math/game-state-structure/events"},
+    {"topic":"frontend overview","url":"https://stake-engine.com/docs/front-end"},
+    {"topic":"frontend getting started","url":"https://stake-engine.com/docs/front-end/getting-started"},
+    {"topic":"frontend file structure","url":"https://stake-engine.com/docs/front-end/file-structure"},
+    {"topic":"frontend dependencies","url":"https://stake-engine.com/docs/front-end/dependencies"},
+    {"topic":"RGS overview","url":"https://stake-engine.com/docs/rgs"},
+    {"topic":"RGS wallet","url":"https://stake-engine.com/docs/rgs/wallet"},
+    {"topic":"distribution","url":"https://stake-engine.com/docs/distribution"}
+  ],
+  "maintenance_note": "Re-check the source pages before implementation or submission because SDK versions, API schemas, supported currencies, submission rules, and commercial terms can change."
+}
