@@ -41,10 +41,10 @@ python --version
 
 ## Install the web SDK
 
-Open a terminal in the web SDK directory:
+From the repository root, open the web SDK directory:
 
 ```powershell
-cd "C:\Users\David Cheng\Documents\GitHub\StakeStuff\Stake\web-sdk"
+cd web-sdk
 pnpm.cmd install
 ```
 
@@ -55,7 +55,7 @@ The repository uses a pnpm workspace and TurboRepo, so install dependencies from
 Start Storybook for the cluster game on port `6002`:
 
 ```powershell
-cd "C:\Users\David Cheng\Documents\GitHub\StakeStuff\Stake\web-sdk"
+cd web-sdk
 $env:PUBLIC_CHROMATIC="true"
 pnpm.cmd --filter cluster exec storybook dev -p 6002 public
 ```
@@ -91,7 +91,7 @@ The math SDK defines game rules, symbols, events, simulations, and win distribut
 From the repository root, create and activate a Python virtual environment:
 
 ```powershell
-cd "C:\Users\David Cheng\Documents\GitHub\StakeStuff\Stake\math-sdk"
+cd math-sdk
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
