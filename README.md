@@ -56,8 +56,7 @@ Start Storybook for the cluster game on port `6002`:
 
 ```powershell
 cd web-sdk
-$env:PUBLIC_CHROMATIC="true"
-pnpm.cmd --filter cluster exec storybook dev -p 6002 public
+pnpm.cmd --filter cluster run storybook
 ```
 
 Then open [http://localhost:6002/](http://localhost:6002/) in a browser. Storybook is the local development preview used to inspect and interact with the game UI.
