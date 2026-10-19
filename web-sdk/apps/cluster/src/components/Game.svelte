@@ -31,6 +31,7 @@
 	import FreeSpinOutro from './FreeSpinOutro.svelte';
 	import Transition from './Transition.svelte';
 	import I18nTest from './I18nTest.svelte';
+	import GameUILayout from './GameUILayout.svelte';
 
 	const context = getContext();
 
@@ -90,7 +91,7 @@
 			<ClusterWinAmounts />
 		</MainContainer>
 
-		<UI>
+		<UI spinOnly layout={GameUILayout}>
 			{#snippet gameName()}
 				<UiGameName name="LOAN SHARK" />
 			{/snippet}

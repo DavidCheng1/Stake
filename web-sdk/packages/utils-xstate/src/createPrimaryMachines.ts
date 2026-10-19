@@ -1,7 +1,7 @@
 import { fromPromise } from 'xstate';
 
 import { API_AMOUNT_MULTIPLIER } from 'constants-shared/bet';
-import { stateBet, stateUrlDerived, stateModal } from 'state-shared';
+import { stateBet, stateBetDerived, stateUrlDerived, stateModal } from 'state-shared';
 import { requestBet, requestEndRound } from 'rgs-requests';
 
 import type { BaseBet } from './types';
@@ -40,7 +40,7 @@ const handleRequestBet = async ({ onError }: { onError: () => void }) => {
 };
 
 const handleRequestEndRound = async () => {
-	if(stateUrlDerived.replay()) return;
+	if (stateUrlDerived.replay()) return;
 
 	try {
 		const data = await requestEndRound({
@@ -93,6 +93,9 @@ function createPrimaryMachines<TBet extends BaseBet>(options: Options<TBet>) {
 	const isLocalDemo = () => import.meta.env.DEV && !stateUrlDerived.rgsUrl() && !!getDemoBet;
 
 	let balanceAmountFromApiHolder: null | number = null;
+	let demoRound: { bet: TBet; wager: number; cost: number } | null = null;
+	const roundBalance = (amount: number) =>
+		Math.round(amount * API_AMOUNT_MULTIPLIER) / API_AMOUNT_MULTIPLIER;
 
 	const BET_TYPE_METHODS_MAP = {
 		noWin: {
@@ -142,12 +145,35 @@ function createPrimaryMachines<TBet extends BaseBet>(options: Options<TBet>) {
 
 	// newGame
 	const newGame = fromPromise(async () => {
-		await onNewGameStart();
-
 		if (isLocalDemo()) {
-			stateBet.wageredBetAmount = stateBet.betAmount;
-			return { bet: getDemoBet!() };
+			try {
+				const bet = getDemoBet!();
+				if (!bet || !Array.isArray(bet.state) || bet.state.length === 0) {
+					throw new Error('The demo round has no playable events.');
+				}
+				const wager = stateBet.betAmount;
+				const cost = stateBetDerived.betCost();
+				if (!Number.isFinite(cost) || cost <= 0 || cost > stateBet.balanceAmount) {
+					throw new Error('Insufficient balance for this spin.');
+				}
+				demoRound = { bet, wager, cost };
+				stateBet.wageredBetAmount = wager;
+				stateBet.balanceAmount = roundBalance(stateBet.balanceAmount - cost);
+				await onNewGameStart();
+				return { bet };
+			} catch (error) {
+				if (demoRound) {
+					stateBet.balanceAmount = roundBalance(stateBet.balanceAmount + demoRound.cost);
+					demoRound = null;
+				}
+				stateBet.autoSpinsCounter = 0;
+				stateModal.modal = { name: 'error', error };
+				onNewGameError();
+				throw error;
+			}
 		}
+
+		await onNewGameStart();
 
 		const data = await handleRequestBet({ onError: onNewGameError });
 
@@ -191,7 +217,22 @@ function createPrimaryMachines<TBet extends BaseBet>(options: Options<TBet>) {
 
 	// playGame
 	const playGame = fromPromise<void, { bet: TBet | null }>(async ({ input }) => {
-		if (input.bet) await onPlayGame(input.bet); // context.bet is hydrated from newGame
+		try {
+			if (input.bet) await onPlayGame(input.bet);
+		} catch (error) {
+			if (!isLocalDemo()) throw error;
+			// A failed local preview must not kill the actor or award a partial round.
+			if (demoRound) {
+				stateBet.balanceAmount = roundBalance(stateBet.balanceAmount + demoRound.cost);
+				demoRound = null;
+			}
+			stateBet.autoSpinsCounter = 0;
+			stateBet.isSpaceHold = false;
+			stateBet.winBookEventAmount = 0;
+			stateModal.modal = { name: 'error', error };
+			onNewGameError();
+			console.error(error);
+		}
 	});
 
 	// endGame
@@ -200,12 +241,12 @@ function createPrimaryMachines<TBet extends BaseBet>(options: Options<TBet>) {
 			const targetBet = input.rawBet || input.bet;
 
 			if (isLocalDemo()) {
-				if (targetBet) {
-					const payoutMultiplier = targetBet.payoutMultiplier || 0;
-					stateBet.balanceAmount =
-						stateBet.balanceAmount -
-						stateBet.wageredBetAmount +
-						stateBet.wageredBetAmount * payoutMultiplier;
+				if (targetBet && demoRound && targetBet === demoRound.bet) {
+					// Only settle once, after playGame has awaited every math event/animation.
+					stateBet.balanceAmount = roundBalance(
+						stateBet.balanceAmount + demoRound.wager * (targetBet.payoutMultiplier || 0),
+					);
+					demoRound = null;
 				}
 				return;
 			}

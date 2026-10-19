@@ -108,6 +108,14 @@ The included math examples are under [`math-sdk/games/`](math-sdk/games/). Use t
 
 ## Troubleshooting
 
+### Spin behavior and regression checks
+
+Press **SPIN** once to play a round. It stays disabled through the full event sequence and animations, then becomes available again after settlement. Auto-spin uses the same round flow.
+
+The local preview uses recorded sample math outcomes, including losses, cascades, and bonus events. The demo balance deducts the wager at round start and credits the recorded payout once at round end. These samples are not a production probability distribution.
+
+From `web-sdk`, run `node --test scripts/test-cluster-spin.mjs` to check the cluster actor and event player with controlled animation callbacks. The tests cover repeated spins, event order, settlement, insufficient funds, failed-round recovery, and auto-spin. Visual animation timing still needs a browser check.
+
 ### `PUBLIC_CHROMATIC` is not recognized
 
 The inline environment-variable syntax in the package script is Unix-style. In Windows PowerShell, set it separately first:

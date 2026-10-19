@@ -228,6 +228,11 @@ export function createReelForCascading<TRawSymbol extends object, TSymbolState e
 		if (value) {
 			updateSymbols(value);
 		}
+		// Restore positions too, including recovery after symbols have fallen out.
+		for (const symbol of reelState.symbols) {
+			symbol.symbolState = 'static' as TSymbolState;
+			void symbol.symbolY.set(getSymbolY(symbol.symbolIndexOfBoard), { duration: 0 });
+		}
 	};
 
 	const stop = () => {

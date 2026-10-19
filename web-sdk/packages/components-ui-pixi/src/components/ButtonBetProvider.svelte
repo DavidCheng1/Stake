@@ -10,6 +10,7 @@
 	import { getContext } from '../context';
 
 	type Props = {
+		spinOnly?: boolean;
 		children: Snippet<
 			[
 				{
@@ -38,6 +39,11 @@
 	};
 
 	const onpress = () => {
+		if (
+			props.spinOnly &&
+			(!context.stateXstateDerived.isIdle() || !stateBetDerived.isBetCostAvailable())
+		)
+			return;
 		context.eventEmitter.broadcast({ type: 'soundPressBet' });
 
 		if (context.stateXstateDerived.isIdle()) {
@@ -54,6 +60,7 @@
 		}
 
 		if (!context.stateXstateDerived.isIdle()) {
+			if (props.spinOnly) return 'spin_disabled';
 			if (stopDisabled) return 'stop_disabled';
 			if (stateBetDerived.hasAutoBetCounter()) return 'stop_default';
 			if (stateBet.isTurbo) return 'stop_disabled';

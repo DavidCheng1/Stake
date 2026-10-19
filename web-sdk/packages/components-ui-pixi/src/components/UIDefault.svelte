@@ -1,5 +1,6 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import type { Snippet, Component } from 'svelte';
+	import type { LayoutUiProps } from '../types';
 
 	import { getContextLayout } from 'utils-layout';
 	import { EnableSpaceHold } from 'components-shared';
@@ -26,6 +27,8 @@
 	import ButtonSoundSwitch from './ButtonSoundSwitch.svelte';
 
 	type Props = {
+		layout?: Component<LayoutUiProps>;
+		spinOnly?: boolean;
 		gameName: Snippet;
 		logo: Snippet;
 	};
@@ -41,10 +44,12 @@
 		tablet: LayoutTablet,
 	};
 
-	const LayoutComponent = $derived(LAYOUT_COMPONENT_MAP[stateLayoutDerived.layoutType()]);
+	const LayoutComponent = $derived(props.layout ?? LAYOUT_COMPONENT_MAP[stateLayoutDerived.layoutType()]);
 </script>
 
-<EnableSpaceHold />
+{#if !props.spinOnly}
+	<EnableSpaceHold />
+{/if}
 
 <UiFadeContainer>
 	<LayoutComponent>
@@ -73,7 +78,7 @@
 		{/snippet}
 
 		{#snippet buttonBet(buttonProps)}
-			<ButtonBet {...buttonProps} />
+			<ButtonBet {...buttonProps} spinOnly={props.spinOnly} />
 		{/snippet}
 
 		{#snippet buttonTurbo(buttonProps)}

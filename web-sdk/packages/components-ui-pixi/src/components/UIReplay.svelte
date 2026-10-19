@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Component } from 'svelte';
 	import { EnableSpaceHold } from 'components-shared';
 
 	import UiFadeContainer from './UiFadeContainer.svelte';
@@ -20,6 +21,8 @@
 	import LabelFreeSpinCounter from './LabelFreeSpinCounter.svelte';
 
 	type Props = {
+		layout?: Component<LayoutUiProps>;
+		spinOnly?: boolean;
 		gameName: LayoutUiProps['gameName'];
 		logo: LayoutUiProps['logo'];
 	};

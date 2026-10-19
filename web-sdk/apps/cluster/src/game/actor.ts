@@ -8,9 +8,12 @@ import type { Bet } from './typesBookEvent';
 import { stateXstateDerived } from './stateXstate';
 import { playBet, convertTorResumableBet } from './utils';
 import { stateGameDerived } from './stateGame.svelte';
+import { eventEmitter } from './eventEmitter';
 import books from '../stories/data/base_books';
 
-const demoBooks = books.filter((book) => book.events.some((event) => event.type === 'tumbleBoard'));
+// Books store their ordered math events as `events`; the game actor consumes `state`.
+// Include losing rounds too: cascades only occur when the math outcome awards a win.
+const demoBooks = books.map((book) => ({ ...book, state: book.events }) as Bet);
 
 const primaryMachines = createPrimaryMachines<Bet>({
 	onResumeGameActive: (betToResume) => convertTorResumableBet(betToResume),
@@ -27,7 +30,12 @@ const primaryMachines = createPrimaryMachines<Bet>({
 		stateBet.winBookEventAmount = 0;
 		await stateGameDerived.enhancedBoard.preSpin({});
 	},
-	onNewGameError: () => stateGameDerived.enhancedBoard.settle(),
+	onNewGameError: () => {
+		eventEmitter.broadcast({ type: 'tumbleBoardReset' });
+		eventEmitter.broadcast({ type: 'tumbleBoardHide' });
+		eventEmitter.broadcast({ type: 'boardShow' });
+		stateGameDerived.enhancedBoard.settle();
+	},
 	onPlayGame: async (bet) => await playBet(bet),
 	checkIsBonusGame: (bet) => checkIsMultipleRevealEvents({ bookEvents: bet.state }),
 	getDemoBet: () => demoBooks[Math.floor(Math.random() * demoBooks.length)],

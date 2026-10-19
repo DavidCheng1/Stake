@@ -13,7 +13,7 @@
 	import { onMount } from 'svelte';
 	import { Tween } from 'svelte/motion';
 
-	import { BitmapText } from 'pixi-svelte';
+	import { ResponsiveBitmapText } from 'components-pixi';
 	import { stateBetDerived } from 'state-shared';
 	import { SECOND } from 'constants-shared/time';
 	import { FadeContainer } from 'components-pixi';
@@ -51,7 +51,7 @@
 
 	// update y
 	onMount(async () => {
-		await y.set(-SYMBOL_SIZE, { duration: (SECOND * 2) / stateBetDerived.timeScale() });
+		await y.set(-12, { duration: (SECOND * 2) / stateBetDerived.timeScale() });
 		show = false;
 	});
 </script>
@@ -62,10 +62,9 @@
 		if (!show) props.win.oncomplete();
 	}}
 >
-	<BitmapText
-		x={SYMBOL_SIZE * (props.win.reel + 0.5)}
-		y={SYMBOL_SIZE * (props.win.row - 0.5) + y.current}
-		scale={scale.current}
+	<ResponsiveBitmapText
+		maxWidth={550}
+		y={18 + y.current}
 		text={showMultiplier
 			? `${bookEventAmountToCurrencyString(props.win.win)} X ${props.win.mult}`
 			: bookEventAmountToCurrencyString(props.win.result)}

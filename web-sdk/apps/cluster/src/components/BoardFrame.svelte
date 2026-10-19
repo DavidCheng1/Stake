@@ -13,7 +13,7 @@
 	const SPINE_SCALE = { width: 0.6, height: 0.6 };
 	const SPRITE_SCALE = { width: 1.07, height: 1.19 };
 	const BG_RATIO = 937 / 806;
-	const POSITION_ADJUSTMENT = 1.01;
+	const POSITION_ADJUSTMENT = 1;
 
 	type AnimationName = 'reelhouse_glow_start' | 'reelhouse_glow_idle' | 'reelhouse_glow_exit';
 

@@ -9,15 +9,27 @@
 	import { UI_BASE_FONT_SIZE, UI_BASE_SIZE } from '../constants';
 	import { i18nDerived } from '../i18n/i18nDerived';
 
-	const props: Partial<Omit<ButtonProps, 'children'>> = $props();
+	const {
+		spinOnly = false,
+		...props
+	}: Partial<Omit<ButtonProps, 'children'>> & { spinOnly?: boolean } = $props();
 	const disabled = $derived(!stateBetDerived.isBetCostAvailable());
 	const sizes = { width: UI_BASE_SIZE, height: UI_BASE_SIZE };
 </script>
 
-<ButtonBetProvider>
+<ButtonBetProvider {spinOnly}>
 	{#snippet children({ key, onpress })}
-		<OnHotkey hotkey="Space" {disabled} {onpress} />
-		<Button {...props} {sizes} {onpress} {disabled}>
+		<OnHotkey
+			hotkey="Space"
+			disabled={disabled || (spinOnly && key === 'spin_disabled')}
+			{onpress}
+		/>
+		<Button
+			{...props}
+			{sizes}
+			{onpress}
+			disabled={disabled || (spinOnly && key === 'spin_disabled')}
+		>
 			{#snippet children({ center, hovered })}
 				<Container {...center}>
 					<UiSprite
@@ -33,9 +45,11 @@
 					/>
 					<Text
 						anchor={0.5}
-						text={['spin_default', 'spin_disabled'].includes(key)
-							? i18nDerived.bet()
-							: i18nDerived.stop()}
+						text={spinOnly
+							? 'SPIN'
+							: ['spin_default', 'spin_disabled'].includes(key)
+								? i18nDerived.bet()
+								: i18nDerived.stop()}
 						style={{
 							align: 'center',
 							wordWrap: true,

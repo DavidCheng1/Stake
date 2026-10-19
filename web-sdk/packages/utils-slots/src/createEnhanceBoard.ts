@@ -10,7 +10,7 @@ export function createEnhanceBoard() {
 		const { spin } = createEnhanceBoardSpin({ board });
 		const settle = (rawBoard?: TRawSymbol[][]) =>
 			board.forEach((reel, reelIndex) => {
-				const rawSymbols = rawBoard?.[reelIndex] || [];
+				const rawSymbols = rawBoard?.[reelIndex];
 				reel.setSymbolsWithRawSymbols(rawSymbols);
 			});
 		const stop = () => board.forEach((reel) => reel.stop());

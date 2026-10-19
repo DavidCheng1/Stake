@@ -7,6 +7,7 @@ import { createGetWinLevelDataByWinLevelAlias } from 'utils-shared/winLevel';
 
 import type { GameType, RawSymbol, SymbolState } from './types';
 import { stateLayoutDerived } from './stateLayout';
+import { getGameLayout } from './layoutGeometry';
 import { winLevelMap } from './winLevelMap';
 import { eventEmitter } from './eventEmitter';
 import {
@@ -89,8 +90,8 @@ export const stateGame = $state({
 });
 
 const boardLayout = () => ({
-	x: stateLayoutDerived.mainLayout().width * 0.5,
-	y: stateLayoutDerived.mainLayout().height * 0.5,
+	x: getGameLayout(stateLayoutDerived.mainLayout()).boardX,
+	y: getGameLayout(stateLayoutDerived.mainLayout()).boardY,
 	anchor: { x: 0.5, y: 0.5 },
 	pivot: { x: BOARD_SIZES.width / 2, y: BOARD_SIZES.height / 2 },
 	...BOARD_SIZES,
