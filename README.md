@@ -1,17 +1,52 @@
 # Stake Game Project
 
-This repository contains the files for our Stake Engine game project. The main game prototype is **Loan Shark**, based on the Stake Engine SDK examples.
+This repository contains the files for our Stake Engine game projects: **Loan Shark**, based on the Stake Engine SDK examples, and **Ghost Duels**.
 
 ## Repository layout
 
 ```text
 Stake/
 ├─ math-sdk/                         # Python game mathematics and simulations
+│  └─ games/ghost_duels/             # Ghost Duels math
 ├─ web-sdk/                          # Svelte/PixiJS frontend SDK and games
 │  └─ apps/cluster/                  # Our current Loan Shark game prototype
+├─ ghost-duels-web/                  # Ghost Duels frontend (static)
+├─ tools/mock_rgs.py                 # Local RGS stand-in for testing Ghost Duels
+├─ GhostDuelsV2.html                 # Original Ghost Duels prototype
 ├─ stake-engine-docs-reference.json  # Saved Stake Engine documentation reference
 └─ README.md
 ```
+
+## Ghost Duels (Geisterduell)
+
+The second game, ported from the `GhostDuelsV2.html` prototype:
+
+| Part | Location |
+| --- | --- |
+| Math (rules, simulations, publish files) | [`math-sdk/games/ghost_duels/`](math-sdk/games/ghost_duels/) |
+| Frontend (static, no build step) | [`ghost-duels-web/`](ghost-duels-web/) |
+| Local mock RGS for testing | [`tools/mock_rgs.py`](tools/mock_rgs.py) |
+
+Generate the math (about 2 minutes, after the math SDK setup below):
+
+```powershell
+cd math-sdk
+env\Scripts\python.exe games\ghost_duels\run.py
+```
+
+This writes `games/ghost_duels/library/publish_files/` (books, lookup table, `index.json`) and runs the RGS format checks. Results are deterministic, so every run produces identical files. They are not in Git because the book file is about 140 MB.
+
+Play it locally against the real books:
+
+```powershell
+math-sdk\env\Scripts\python.exe tools\mock_rgs.py
+```
+
+For Stake Engine, upload `math-sdk/games/ghost_duels/library/publish_files/` as the math and the `ghost-duels-web/` folder as the frontend.
+
+Current math, from 1M spins: RTP 95.67%, a win every 3.6 spins, a bonus every 725 spins, max win 25,000×.
+
+## Loan Shark
 
 The active frontend project is located at:
 

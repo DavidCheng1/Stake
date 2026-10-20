@@ -1,0 +1,213 @@
+"""Local stand-in for the Stake Engine RGS, for testing ghost-duels-web against the real math books.
+
+Serves the frontend and the wallet endpoints (authenticate, play, end-round, bet/event, replay).
+Rounds are drawn from the published books by lookup-table weight, like the RGS does.
+
+    python tools/mock_rgs.py            then open the printed URL
+    python tools/mock_rgs.py --port 8080 --books 20000 --currency EUR
+
+Force a feature by putting it in rgs_url, e.g. rgs_url=http://127.0.0.1:8080/force/bonus
+(kinds: bonus, duel, tier2, tier3, wildonly, big, win, lose). Not part of the game upload.
+"""
+
+import argparse
+import io
+import json
+import mimetypes
+import os
+import random
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlparse, unquote
+
+import zstandard
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WEB = os.path.join(ROOT, "ghost-duels-web")
+PUBLISH = os.path.join(ROOT, "math-sdk", "games", "ghost_duels", "library", "publish_files")
+API = 1_000_000
+BET_LEVELS = [0.1, 0.2, 0.4, 0.6, 0.8, 1, 2, 4, 5, 10, 20, 50, 100]
+
+
+def categories(book):
+    types = {e["type"] for e in book["events"]}
+    tiers = {e["tier"] for e in book["events"] if e["type"] == "vsDuel"}
+    wild_only = any(w["wildOnly"] for e in book["events"] if e["type"] == "winInfo" for w in e["wins"])
+    pay = book["payoutMultiplier"]
+    out = ["win" if pay > 0 else "lose"]
+    if "bonusEnd" in types:
+        out.append("bonus")
+    if tiers:
+        out.append("duel")
+    if 2 in tiers:
+        out.append("tier2")
+    if 3 in tiers:
+        out.append("tier3")
+    if wild_only:
+        out.append("wildonly")
+    if pay >= 10000:
+        out.append("big")
+    return out
+
+
+def load_books(limit, scan):
+    """Keep the first `limit` books for normal play and, while scanning up to `scan`, examples of rare kinds."""
+    weights = {}
+    with open(os.path.join(PUBLISH, "lookUpTable_base_0.csv"), encoding="UTF-8") as f:
+        for line in f:
+            i, w, _ = line.strip().split(",")
+            weights[int(i)] = int(w)
+    books, forced = {}, {}
+    with open(os.path.join(PUBLISH, "books_base.jsonl.zst"), "rb") as f:
+        reader = io.TextIOWrapper(zstandard.ZstdDecompressor().stream_reader(f), encoding="UTF-8")
+        for n, line in enumerate(reader):
+            if n >= scan:
+                break
+            book = json.loads(line)
+            keep = n < limit
+            for kind in categories(book):
+                if len(forced.setdefault(kind, [])) < (2000 if kind in ("win", "lose") else 200):
+                    forced[kind].append(book["id"])
+                    keep = True
+            if keep:
+                books[book["id"]] = line  # raw JSON, parsed when played
+    ids = [i for i in books if i < limit]
+    return books, ids, [weights.get(i, 1) for i in ids], forced
+
+
+class State:
+    def __init__(self, args):
+        self.lock = threading.Lock()
+        self.balance = int(args.balance * API)
+        self.currency = args.currency
+        self.round = None  # active round
+        self.event = None
+        print("Loading books…", flush=True)
+        self.books, self.ids, self.weights, self.forced = load_books(args.books, args.scan)
+        print(f"{len(self.ids)} books for play; forced kinds: " + ", ".join(f"{k} {len(v)}" for k, v in self.forced.items()))
+
+    def pick(self, force):
+        if force and self.forced.get(force):
+            return self.book(random.choice(self.forced[force]))
+        return self.book(random.choices(self.ids, self.weights)[0])
+
+    def book(self, book_id):
+        line = self.books.get(book_id)
+        return json.loads(line) if line else None
+
+
+class Handler(BaseHTTPRequestHandler):
+    state: State = None
+
+    def log_message(self, fmt, *args):
+        if "/wallet/" in self.path or "/bet/" in self.path:
+            super().log_message(fmt, *args)
+
+    def send_json(self, code, data):
+        body = json.dumps(data).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST")
+        self.end_headers()
+
+    def split_force(self):
+        parts = urlparse(self.path).path.split("/")
+        if len(parts) > 3 and parts[1] == "force":
+            return parts[2], "/" + "/".join(parts[3:])
+        return None, urlparse(self.path).path
+
+    def do_GET(self):
+        _, path = self.split_force()
+        if path.startswith("/bet/replay/"):
+            book_id = int(path.rstrip("/").split("/")[-1])
+            book = self.state.book(book_id)
+            if not book:
+                return self.send_json(404, {"error": "ERR_VAL", "message": "book not loaded"})
+            return self.send_json(200, {"payoutMultiplier": book["payoutMultiplier"] / 100, "costMultiplier": 1, "state": book["events"]})
+        file = os.path.normpath(os.path.join(WEB, unquote(path).lstrip("/") or "index.html"))
+        if not file.startswith(WEB) or not os.path.isfile(file):
+            self.send_response(404)
+            self.end_headers()
+            return
+        with open(file, "rb") as f:
+            body = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", mimetypes.guess_type(file)[0] or "application/octet-stream")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_POST(self):
+        force, path = self.split_force()
+        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+        st = self.state
+        with st.lock:
+            bal = lambda: {"amount": st.balance, "currency": st.currency}
+            if path == "/wallet/authenticate":
+                levels = [int(v * API) for v in BET_LEVELS]
+                return self.send_json(200, {
+                    "balance": bal(),
+                    "config": {
+                        "minBet": levels[0], "maxBet": levels[-1], "stepBet": 10000,
+                        "defaultBetLevel": API, "betLevels": levels,
+                        "jurisdiction": {"socialCasino": False, "disabledAutoplay": False, "disabledSpacebar": False,
+                                         "displayRTP": True, "minimumRoundDuration": 0},
+                    },
+                    "round": dict(st.round, event=st.event) if st.round else None,
+                })
+            if path == "/wallet/play":
+                amount = int(body.get("amount", 0))
+                if st.round:
+                    return self.send_json(400, {"error": "ERR_VAL", "message": "round already active"})
+                if amount <= 0 or amount % 10000:
+                    return self.send_json(400, {"error": "ERR_VAL", "message": "invalid amount"})
+                if amount > st.balance:
+                    return self.send_json(400, {"error": "ERR_IPB", "message": "insufficient balance"})
+                book = st.pick(force)
+                st.balance -= amount
+                mult = book["payoutMultiplier"] / 100
+                rnd = {"roundID": book["id"], "amount": amount, "payout": int(round(mult * amount)),
+                       "payoutMultiplier": mult, "active": mult > 0, "mode": "BASE", "state": book["events"]}
+                st.round, st.event = (rnd if mult > 0 else None), None
+                print(f"  book {book['id']}  payout {mult}x  force={force}", flush=True)
+                return self.send_json(200, {"balance": bal(), "round": rnd})
+            if path == "/wallet/end-round":
+                if st.round:
+                    st.balance += st.round["payout"]
+                    st.round = None
+                return self.send_json(200, {"balance": bal()})
+            if path == "/wallet/balance":
+                return self.send_json(200, {"balance": bal()})
+            if path == "/bet/event":
+                st.event = body.get("event")
+                return self.send_json(200, {"event": st.event})
+        self.send_json(404, {"error": "ERR_VAL", "message": "unknown endpoint"})
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--port", type=int, default=8080)
+    ap.add_argument("--books", type=int, default=20000, help="books used for normal play")
+    ap.add_argument("--scan", type=int, default=200000, help="books scanned for forced examples")
+    ap.add_argument("--balance", type=float, default=1000)
+    ap.add_argument("--currency", default="EUR")
+    args = ap.parse_args()
+    Handler.state = State(args)
+    host = f"127.0.0.1:{args.port}"
+    print(f"\nPlay:   http://{host}/?sessionID=local&lang=de&rgs_url=http://{host}")
+    print(f"Bonus:  http://{host}/?sessionID=local&lang=de&rgs_url=http://{host}/force/bonus")
+    print(f"Replay: http://{host}/?replay=true&game=ghost_duels&version=1&mode=base&event=<book id>&amount=1000000&rgs_url=http://{host}\n")
+    ThreadingHTTPServer(("127.0.0.1", args.port), Handler).serve_forever()
+
+
+if __name__ == "__main__":
+    main()
