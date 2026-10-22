@@ -27,14 +27,14 @@ The second game, ported from the `GhostDuelsV2.html` prototype:
 | Frontend (static, no build step) | [`ghost-duels-web/`](ghost-duels-web/) |
 | Local mock RGS for testing | [`tools/mock_rgs.py`](tools/mock_rgs.py) |
 
-Generate the math (about 7 minutes, after the math SDK setup below):
+Generate the math (about 20 minutes, after the math SDK setup below):
 
 ```powershell
 cd math-sdk
 env\Scripts\python.exe games\ghost_duels\run.py
 ```
 
-This simulates both bet modes (1M base rounds and 100k bonus buys), writes `games/ghost_duels/library/publish_files/` (books and lookup table per mode, plus `index.json`) and runs the RGS format checks. Results are deterministic, so every run produces identical files. They are not in Git because the books are about 185 MB.
+This simulates all five bet modes (1M base rounds and 100k rounds for each buy mode), writes `games/ghost_duels/library/publish_files/` (books and lookup table per mode, plus `index.json`) and runs the RGS format checks. Results are deterministic, so every run produces identical files. They are not in Git because the books are about 300 MB. The run needs about 1 GB of free disk and works on 16 GB of RAM (4 workers).
 
 Play it locally against the real books:
 
@@ -45,7 +45,7 @@ math-sdk\env\Scripts\python.exe tools\mock_rgs.py
 For Stake Engine, upload `math-sdk/games/ghost_duels/library/publish_files/` as the math and the `ghost-duels-web/` folder as the frontend.
 
 Current math, from 1M spins: RTP 95.67%, a win every 3.6 spins, a bonus every 725 spins, max win 25,000×.
-Bonus buy (`bonus` mode, 100k rounds): costs 183× the bet, RTP 95.63%, average payout 175×.
+Buy modes (100k rounds each): Ghost Crates 183× (RTP 95.57%), Big Ghost Crates 325× (95.79%), Mega Ghost Crates 652× (95.64%), VS Spin 5.3× (95.43%).
 
 ## Loan Shark
 

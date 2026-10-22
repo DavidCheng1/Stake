@@ -19,7 +19,14 @@ Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not 
 - [x] **Bonus buy:** `bonus` bet mode (cost 183×, RTP 95.63% from 100k rounds) that starts Ghost Crates directly, plus the Buy Bonus plaque and confirmation dialog. Follows Stake's `disabledBuyFeature`.
   - The price must match in two places: `buy_cost` in `game_config.py` and `BUY.cost` in `game.js`. After changing the math, rerun `run.py` and set both to the bonus mean payout divided by the base RTP.
 - [x] **Spooky sounds** (synthesized, through the sound panel and mute): haunted bells for wins, a ghostly poof for tumbles, bone ticks while the win counts up, duel slam, metallic clashes and wails for knockouts, the pirate's horn and the devil's growl, organ and bell toll for the free-spin trigger, rune chimes, heartbeat for lost lives, big-win fanfare; a crypt reverb on all of it, and the music dips under big moments.
-- [ ] **Bonus menu (prices provisional):** Ghost Crates (3–5 FS, 183×), Big Ghost Crates (exactly 4 FS, ~310×), Mega Ghost Crates (exactly 5 FS, ~590×) and VS Spin (a spin with at least one VS reel, ~5×). The full simulation sets the final prices; until then rerun `run.py` before testing the new options locally.
+- [x] **Bonus menu:** four buyable modes, priced from 100k simulated rounds each so every RTP sits next to the base game's 95.67%:
+  | Mode | Price | RTP | Max win | Pays 0× |
+  | --- | --- | --- | --- | --- |
+  | Ghost Crates (3–5 FS) | 183× | 95.57% | 25,000× | 21.6% |
+  | Big Ghost Crates (exactly 4 FS) | 325× | 95.79% | 25,000× | 19.9% |
+  | Mega Ghost Crates (exactly 5 FS) | 652× | 95.64% | 25,000× | 18.9% |
+  | VS Spin (at least one VS reel) | 5.3× | 95.43% | 4,064× | 49.7% |
+  - The price must match in `game_config.py` (`buy_modes`) and `game.js` (`BUYS`): price = mean payout of the mode / base RTP, whole bets (0.1 below 20×).
 - [x] **Approval checklist fixes** (Engine's review prompt is `engine-review-prompt.md` in the repo root; guideline IDs in brackets):
   - The page is only the game, scaled to the window; nothing scrolls [227, 193, 195].
   - Phones held upright get their own layout: the reels on top, a touch panel with every control below [194].
@@ -48,13 +55,13 @@ Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not 
 
 - [ ] Upload the math and front versions. Build them with the release script (see `release/` locally) or upload directly:
   - Math: `math-sdk/games/ghost_duels/library/publish_files/` after running the math.
-  - The five files are `books_base.jsonl.zst`, `lookUpTable_base_0.csv`, `books_bonus.jsonl.zst`, `lookUpTable_bonus_0.csv` and `index.json`.
+  - 11 files: `index.json` plus a books file and a lookup table for each of the five modes (base, bonus, bonus4, bonus5, vsspin).
   - Front: the `ghost-duels-web/` folder without its `README.md`.
 - [ ] Test on Stake with a real session: spin, win, bonus, bonus buy, reload mid-round, a replay link, and social mode.
 - [ ] Before submitting, have a coding agent run `engine-review-prompt.md` again and fix what it reports.
 
-- [ ] **Decide on bonus buys that pay nothing:** about 1 in 5 bought bonuses (22%) pays 0×, because Ghost Crates only pays when 4+ runes touch a crate. That feels harsh at 183×. Options: more lives or a guaranteed minimum in the bought bonus, then reprice.
-- [ ] The SDK's 3-star volatility check flags `etl40b` for the bonus buy (1.10, limit 0.9). The check adds up wins of 40× the mode cost in base-bet units, so for a 183× mode it is not comparable; ask Stake whether it applies to buy modes.
+- [ ] **Decide on bonus buys that pay nothing:** about 1 in 5 bought bonuses pays 0× (19–22%, even with 4 or 5 crates), because Ghost Crates only pays when 4+ runes touch a crate. That feels harsh at these prices. Options: more lives or a guaranteed minimum in bought bonuses, then reprice.
+- [ ] The SDK's 3-star volatility check flags the buy modes (`etl40b` 1.1–2.0 against 0.9, `etl10k` up to 23.8 against 0.8 for Mega). It adds up big wins in base-bet units, so it is not comparable for modes costing 183–652×; ask Stake whether it applies to buy modes.
 
 ### Nice to have
 
@@ -92,7 +99,7 @@ Everything is in the repo **except** the generated math files, which are too big
    ```
 4. Run it:
    ```powershell
-   env\Scripts\python.exe games\ghost_duels\run.py   # about 7 minutes (base + bonus buy), writes library/publish_files
+   env\Scripts\python.exe games\ghost_duels\run.py   # about 20 minutes (base + 4 buy modes), writes library/publish_files
    cd ..
    math-sdk\env\Scripts\python.exe tools\mock_rgs.py   # then open the printed URL
    ```
