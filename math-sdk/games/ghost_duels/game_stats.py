@@ -31,6 +31,7 @@ def print_stats(config, mode="base"):
     print(json.dumps(stats, indent=2))
     with open(os.path.join(config.library_path, f"stats_{mode}.json"), "w", encoding="UTF-8") as f:
         json.dump(stats, f, indent=2)
-    if abs(stats["rtp"] - config.rtp) > 0.0005:
-        print(f"WARNING: declared rtp {config.rtp} differs from lookup table rtp {stats['rtp']}")
+    declared = next(bm.get_rtp() for bm in config.bet_modes if bm.get_name() == mode)
+    if abs(stats["rtp"] - declared) > 0.0005:
+        print(f"WARNING: declared rtp {declared} differs from lookup table rtp {stats['rtp']}")
     return stats

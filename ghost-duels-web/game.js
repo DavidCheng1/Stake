@@ -65,13 +65,13 @@ const MAX_WIN_X = 25000;
 // Buyable modes. cost must match buy_modes in math-sdk/games/ghost_duels/game_config.py; rtp and maxWin come from the
 // published lookup tables (math-sdk library/stats_<mode>.json). Update all three after rerunning run.py.
 const BUYS = [
-  { mode: "BONUS", cost: 183, rtp: 95.57, maxWin: 25000, fs: 3, name: i18n("Geisterkisten", "Ghost Crates"),
+  { mode: "BONUS", cost: 182, rtp: 96.09, maxWin: 25000, fs: 3, name: i18n("Geisterkisten", "Ghost Crates"),
     text: i18n("3 bis 5 FS: der Geisterkisten-Bonus startet sofort.", "3 to 5 FS: the Ghost Crates bonus starts right away.") },
-  { mode: "BONUS4", cost: 325, rtp: 95.79, maxWin: 25000, fs: 4, name: i18n("Große Geisterkisten", "Big Ghost Crates"),
+  { mode: "BONUS4", cost: 324, rtp: 96.08, maxWin: 25000, fs: 4, name: i18n("Große Geisterkisten", "Big Ghost Crates"),
     text: i18n("Genau 4 FS: der Bonus startet mit 4 Kisten.", "Exactly 4 FS: the bonus starts with 4 crates.") },
-  { mode: "BONUS5", cost: 652, rtp: 95.64, maxWin: 25000, fs: 5, name: i18n("Mega-Geisterkisten", "Mega Ghost Crates"),
+  { mode: "BONUS5", cost: 650, rtp: 95.93, maxWin: 25000, fs: 5, name: i18n("Mega-Geisterkisten", "Mega Ghost Crates"),
     text: i18n("Genau 5 FS: 5 Kisten, öfter mit ×3.", "Exactly 5 FS: 5 crates, more often at ×3.") },
-  { mode: "VSSPIN", cost: 5.3, rtp: 95.43, maxWin: 4064, vs: true, name: i18n("VS-Spin", "VS Spin"),
+  { mode: "VSSPIN", cost: 5.27, rtp: 95.98, maxWin: 4064, vs: true, name: i18n("VS-Spin", "VS Spin"),
     text: i18n("Ein Spin mit mindestens einer VS-Walze: jede Gruppe, die sie erreicht, startet ein Duell.", "A spin with at least one VS reel: every group that reaches it starts a duel.") },
 ];
 const BASE_INFO = { rtp: 95.67, maxWin: 6144 };

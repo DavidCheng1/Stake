@@ -16,17 +16,17 @@ Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not 
 - [x] **Presentation:** intro screen with the three features (click to continue); the VS reel lands small and bursts open into a framed reel with the Skull King and smoke; spooky multiplier lettering; connected groups light up as one glowing shape instead of lines; the big Skull King stands behind the dashboard.
 - [x] **Turbo and skip:** the bolt button on the dashboard plays rounds about twice as fast; a click on the board or Spin during a round skips the rest of it. Both respect Stake's `disabledTurbo` and `disabledSlamstop`.
 - [x] **English first:** the page is written in English; German is the translation for `lang=de`.
-- [x] **Bonus buy:** `bonus` bet mode (cost 183×, RTP 95.63% from 100k rounds) that starts Ghost Crates directly, plus the Buy Bonus plaque and confirmation dialog. Follows Stake's `disabledBuyFeature`.
-  - The price must match in two places: `buy_cost` in `game_config.py` and `BUY.cost` in `game.js`. After changing the math, rerun `run.py` and set both to the bonus mean payout divided by the base RTP.
+- [x] **Bonus buy:** `bonus` bet mode (cost 182×, RTP 96.09% from 100k rounds) that starts Ghost Crates directly, plus the Buy Bonus plaque and confirmation dialog. Follows Stake's `disabledBuyFeature`.
+  - The price must match in two places: `buy_modes` in `game_config.py` and `BUYS` in `game.js`. After changing the math, rerun `run.py`, set the price to the mode's mean payout divided by 0.96 and its `rtp` to mean payout / price, then run `run.py --configs-only`.
 - [x] **Spooky sounds** (synthesized, through the sound panel and mute): haunted bells for wins, a ghostly poof for tumbles, bone ticks while the win counts up, duel slam, metallic clashes and wails for knockouts, the pirate's horn and the devil's growl, organ and bell toll for the free-spin trigger, rune chimes, heartbeat for lost lives, big-win fanfare; a crypt reverb on all of it, and the music dips under big moments.
-- [x] **Bonus menu:** four buyable modes, priced from 100k simulated rounds each so every RTP sits next to the base game's 95.67%:
+- [x] **Bonus menu:** four buyable modes, priced from 100k simulated rounds each so every RTP is within 0.1% of 96%:
   | Mode | Price | RTP | Max win | Pays 0× |
   | --- | --- | --- | --- | --- |
-  | Ghost Crates (3–5 FS) | 183× | 95.57% | 25,000× | 21.6% |
-  | Big Ghost Crates (exactly 4 FS) | 325× | 95.79% | 25,000× | 19.9% |
-  | Mega Ghost Crates (exactly 5 FS) | 652× | 95.64% | 25,000× | 18.9% |
-  | VS Spin (at least one VS reel) | 5.3× | 95.43% | 4,064× | 49.7% |
-  - The price must match in `game_config.py` (`buy_modes`) and `game.js` (`BUYS`): price = mean payout of the mode / base RTP, whole bets (0.1 below 20×).
+  | Ghost Crates (3–5 FS) | 182× | 96.09% | 25,000× | 21.6% |
+  | Big Ghost Crates (exactly 4 FS) | 324× | 96.08% | 25,000× | 19.9% |
+  | Mega Ghost Crates (exactly 5 FS) | 650× | 95.93% | 25,000× | 18.9% |
+  | VS Spin (at least one VS reel) | 5.27× | 95.98% | 4,064× | 49.7% |
+  - The price must match in `game_config.py` (`buy_modes`) and `game.js` (`BUYS`): price = mean payout of the mode / 0.96, whole bets (VS Spin to 0.01, since 5.2× would be 97.3% and 5.3× 95.43%); each mode also declares `rtp` = mean payout / price. Stake allows at most 96.7% per mode.
 - [x] **Approval checklist fixes** (Engine's review prompt is `engine-review-prompt.md` in the repo root; guideline IDs in brackets):
   - The page is only the game, scaled to the window; nothing scrolls [227, 193, 195].
   - Phones held upright get their own layout: the reels on top, a touch panel with every control below [194].
@@ -61,7 +61,7 @@ Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not 
 - [ ] Before submitting, have a coding agent run `engine-review-prompt.md` again and fix what it reports.
 
 - [ ] **Decide on bonus buys that pay nothing:** about 1 in 5 bought bonuses pays 0× (19–22%, even with 4 or 5 crates), because Ghost Crates only pays when 4+ runes touch a crate. That feels harsh at these prices. Options: more lives or a guaranteed minimum in bought bonuses, then reprice.
-- [ ] The SDK's 3-star volatility check flags the buy modes (`etl40b` 1.1–2.0 against 0.9, `etl10k` up to 23.8 against 0.8 for Mega). It adds up big wins in base-bet units, so it is not comparable for modes costing 183–652×; ask Stake whether it applies to buy modes.
+- [ ] The SDK's 3-star volatility check flags the buy modes (`etl40b` 1.1–2.0 against 0.9, `etl10k` up to 23.8 against 0.8 for Mega). It adds up big wins in base-bet units, so it is not comparable for modes costing 182–650×; ask Stake whether it applies to buy modes.
 
 ### Nice to have
 
