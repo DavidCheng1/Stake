@@ -101,7 +101,7 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 5vw, 
 /* Geisterkisten bonus */
 .stage.bonus::before { content: ""; position: absolute; inset: -1%; background: radial-gradient(ellipse at 50% 45%, rgb(4 16 13 / .5), rgb(3 10 9 / .82)); border-radius: 6px; animation: bonusIn .6s ease-out; }
 @keyframes bonusIn { from { opacity: 0; } }
-.reels { clip-path: inset(-.5% -4% -1% -4%); }
+.reels { clip-path: inset(-.5% -12% -1% -12%); } /* sides leave room for the Skull King breaking out of a VS reel */
 .stage.hurt::after { content: ""; position: absolute; inset: -2%; pointer-events: none; z-index: 7; border-radius: 8px; box-shadow: inset 0 0 6cqw rgb(180 20 40 / .75); animation: hurt 1s ease-out forwards; }
 @keyframes hurt { from { opacity: 1; } to { opacity: 0; } }
 
@@ -195,8 +195,8 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 5vw, 
 #winVal.hit { text-shadow: 0 0 1.2cqw rgb(233 196 106 / .8), 0 .15cqw 0 #000; }
 .msg { left: 36.33%; top: 82.7%; width: 26.95%; height: 4%; display: grid; place-items: center; font-size: 1.4cqw; font-weight: 700; letter-spacing: .06em;
   color: #c9ffe6; text-shadow: 0 0 .8cqw rgb(109 255 179 / .6), 0 .12cqw 0 #000; white-space: nowrap; overflow: hidden; }
-.mult { font-family: var(--display); font-size: 2.2cqw; color: #fff; background: linear-gradient(#ff5ccf, #9b1a86); border: .2cqw solid var(--gold); border-radius: .8cqw;
-  padding: 0 .7cqw; line-height: 1.25; left: 59.5%; top: 86.8%; text-shadow: 0 .15cqw 0 #3a0636; }
+.mult { font-family: var(--display); font-size: 2.6cqw; line-height: 1; left: 59.5%; top: 86.4%; letter-spacing: .03em; color: #dfffee;
+  -webkit-text-stroke: .09em #04120d; paint-order: stroke fill; text-shadow: 0 0 .25em rgb(109 255 179 / .95), 0 0 .7em rgb(109 255 179 / .6), 0 .09em 0 #020806; }
 .hot { position: absolute; padding: 0; margin: 0; border: 0; background: transparent; cursor: pointer; border-radius: .6cqw; box-shadow: none; font: inherit; color: inherit; }
 .hot::after { content: ""; position: absolute; inset: -8%; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .15s;
   background: radial-gradient(closest-side, rgb(160 255 210 / .55), rgb(109 255 179 / .15) 70%, transparent); mix-blend-mode: screen; }
@@ -263,9 +263,19 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 5vw, 
   background: radial-gradient(circle at 50% 35%, #2e363a, #15131a 75%); box-shadow: 0 0 0 .22cqw #c99a3e, 0 0 0 .38cqw #15131a, 0 .5cqw 1cqw rgb(0 0 0 / .6); }
 #musicBtn svg { width: 60%; height: 60%; fill: none; stroke: #c9ffe6; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 .4cqw rgb(109 255 179 / .7)); }
 #musicBtn .spk { fill: #c9ffe6; }
-#musicBtn[aria-pressed="true"] .off, #musicBtn[aria-pressed="false"] .on { display: none; }
-#musicBtn[aria-pressed="false"] svg { stroke: var(--muted); filter: none; }
-#musicBtn[aria-pressed="false"] .spk { fill: var(--muted); }
+#musicBtn:not(.off) .off, #musicBtn.off .on { display: none; }
+#musicBtn.off svg { stroke: var(--muted); filter: none; }
+#musicBtn.off .spk { fill: var(--muted); }
+/* sound panel: the autoplay menu's frame, hanging below the speaker */
+.snd-menu { right: 1.6%; top: 12.5%; bottom: auto; width: 24%; transform-origin: 90% 0; }
+.snd-menu::after { display: none; }
+.snd-row { display: grid; grid-template-columns: 6.6cqw minmax(0, 1fr) 3cqw; align-items: center; gap: .8cqw; cursor: pointer;
+  font: 800 1.45cqw/1 var(--ui); letter-spacing: .06em; text-transform: uppercase; color: #f0d9a0; text-shadow: 0 .12cqw 0 #000; }
+.snd-row output { text-align: right; color: #c9ffe6; font-variant-numeric: tabular-nums; }
+.snd-row input { width: 100%; height: 1.8cqw; margin: 0; accent-color: var(--ghost); cursor: pointer; }
+.snd-row input:focus-visible { outline: .25cqw solid #6dffb3; outline-offset: .2cqw; border-radius: .4cqw; }
+.snd-foot { grid-template-columns: 1fr; }
+.snd-foot button[aria-pressed="true"] { color: #fff; border-color: #6dffb3; background: linear-gradient(#1f4a3a, #12271f); box-shadow: inset 0 0 .8cqw rgb(109 255 179 / .5), 0 0 1cqw rgb(109 255 179 / .35); }
 .cell.dim, .tall.dim { filter: brightness(.38) saturate(.5); transition: filter .35s; }
 .cell.win::after, .tall.win::after { content: ""; position: absolute; inset: 0; border-radius: 8px; pointer-events: none;
   box-shadow: 0 0 0 2px rgb(var(--wc, 246 196 79)) inset, 0 0 16px rgb(var(--wc, 246 196 79) / .55); animation: frame 1s ease-in-out infinite; }
@@ -331,32 +341,69 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 5vw, 
 
 /* Tall reel (VS / duel winner) */
 .tall { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; border-radius: 8px; }
-.tall .pillar { position: absolute; inset: 0; border-radius: 8px;
-  background: linear-gradient(180deg, rgb(89 255 156 / .55), rgb(20 10 40 / .3) 50%, rgb(211 107 255 / .6)); }
-.tall .pillar::after { content: ""; position: absolute; inset: 0;
-  background: repeating-linear-gradient(170deg, transparent 0 18px, rgb(200 255 255 / .22) 19px 21px, transparent 22px 44px);
-  animation: bolts .6s linear infinite; }
-@keyframes bolts { to { background-position: 0 44px; } }
-.tall.char .pillar { background: linear-gradient(180deg, rgb(var(--c) / .55), rgb(20 10 40 / .25) 50%, rgb(var(--c) / .55)); }
-.tall .sym { width: 138%; max-width: none; z-index: 1; }
+.tall .sym { width: 138%; max-width: none; z-index: 3; }
+/* VS reel: a small VS lands, then the frame bursts open (tallLanded). Layers: glow, backdrop with rays and rising smoke, gold frame, Skull King, VS crest, multiplier */
+.tall.vsx { --c: 109 255 179; }
+.vx-glow { position: absolute; inset: -2% -10%; border-radius: 14px; pointer-events: none; z-index: 0;
+  background: radial-gradient(closest-side, rgb(var(--c) / .5), rgb(var(--c) / .12) 70%, transparent); filter: blur(.5cqw); animation: vxGlow 2.6s ease-in-out infinite; }
+@keyframes vxGlow { 50% { opacity: .5; } }
+.vx-bg { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; z-index: 0;
+  background: radial-gradient(95% 26% at 50% 46%, rgb(var(--c) / .42), transparent 72%), radial-gradient(130% 22% at 50% 100%, rgb(211 107 255 / .5), transparent 72%),
+    linear-gradient(180deg, #1f0f36 0%, #0b221c 40%, #0d2c22 62%, #1c0b2f 100%); }
+.vx-rays { position: absolute; left: 50%; top: 46%; width: 520%; aspect-ratio: 1; translate: -50% -50%;
+  background: repeating-conic-gradient(rgb(var(--c) / .2) 0 7deg, transparent 7deg 20deg);
+  -webkit-mask: radial-gradient(closest-side, #000 12%, transparent 72%); mask: radial-gradient(closest-side, #000 12%, transparent 72%); animation: vxSpin 16s linear infinite; }
+@keyframes vxSpin { to { rotate: 360deg; } }
+.vx-smoke { position: absolute; inset: 0; background: url(assets/img36.webp) 0 0 / 24cqw 24cqw repeat; opacity: .5; mix-blend-mode: screen; animation: vxRise 9s linear infinite; }
+.vx-smoke.b { background-image: url(assets/img35.webp); background-size: 30cqw 30cqw; opacity: .55; animation-name: vxRiseB; animation-duration: 13s; }
+@keyframes vxRise { to { background-position: 0 -24cqw; } }
+@keyframes vxRiseB { to { background-position: 4cqw -30cqw; } }
+.vx-fog { position: absolute; left: -30%; right: -30%; bottom: -4%; height: 30%; background: radial-gradient(ellipse at 50% 100%, rgb(215 255 235 / .45), transparent 70%); animation: vxFog 3.4s ease-in-out infinite; }
+@keyframes vxFog { 50% { opacity: .55; transform: scaleX(1.15); } }
+/* gold rim drawn as a ring, like the autoplay menu */
+.vx-frame { position: absolute; inset: 0; border-radius: 8px; padding: .3cqw; pointer-events: none; z-index: 2;
+  background: linear-gradient(175deg, #f6dd8f 0%, #c99a3e 18%, #8a6122 40%, #e2bb62 58%, #a77a2c 78%, #f0d184 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  filter: drop-shadow(0 0 .5cqw rgb(var(--c) / .8)); }
+.vx-king { position: absolute; left: 50%; top: 22%; width: 170%; aspect-ratio: 730 / 930; translate: -50% 0; z-index: 3; pointer-events: none;
+  filter: drop-shadow(0 0 .5cqw rgb(var(--c) / .6)) drop-shadow(0 .3cqw .3cqw rgb(0 0 0 / .6)); }
+.vk { position: absolute; inset: 0; transform-origin: 50% 92%; animation: vkBreathe 3.4s ease-in-out infinite; }
+.vk img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none; }
+.vk img.vk-lamp { left: 4.38%; top: 29.03%; width: 39.45%; height: 31.4%; inset: auto; animation: vkLamp 1.8s ease-in-out infinite; }
+@keyframes vkBreathe { 50% { transform: scale(1.025, 1.04) translateY(-1.5%); } }
+@keyframes vkLamp { 50% { filter: brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3); } }
+.vx-crest { position: absolute; left: 50%; top: .5%; width: 112%; translate: -50% 0; z-index: 4; filter: drop-shadow(0 .3cqw .4cqw rgb(0 0 0 / .6)); }
+.tall .vx-crest .sym { width: 100%; }
+.vx-mult { position: absolute; left: 50%; bottom: 3%; translate: -50% 0; z-index: 4; font-size: 2.8cqw; animation: vxAsk 1.8s ease-in-out infinite; }
+@keyframes vxAsk { 50% { scale: 1.12; opacity: .75; } }
+.vx-flash { position: absolute; inset: -4% -10%; border-radius: 12px; z-index: 6; pointer-events: none; background: radial-gradient(closest-side, #fff, rgb(var(--c) / .8) 50%, transparent); }
+/* landing state: only the VS, cell sized, in the middle of the reel */
+.vsx.small > :not(.vx-crest) { visibility: hidden; }
+.vsx.small .vx-crest { top: 50%; width: 70%; translate: -50% -50%; }
+/* duel winner in the frame */
+.vsx.char .vx-bg { background: radial-gradient(95% 30% at 50% 50%, rgb(var(--c) / .5), transparent 72%), radial-gradient(130% 22% at 50% 100%, rgb(var(--c) / .35), transparent 72%), linear-gradient(180deg, #1f0f36, #0b221c 50%, #1c0b2f); }
 .tall.dueling { z-index: 6; }
-.rd-arena { position: absolute; inset: 0; z-index: 2; }
+.rd-arena { position: absolute; inset: 0; z-index: 5; }
 .rd-f { position: absolute; left: 50%; width: 118%; margin-left: -59%; display: grid; justify-items: center; }
 .rd-f.top { top: 1%; } .rd-f.bot { bottom: 1%; }
 .rd-f .sym { width: 100%; filter: drop-shadow(0 0 .8cqw rgb(var(--c))); }
-.rd-badge { position: absolute; left: 0; right: 0; margin-inline: auto; width: max-content; font-size: 1.6cqw; z-index: 10; }
+.rd-badge { position: absolute; left: 0; right: 0; margin-inline: auto; width: max-content; font-size: 2.2cqw; z-index: 10; }
 .rd-f { z-index: 1; }
 .rd-f.top .rd-badge { bottom: -8%; } .rd-f.bot .rd-badge { top: -8%; }
 .rd-vs { position: absolute; left: 50%; top: 50%; width: 92%; transform: translate(-50%, -50%); z-index: 3; }
 .rd-vs .sym { width: 100%; }
 .rd-call { position: absolute; left: 50%; top: 50%; z-index: 20; padding: .3cqw .8cqw; border-radius: .7cqw; background: rgb(6 14 12 / .82); border: .15cqw solid rgb(var(--c)); white-space: nowrap; font: 400 2.6cqw/1 var(--display); color: #fff; pointer-events: none;
   text-shadow: 0 0 1.4cqw rgb(var(--c)), 0 .25cqw 0 #000; }
-.tall-badge.t2 { background: linear-gradient(#ffd877, #c98a14); color: #2a1700; text-shadow: none; }
-.tall-badge.t3 { background: linear-gradient(#ff8a5c, #b0170f); border-color: #ffe39a; box-shadow: 0 0 1.4cqw rgb(255 90 40 / .9); }
 .rd-flash { position: absolute; inset: 0; background: #fff; opacity: 0; border-radius: 8px; z-index: 4; pointer-events: none; }
-.tall-badge { font-size: 2cqw; position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); z-index: 10; }
-.badge { font-family: var(--display); color: #fff; font-size: 3.2cqw; line-height: 1.15; padding: 0 .35em;
-  background: linear-gradient(#ff5ccf, #9b1a86); border: .2cqw solid var(--gold); border-radius: 1cqw; text-shadow: 0 .2cqw 0 #3a0636; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tall-badge { font-size: 3cqw; position: absolute; left: 50%; bottom: 2.5%; translate: -50% 0; z-index: 10; }
+/* multipliers: dripping Creepster numbers with a dark outline and a ghostly glow; gold for the pirate, fire for the devil */
+.badge { font-family: var(--display); font-weight: 400; color: #dfffee; font-size: 3.2cqw; line-height: 1; padding: 0 .08em; letter-spacing: .03em; white-space: nowrap; font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: .09em #04120d; paint-order: stroke fill;
+  text-shadow: 0 0 .25em rgb(109 255 179 / .95), 0 0 .7em rgb(109 255 179 / .6), 0 .09em 0 #020806; }
+.badge.t2 { color: #ffe39a; -webkit-text-stroke-color: #2a1700; text-shadow: 0 0 .25em rgb(255 200 80 / .95), 0 0 .75em rgb(255 160 30 / .6), 0 .09em 0 #1c0f00; }
+.badge.t3 { color: #ffc29a; -webkit-text-stroke-color: #2a0400; text-shadow: 0 0 .25em rgb(255 90 40 / 1), 0 0 .8em rgb(255 40 20 / .75), 0 .09em 0 #200300; }
+.float .fm { font: 400 1.3em/1 var(--display); letter-spacing: .03em; color: #dfffee; margin-left: .15em; -webkit-text-stroke: .06em #04120d; paint-order: stroke fill;
+  text-shadow: 0 0 .3em rgb(109 255 179 / .9); }
 
 /* Overlays */
 .links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 4; overflow: visible; }
@@ -427,5 +474,6 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 5vw, 
 @media (max-width: 480px) { .rune-card { grid-column: 1 / -1; } .tests .note { margin-left: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .rig, .p-head, .p-tail, .p-hat, .p-jaw, .glow, .aura, .gloss, .tall .pillar::after, .cell.win::after, .tall.win::after { animation: none !important; }
+  .rig, .p-head, .p-tail, .p-hat, .p-jaw, .glow, .aura, .gloss, .cell.win::after, .tall.win::after,
+  .vx-glow, .vx-rays, .vx-smoke, .vx-fog, .vk, .vk img, .vx-mult { animation: none !important; }
 }

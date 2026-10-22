@@ -216,11 +216,29 @@ const fx = (() => {
   let OX = 0, OY = 0;
   function size() { const r = game.getBoundingClientRect(), s = stage.getBoundingClientRect(), d = devicePixelRatio || 1; OX = s.left - r.left; OY = s.top - r.top; W = r.width; H = r.height; canvas.width = W * d; canvas.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); }
   size(); addEventListener("resize", size);
+  // smoke puff sprite: the fog texture, tinted and faded out to a soft round edge (cached once the texture has loaded)
+  const FOG = new Image(); FOG.src = "assets/img35.webp";
+  function smokeSprite(rgb) {
+    const key = "smoke" + rgb; let sp = SPR.get(key); if (sp) return sp;
+    sp = document.createElement("canvas"); sp.width = sp.height = 96; const sx = sp.getContext("2d"), ready = FOG.complete && FOG.naturalWidth > 0;
+    if (ready) for (let i = 0; i < 3; i++) sx.drawImage(FOG, 0, 0, 96, 96); else { sx.fillStyle = "#fff"; sx.fillRect(0, 0, 96, 96); } // stacked for a denser puff
+    sx.globalCompositeOperation = "source-atop"; sx.fillStyle = `rgba(${rgb},.5)`; sx.fillRect(0, 0, 96, 96);
+    sx.globalCompositeOperation = "destination-in";
+    const g = sx.createRadialGradient(48, 48, 0, 48, 48, 48); g.addColorStop(0, "#000"); g.addColorStop(.55, "rgba(0,0,0,.55)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    sx.fillStyle = g; sx.fillRect(0, 0, 96, 96);
+    if (ready) SPR.set(key, sp);
+    return sp;
+  }
   function emit(x, y, o = {}) {
     if (RM) return;
     x += OX; y += OY;
     const n = o.n ?? 20, s = o.scale ?? 1, kind = o.kind ?? "wisp", rgb = (o.rgb ?? "89 255 156").split(" ").join(",");
     for (let i = 0; i < n; i++) {
+      if (kind === "smoke") { // slow, growing puff; o.ang / o.sp aim it
+        const ang = (o.ang ?? Math.random() * Math.PI * 2) + (Math.random() - .5) * .5, sp = (o.sp ?? 1) * (.6 + Math.random() * .8) * s;
+        parts.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 1, r: (5 + Math.random() * 5) * s, kind, rgb, rot: Math.random() * 6.3, vr: (Math.random() - .5) * .03 });
+        continue;
+      }
       const ang = kind === "spark" ? Math.random() * Math.PI * 2 : -Math.PI / 2 + (Math.random() - .5) * 2.2;
       const sp = (kind === "spark" ? 3 + Math.random() * 6 : 1.2 + Math.random() * 2.6) * s;
       parts.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 1, r: (2 + Math.random() * 4) * s, kind,
@@ -236,6 +254,10 @@ const fx = (() => {
         p.x += p.vx; p.y += p.vy; p.vx *= .92; p.vy *= .92; p.life -= .035;
         ctx.strokeStyle = `rgba(${p.rgb},${p.life})`; ctx.lineWidth = p.r * .6;
         ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 3, p.y - p.vy * 3); ctx.stroke();
+      } else if (p.kind === "smoke") {
+        p.x += p.vx; p.y += p.vy; p.vx *= .975; p.vy = p.vy * .975 - .01; p.r *= 1.011; p.rot += p.vr; p.life -= .0085;
+        ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = Math.max(0, p.life) * Math.min(1, (1 - p.life) * 8) * .6;
+        ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.drawImage(smokeSprite(p.rgb), -p.r * 2, -p.r * 2, p.r * 4, p.r * 4); ctx.restore();
       } else if (p.kind === "bubble") {
         p.wob += .12; p.x += p.vx * .4 + Math.sin(p.wob) * .5; p.y += p.vy * .7; p.life -= .014;
         ctx.strokeStyle = `rgba(${p.rgb},${p.life})`; ctx.lineWidth = 1.5;
@@ -275,11 +297,6 @@ for (let c = 0; c < COLS; c++) {
   const tall = div("tall"); tall.hidden = true; el.appendChild(tall);
   reelsEl.appendChild(el); reels.push({ el, cells, tall });
 }
-// decorative idle board until the first round (no FS, so it never looks like a trigger)
-const idleSym = () => { let id; do { id = randSym(); } while (id === "fs"); return id; };
-G = reels.map(() => Array.from({ length: ROWS }, idleSym));
-reels.forEach((rl, c) => rl.cells.forEach((cell, r) => cell.appendChild(makeSym(G[c][r]))));
-
 function clearBoard() {
   fx.size();
   qa(reelsEl, ".cell, .tall").forEach(c => c.classList.remove("win", "dim"));
@@ -287,19 +304,80 @@ function clearBoard() {
   multChip.hidden = true; winVal.classList.remove("hit");
 }
 
+// ---------- VS reel: lands as a small VS, then bursts open into a framed, smoking reel with the Skull King ----------
 let vsReels = [];
-function showTallVS(rl, deferFx) {
-  rl.tall.hidden = false; rl.tall.className = "tall";
-  rl.tall.replaceChildren(div("pillar"), makeSym("vs"));
+// backdrop shared by the VS reel and the duel winner: glow, smoke rising over light rays, gold frame
+const vxBack = () => {
+  const bg = div("vx-bg"); bg.append(div("vx-rays"), div("vx-smoke"), div("vx-smoke b"), div("vx-fog"));
+  return [div("vx-glow"), bg, div("vx-frame")];
+};
+function skullKing() {
+  const k = div("vx-king"), inner = div("vk"), body = new Image(), lamp = new Image();
+  body.src = "assets/img24.webp"; lamp.src = "assets/img25.webp"; body.alt = lamp.alt = ""; lamp.className = "vk-lamp";
+  inner.append(body, lamp); k.appendChild(inner); return k;
+}
+function showTallVS(rl, small) {
+  const t = rl.tall; t.hidden = false; t.className = "tall vsx" + (small ? " small" : ""); t.style.removeProperty("--c");
+  const crest = div("vx-crest"), mult = div("vx-mult badge"); crest.appendChild(makeSym("vs")); mult.textContent = "×?";
+  t.replaceChildren(...vxBack(), skullKing(), crest, mult);
   rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = "hidden"; });
-  if (!deferFx) tallLanded(rl);
 }
-function tallLanded(rl) {
-  if (!RM) rl.tall.animate([{ filter: "brightness(3)" }, { filter: "brightness(1)" }], { duration: 600, easing: "ease-out" });
-  shake(9, 450);
-  const [x, y, w, h] = centerOf(rl.tall);
+// duel winner: the character in the frame with its multiplier at the bottom
+function showTallWinner(rl, id, mult, tier) {
+  const t = rl.tall; t.hidden = false; t.className = "tall vsx char"; t.style.setProperty("--c", SYM[id].rgb);
+  const badge = div("tall-badge badge" + (tier >= 2 ? " t" + tier : "")); badge.textContent = "×" + mult;
+  t.replaceChildren(...vxBack(), makeSym(id), badge);
+  rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = "hidden"; });
+}
+// the small VS has landed: it charges, then the frame shoots open, smoke blasts out and the king rises
+async function tallLanded(rl) {
+  const t = rl.tall, crest = q(t, ".vx-crest");
+  const [x, y, w, h] = centerOf(t);
+  if (RM || !t.classList.contains("small")) { t.classList.remove("small"); shake(9, 450); return; }
+  shake(5, 250);
+  sound.charge();
+  const first = crest.getBoundingClientRect();
+  await crest.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "scale(1.35) rotate(-7deg)", filter: "brightness(1.9) drop-shadow(0 0 1cqw #6dffb3)", offset: .6 },
+    { transform: "scale(1.22) rotate(5deg)", filter: "brightness(2.3) drop-shadow(0 0 1.4cqw #d36bff)" }], { duration: 380, easing: "ease-in" }).finished;
+  t.classList.remove("small");
+  const last = crest.getBoundingClientRect();
+  const dx = first.left + first.width / 2 - (last.left + last.width / 2), dy = first.top + first.height / 2 - (last.top + last.height / 2);
+  sound.burst(); shake(11, 520);
+  crest.animate([{ transform: `translate(${dx}px, ${dy}px) scale(${first.width * 1.22 / last.width})`, filter: "brightness(2.3)" }, { transform: "scale(1.12)", offset: .6 }, { transform: "none", filter: "brightness(1)" }],
+    { duration: 680, easing: "cubic-bezier(.2,.9,.3,1.15)" });
+  const open = [{ transform: "scaleY(0)", opacity: .3 }, { transform: "scaleY(1.06)", opacity: 1, offset: .6 }, { transform: "none", opacity: 1 }];
+  qa(t, ".vx-glow, .vx-bg, .vx-frame").forEach(e => e.animate(open, { duration: 520, easing: "cubic-bezier(.2,.9,.3,1)" }));
+  q(t, ".vx-king").animate([{ transform: "translateY(38%) scale(.3)", opacity: 0 }, { transform: "translateY(-5%) scale(1.08)", opacity: 1, offset: .65 }, { transform: "none", opacity: 1 }],
+    { duration: 720, delay: 140, easing: "ease-out", fill: "backwards" });
+  q(t, ".vx-mult").animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(1.3)", opacity: 1, offset: .7 }, { transform: "none", opacity: 1 }], { duration: 420, delay: 420, fill: "backwards" });
+  const flash = div("vx-flash"); t.appendChild(flash);
+  flash.animate([{ opacity: .95 }, { opacity: 0 }], { duration: 420, easing: "ease-out" }).finished.then(() => flash.remove());
+  for (let i = 0; i < 18; i++) fx.emit(x, y + (Math.random() - .5) * h * .8, { kind: "smoke", n: 1, rgb: i % 3 ? "150 255 200" : "211 107 255", scale: w / 60, ang: Math.random() * Math.PI * 2, sp: 2.6 });
   for (let i = 0; i < 5; i++) fx.emit(x, y - h / 2 + h * (i + .5) / 5, { n: 10, kind: "spark", rgb: i < 2 ? "89 255 156" : "211 107 255", scale: w / 140 });
+  await sleep(760);
 }
+// VS reels and duel winners on the board keep breathing smoke out over their neighbours
+setInterval(() => {
+  if (RM || document.hidden || stage.classList.contains("dropping")) return;
+  for (const { tall: t } of reels) {
+    if (t.hidden || !t.classList.contains("vsx") || t.classList.contains("small") || t.classList.contains("dueling")) continue;
+    const [x, y, w, h] = centerOf(t), side = Math.random() < .5 ? -1 : 1;
+    fx.emit(x + side * w * .42, y + (Math.random() - .45) * h * .9, { kind: "smoke", n: 1, rgb: t.style.getPropertyValue("--c") || (Math.random() < .3 ? "211 107 255" : "150 255 200"),
+      scale: w / 60, ang: -Math.PI / 2 + side * (.7 + Math.random() * .6), sp: .55 });
+  }
+}, 170);
+
+// showcase board until the first round: a VS reel with the Skull King, a duel winner with its multiplier,
+// three free-spin symbols and every pay symbol at least once
+(() => {
+  const VS_COL = 2, WIN_COL = 5, open = [];
+  G = reels.map((rl, c) => Array.from({ length: ROWS }, (_, r) => { if (c !== VS_COL && c !== WIN_COL) open.push([c, r]); let id; do { id = randSym(); } while (id === "fs"); return id; }));
+  for (let i = open.length - 1; i > 0; i--) { const j = rnd(i + 1); [open[i], open[j]] = [open[j], open[i]]; }
+  SYM_IDS.filter(id => id !== "fs").concat("fs", "fs", "fs").forEach((id, i) => { const [c, r] = open[i]; G[c][r] = id; });
+  reels.forEach((rl, c) => rl.cells.forEach((cell, r) => cell.appendChild(makeSym(G[c][r]))));
+  showTallVS(reels[VS_COL], false);
+  showTallWinner(reels[WIN_COL], "pirate", 25, 2);
+})();
 
 function pitchPx() { return reels[0].cells[1].getBoundingClientRect().top - reels[0].cells[0].getBoundingClientRect().top; }
 const DROP_KF = from => [
@@ -313,6 +391,7 @@ const DROP_EASE = "cubic-bezier(.45,0,.8,.5)";
 async function spinReels(res) {
   const P = pitchPx();
   stage.classList.add("dropping");
+  sound.spin();
   // 1. old symbols fall out of the bottom
   const outs = [];
   if (!RM) reels.forEach((rl, c) => {
@@ -346,6 +425,8 @@ async function spinReels(res) {
     rl.cells.forEach((cell, r) => { const el = pre[c][r]; cell.appendChild(el); fills.push([c, r, el]); });
   });
   void reelsEl.offsetHeight;
+  // one knock per reel when its bottom symbol hits (that drop peaks at 64% of 340 + 6 × 24 ms); VS reels land at 82% of 460 ms
+  for (let c = 0; c < COLS; c++) sound.land(c, (stops[c] + (RM ? 0 : vsReels.includes(c) ? 377 : 310)) / 1000, vsReels.includes(c));
   const done = [];
   fills.forEach(([c, r, el]) => {
     const delay = stops[c] + (ROWS - 1 - r) * 50;
@@ -362,6 +443,7 @@ async function spinReels(res) {
   // tease overlays (blurred fast spin) run until that reel's drop starts
   tease.forEach((on, c) => {
     if (!on) return;
+    sound.tease(Math.max(0, stops[c] - 1500) / 1000, 1.5);
     setTimeout(() => {
       const rl = reels[c], ov = div("teasefx");
       for (let r = 0; r < ROWS; r++) { const im = new Image(); im.src = IMG[randSym()]; im.alt = ""; ov.appendChild(im); }
@@ -443,7 +525,9 @@ function drawLinks(cl) {
   });
 }
 function floatText(x, y, text, rgb, big, small) {
-  const f = div("float" + (small ? " small" : "")); f.textContent = text; f.style.left = x + "px"; f.style.top = y + "px"; f.style.setProperty("--c", rgb);
+  const f = div("float" + (small ? " small" : "")); f.style.left = x + "px"; f.style.top = y + "px"; f.style.setProperty("--c", rgb);
+  // multipliers ("×5") get the spooky lettering
+  text.split(/(×\s?[\d.,]+)/).forEach(part => { if (!part) return; if (part[0] === "×") { const b = document.createElement("b"); b.className = "fm"; b.textContent = part; f.appendChild(b); } else f.append(part); });
   if (big) f.style.fontSize = "6cqw";
   floatsEl.appendChild(f);
   f.animate([{ opacity: 0, transform: "translate(-50%,-30%) scale(.6)" }, { opacity: 1, transform: "translate(-50%,-50%) scale(1.1)", offset: .2 }, { opacity: 1, transform: "translate(-50%,-90%) scale(1)", offset: .75 }, { opacity: 0, transform: "translate(-50%,-120%)" }],
@@ -554,18 +638,20 @@ async function reelDuel(d) {
   const pirate = d.challengers.find(ch => ch.symbol === "pirate"), devil = d.challengers.find(ch => ch.symbol === "devil");
   const m2 = pirate?.mult, m3 = devil?.mult;
   let winner = topWins1 ? ghostTop : ghostBot, mult = topWins1 ? m1 : m1b;
-  const vsSym = q(tall, ".sym");
+  const vsSym = q(tall, ".vx-crest .sym") || q(tall, ".sym");
   say(i18n("Duell", "Duel") + `: ${SYM[ghostTop].name} vs ${SYM[ghostBot].name}`);
   hero.react("point", 2600);
   animWin(vsSym); shake(6, 350);
   const finalTier = tier;
   const finish = async () => {
-    tall.classList.remove("dueling");
-    tall.className = "tall char"; tall.style.setProperty("--c", SYM[winner].rgb);
-    const ns = makeSym(winner), badge = div("tall-badge badge"); badge.textContent = "×" + mult;
-    if (finalTier >= 2) badge.classList.add("t" + finalTier);
-    tall.replaceChildren(div("pillar"), ns, badge);
-    if (!RM) tall.animate([{ filter: "brightness(2.5)" }, { filter: "brightness(1)" }], { duration: 450 });
+    showTallWinner(rl, winner, mult, finalTier);
+    const ns = q(tall, ".sym"), badge = q(tall, ".tall-badge");
+    if (!RM) {
+      tall.animate([{ filter: "brightness(2.5)" }, { filter: "brightness(1)" }], { duration: 450 });
+      badge.animate([{ transform: "scale(2.4)", opacity: 0 }, { transform: "scale(.9)", opacity: 1, offset: .6 }, { transform: "none", opacity: 1 }], { duration: 520, easing: "ease-out" });
+      const [bx, by, bw] = centerOf(badge);
+      fx.emit(bx, by, { n: 22, kind: "spark", rgb: finalTier === 3 ? "255 122 42" : finalTier === 2 ? "255 216 119" : "109 255 179", scale: bw / 90 });
+    }
     animWin(ns); shake(finalTier === 3 ? 14 : 7, finalTier === 3 ? 700 : 350);
     await sleep(RM ? 300 : 700);
     return { winner, mult, tier: finalTier };
@@ -575,11 +661,12 @@ async function reelDuel(d) {
     return finish();
   }
   const arena = div("rd-arena"), mid = div("rd-vs"), fl = div("rd-flash");
-  const fighter = (pos, id) => { const el = div("rd-f " + pos), sy = makeSym(id), bd = div("rd-badge badge"); bd.textContent = "×?"; el.append(sy, bd); el.style.setProperty("--c", SYM[id].rgb); return { el, sy, bd, id }; };
+  const fighter = (pos, id) => { const el = div("rd-f " + pos), sy = makeSym(id), bd = div("rd-badge badge" + (id === "pirate" ? " t2" : id === "devil" ? " t3" : "")); bd.textContent = "×?"; el.append(sy, bd); el.style.setProperty("--c", SYM[id].rgb); return { el, sy, bd, id }; };
   let top = fighter("top", ghostTop), bot = fighter("bot", ghostBot);
   mid.appendChild(makeSym("vs"));
   arena.append(top.el, bot.el, mid, fl);
   vsSym.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(.4) rotate(20deg)", opacity: 0 }], { duration: 350, fill: "forwards" });
+  qa(tall, ".vx-king, .vx-mult").forEach(e => e.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.7)" }], { duration: 350, fill: "forwards" }));
   await sleep(250);
   tall.classList.add("dueling"); tall.appendChild(arena);
   const [cx, cy, cw] = centerOf(tall);
@@ -836,6 +923,7 @@ async function slowSpin(landed) {
   const ghost = () => { const g = div("ghostspin"), img = new Image(); img.src = IMG[pick(ghostPool)]; img.alt = ""; g.appendChild(img); return g; };
   const ghostTick = () => empties.forEach(([c, r]) => { if (!K[c][r] && reels[c].cells[r].classList.contains("falling")) reels[c].cells[r].replaceChildren(ghost()); });
   ghostTick(); const ghostIv = RM ? 0 : setInterval(ghostTick, 95);
+  sound.spin();
   const plan = landed.map(p => ({ c: p.reel, r: p.row, t: p.type === "crate" ? "c" : "r", p }));
   await sleep(RM ? 150 : 850);
   for (let c = 0; c < COLS; c++) {
@@ -845,6 +933,7 @@ async function slowSpin(landed) {
       if (p.t === "c") placeCrate(p.c, p.r, p.p.symbol, p.p.mult);
       else placeRune(p.c, p.r, p.p.value, p.p.symbol);
     }
+    sound.land(c, 0, colPlan.some(p => p.t === "c"));
     await sleep(RM ? 20 : (colPlan.length ? (colPlan.some(p => p.t === "c") ? 600 : 300) : 110));
   }
   clearInterval(ghostIv);
@@ -1140,48 +1229,123 @@ document.getElementById("infoBtn").addEventListener("click", () => document.getE
 document.getElementById("spin").addEventListener("click", () => play());
 addEventListener("keydown", e => { if (e.code === "Space" && e.target === document.body && !RGS.jurisdiction.disabledSpacebar) { e.preventDefault(); play(); } });
 
-// ---------- Background music: "Spooky Carousel", looped without a gap through Web Audio ----------
-// Browsers only allow sound after a tap or key press, so it starts on the first one. Muting is remembered.
-const musicBtn = document.getElementById("musicBtn");
-const music = (() => {
-  const SRC = "assets/spooky-carousel.mp3", VOL = 0.45, KEY = "ghostDuels.music";
-  let on = true; try { on = localStorage.getItem(KEY) !== "off"; } catch {}
-  let ctx, gain, started = false;
-  const file = fetch(SRC).then(r => { if (!r.ok) throw new Error("music " + r.status); return r.arrayBuffer(); });
-  file.catch(() => {}); // reported in start()
-  const fade = (to, sec) => { const t = ctx.currentTime; gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(gain.gain.value, t); gain.gain.linearRampToValueAtTime(to, t + sec); };
-  async function start() {
+// ---------- Sound: one Web Audio graph with a music bus and an effects bus, each with its own volume ----------
+// Browsers only allow sound after a tap or key press, so everything starts on the first one. Volumes and mute are remembered.
+// The effects are synthesized placeholders; each one can later be swapped for a recorded sample without touching the call sites.
+const sound = (() => {
+  const KEY = "ghostDuels.sound", MUSIC_SRC = "assets/spooky-carousel.mp3";
+  const st = { music: 65, sfx: 80, muted: false }; // sliders 0–100
+  try { Object.assign(st, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
+  let ctx, master, musicBus, sfxBus, noise, started = false;
+  const file = fetch(MUSIC_SRC).then(r => { if (!r.ok) throw new Error("music " + r.status); return r.arrayBuffer(); });
+  file.catch(() => {}); // reported in loadMusic()
+  const level = v => (v / 100) ** 2; // slider to gain, roughly even steps in loudness
+  function apply(sec = .25) {
+    if (!ctx) return;
+    const t = ctx.currentTime, k = Math.max(sec / 3, .001);
+    master.gain.setTargetAtTime(st.muted ? 0 : 1, t, k);
+    musicBus.gain.setTargetAtTime(level(st.music), t, k);
+    sfxBus.gain.setTargetAtTime(level(st.sfx), t, k);
+  }
+  function start() {
     started = true;
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     ctx = new AC(); ctx.resume(); // created inside the gesture, so it may play
-    gain = ctx.createGain(); gain.gain.value = 0; gain.connect(ctx.destination);
+    master = ctx.createGain(); master.connect(ctx.destination);
+    musicBus = ctx.createGain(); musicBus.connect(master);
+    sfxBus = ctx.createGain(); sfxBus.connect(master);
+    apply(0);
+    noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const nd = noise.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    loadMusic();
+  }
+  async function loadMusic() {
     try {
       const buf = await ctx.decodeAudioData(await file);
       // loop between the first and last audible sample, so silence or decoder padding at the ends never leaves a gap
       const ch = [...Array(buf.numberOfChannels)].map((_, c) => buf.getChannelData(c));
       const edge = (i, step) => { while (i >= 0 && i < buf.length && !ch.some(d => Math.abs(d[i]) > 1e-3)) i += step; return Math.min(Math.max(i, 0), buf.length - 1); };
-      const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+      const src = ctx.createBufferSource(), fadeIn = ctx.createGain(); src.buffer = buf; src.loop = true;
       src.loopStart = edge(0, 1) / buf.sampleRate; src.loopEnd = (edge(buf.length - 1, -1) + 1) / buf.sampleRate;
-      src.connect(gain); src.start(0, src.loopStart);
-      if (on && !document.hidden) fade(VOL, 2); else ctx.suspend();
+      const t = ctx.currentTime; fadeIn.gain.setValueAtTime(0, t); fadeIn.gain.linearRampToValueAtTime(1, t + 2);
+      src.connect(fadeIn).connect(musicBus); src.start(0, src.loopStart);
     } catch (err) { console.warn(err); }
   }
-  function set(v) {
-    on = v; musicBtn.setAttribute("aria-pressed", String(on));
-    try { localStorage.setItem(KEY, on ? "on" : "off"); } catch {}
-    if (!started) { if (on) start(); return; }
-    if (!ctx) return;
-    if (on) { ctx.resume(); fade(VOL, .4); } else fade(0, .3);
+  // first gesture starts the audio; later ones wake it if the browser suspended it (iOS interruptions).
+  // Capture phase, so the context exists before the Space or Spin handler asks for its first sound.
+  const wake = () => { if (!started) start(); else if (ctx && ctx.state !== "running" && !document.hidden) ctx.resume(); };
+  addEventListener("pointerdown", wake, true); addEventListener("keydown", wake, true);
+  document.addEventListener("visibilitychange", () => { if (!ctx) return; if (document.hidden) ctx.suspend(); else ctx.resume(); });
+
+  // ---- synth helpers: an enveloped oscillator and an enveloped, filtered noise burst
+  const env = (g, t, a, peak, d) => { g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d); };
+  function tone(t, { type = "sine", f, f2, a = .002, d = .1, vol = .3 }) {
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type;
+    o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + a + d);
+    env(g, t, a, vol, d); o.connect(g).connect(sfxBus); o.start(t); o.stop(t + a + d + .05);
   }
-  // first gesture starts the music; later ones wake it if the browser suspended it (iOS interruptions)
-  const wake = () => { if (!on) return; if (!started) start(); else if (ctx && ctx.state !== "running" && !document.hidden) ctx.resume(); };
-  addEventListener("pointerdown", wake); addEventListener("keydown", wake);
-  document.addEventListener("visibilitychange", () => { if (!ctx) return; if (document.hidden) ctx.suspend(); else if (on) ctx.resume(); });
-  musicBtn.setAttribute("aria-pressed", String(on));
-  return { toggle: () => set(!on) };
+  function hiss(t, { f, f2, q = 1, a = .002, d = .08, vol = .3 }) {
+    const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noise; s.loop = true; fl.type = "bandpass"; fl.Q.value = q;
+    fl.frequency.setValueAtTime(f, t); if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + a + d);
+    env(g, t, a, vol, d); s.connect(fl).connect(g).connect(sfxBus); s.start(t, Math.random()); s.stop(t + a + d + .05);
+  }
+  // effects are skipped until the first gesture and in hidden tabs (they would pile up and play on return)
+  const at = (delay = 0) => ctx && !document.hidden ? ctx.currentTime + Math.max(0, delay) : null;
+  const fx = {
+    click() { const t = at(); if (t == null) return; tone(t, { type: "triangle", f: 1900, f2: 1100, d: .045, vol: .16 }); hiss(t, { f: 4200, q: 2, d: .018, vol: .1 }); },
+    // the old board falls out: a falling whoosh with a soft thump
+    spin() { const t = at(); if (t == null) return; hiss(t, { f: 2400, f2: 320, q: .8, a: .03, d: .38, vol: .26 }); tone(t, { f: 150, f2: 55, a: .004, d: .2, vol: .3 }); },
+    // a reel comes to rest: a wooden knock that climbs a little from reel to reel; heavy for VS reels and crates
+    land(c, delay = 0, heavy = false) {
+      const t = at(delay); if (t == null) return;
+      const up = 1 + c * .06;
+      if (heavy) { tone(t, { f: 120, f2: 38, a: .003, d: .32, vol: .5 }); tone(t, { type: "triangle", f: 640, d: .4, vol: .05 }); tone(t, { type: "triangle", f: 957, d: .3, vol: .035 }); hiss(t, { f: 500, q: 1, d: .12, vol: .25 }); }
+      else { tone(t, { f: 200 * up, f2: 80 * up, a: .002, d: .11, vol: .38 }); hiss(t, { f: 1100 * up, q: 1.6, d: .045, vol: .2 }); }
+    },
+    // the small VS charges up before it bursts open
+    charge() { const t = at(); if (t == null) return; tone(t, { type: "triangle", f: 260, f2: 980, a: .3, d: .08, vol: .09 }); hiss(t, { f: 600, f2: 4000, q: 3, a: .32, d: .05, vol: .12 }); },
+    // the VS reel bursts open: a deep boom with a smoke blast
+    burst() {
+      const t = at(); if (t == null) return;
+      tone(t, { f: 95, f2: 30, a: .004, d: .65, vol: .55 }); tone(t, { type: "sawtooth", f: 180, f2: 60, a: .004, d: .3, vol: .06 });
+      hiss(t, { f: 3200, f2: 350, q: .7, a: .01, d: .7, vol: .3 }); tone(t + .05, { type: "triangle", f: 1320, d: .5, vol: .03 });
+    },
+    // one free-spin symbol away: a rising, pulsing riser over the tease
+    tease(delay = 0, dur = 1.5) {
+      const t = at(delay); if (t == null) return;
+      hiss(t, { f: 300, f2: 2600, q: 5, a: dur * .85, d: dur * .15, vol: .16 });
+      for (let i = 0; i < 4; i++) tone(t + i * dur / 4, { f: 85, f2: 50, a: .004, d: .16, vol: .28 });
+    },
+  };
+  return {
+    ...fx, st,
+    set(part) { Object.assign(st, part); try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} apply(); },
+  };
 })();
-musicBtn.addEventListener("click", () => music.toggle());
+
+// ---- sound panel: Music and Effects sliders plus mute, opened from the speaker in the top-right corner
+const musicBtn = document.getElementById("musicBtn"), sndMenu = document.getElementById("sndMenu");
+const volMusic = document.getElementById("volMusic"), volSfx = document.getElementById("volSfx"), muteAll = document.getElementById("muteAll");
+function showSound() {
+  const { music, sfx, muted } = sound.st;
+  volMusic.value = music; volSfx.value = sfx;
+  document.getElementById("outMusic").textContent = music; document.getElementById("outSfx").textContent = sfx;
+  muteAll.setAttribute("aria-pressed", String(muted));
+  musicBtn.classList.toggle("off", muted || (!music && !sfx));
+}
+function openSndMenu(open) { sndMenu.hidden = !open; musicBtn.setAttribute("aria-expanded", String(open)); if (open) volMusic.focus(); }
+musicBtn.addEventListener("click", () => openSndMenu(sndMenu.hidden));
+volMusic.addEventListener("input", () => { sound.set({ music: +volMusic.value, muted: false }); showSound(); });
+volSfx.addEventListener("input", () => { sound.set({ sfx: +volSfx.value, muted: false }); showSound(); });
+volSfx.addEventListener("change", () => sound.click()); // a sample of the new effects level
+muteAll.addEventListener("click", () => { sound.set({ muted: !sound.st.muted }); showSound(); });
+addEventListener("keydown", e => { if (e.key === "Escape" && !sndMenu.hidden) { openSndMenu(false); musicBtn.focus(); } });
+document.addEventListener("pointerdown", e => { if (!sndMenu.hidden && !sndMenu.contains(e.target) && !musicBtn.contains(e.target)) openSndMenu(false); });
+showSound();
+// every button on the console and in the menus clicks (disabled buttons get no click event)
+document.addEventListener("click", e => { if (e.target.closest(".hot, .am-grid button, .am-foot button")) sound.click(); });
 
 // ---------- Start: authenticate (or load a replay), apply bet levels and rules, resume an open round ----------
 async function boot() {
@@ -1686,7 +1850,11 @@ if (RGS.lang !== "de") {
   set("#amClose", "Close", "aria-label");
   set("#spin", "Spin", "aria-label");
   set("#infoBtn", "Show paytable", "aria-label");
-  set("#musicBtn", "Music", "aria-label");
+  set("#musicBtn", "Sound", "aria-label");
+  set("#sndMenu", "Volume", "aria-label");
+  set("#lblMusic", "Music");
+  set("#lblSfx", "Effects");
+  set("#muteAll", "Mute");
 }
 
 boot();

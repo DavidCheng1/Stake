@@ -39,8 +39,9 @@ Last updated: 2026-10-20. All work is on the `ghost-duels` branch, which is not 
 - [ ] Resume continues from the saved event instead of replaying the round from the start.
 - [ ] Bonus buy mode: a new bet mode in `game_config.py` plus a buy button in the frontend.
 - [ ] More languages: right now German is shown for `lang=de` and English for everything else.
-- [x] Background music: "Spooky Carousel" loops gaplessly, with a mute toggle in the top-right corner.
-- [ ] Sound effects (spin, wins, duels, free spins) and lowering the music during big wins.
+- [x] Background music: "Spooky Carousel" loops gaplessly. The speaker in the top-right corner opens Music and Effects volume sliders and a mute.
+- [x] First sound effects, synthesized placeholders: button clicks, spin whoosh, one knock per landing reel (heavy for VS reels and crates), free-spin tease riser.
+- [ ] Remaining sound effects: wins, tumbles, duels, bonus trigger and lives, and lowering the music during big wins. Decide between synthesized sounds and a licensed sample pack.
 
 ### Whenever the math changes
 
