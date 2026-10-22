@@ -1,6 +1,6 @@
 # Ghost Duels: status and to-do
 
-Last updated: 2026-10-20. All work is on the `ghost-duels` branch, which is not merged into `main` yet.
+Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not merged into `main` yet.
 
 ## Done
 
@@ -13,6 +13,9 @@ Last updated: 2026-10-20. All work is on the `ghost-duels` branch, which is not 
   - Covers wallet calls, resume after reload, replay links, bet levels and currency from Stake, and German/English text.
 - [x] **Local test server** `tools/mock_rgs.py`: stands in for Stake's server using the real simulated rounds.
 - [x] Tested in a browser: normal rounds, devil duel, 4+ VS reels side by side, bonus, resume, replay, and autoplay with low balance.
+- [x] **Presentation:** intro screen with the three features (click to continue); the VS reel lands small and bursts open into a framed reel with the Skull King and smoke; spooky multiplier lettering; connected groups light up as one glowing shape instead of lines; the big Skull King stands behind the dashboard.
+- [x] **Turbo and skip:** the bolt button on the dashboard plays rounds about twice as fast; a click on the board or Spin during a round skips the rest of it. Both respect Stake's `disabledTurbo` and `disabledSlamstop`.
+- [x] **English first:** the page is written in English; German is the translation for `lang=de`.
 
 ## To do
 
@@ -37,8 +40,9 @@ Last updated: 2026-10-20. All work is on the `ghost-duels` branch, which is not 
 ### Nice to have
 
 - [ ] Resume continues from the saved event instead of replaying the round from the start.
-- [ ] Bonus buy mode: a new bet mode in `game_config.py` plus a buy button in the frontend.
+- [ ] **Bonus buy (in progress):** a `bonus` bet mode that starts the Ghost Crates bonus directly, priced so its RTP matches the base game, plus a Buy Bonus button with a confirmation dialog. The test server already serves every mode in `index.json`.
 - [ ] More languages: right now German is shown for `lang=de` and English for everything else.
+- [x] The local test server no longer drops image requests (its connection backlog was 5).
 - [x] Background music: "Spooky Carousel" loops gaplessly. The speaker in the top-right corner opens Music and Effects volume sliders and a mute.
 - [x] First sound effects, synthesized placeholders: button clicks, spin whoosh, one knock per landing reel (heavy for VS reels and crates), free-spin tease riser.
 - [ ] Remaining sound effects: wins, tumbles, duels, bonus trigger and lives, and lowering the music during big wins. Decide between synthesized sounds and a licensed sample pack.

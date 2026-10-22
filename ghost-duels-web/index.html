@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -11,58 +11,60 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Geisterduell</h1>
-    <p class="sub">Gruppen ab 4 gleichen Symbolen gewinnen, verschwinden und neue fallen nach. Die VS-Walze ist wild und startet ein Duell, sobald eine Gruppe über sie verbunden ist.</p>
+    <h1>Ghost Duels</h1>
+    <p class="sub">Groups of 4 or more matching symbols win, disappear and new ones drop in. The VS reel is wild and starts a duel as soon as a group connects through it.</p>
   </header>
 
   <section class="game" id="game" aria-label="Slot">
     <img class="bg" src="assets/bg.webp" alt="" draggable="false">
     <div class="ambient" id="ambient" aria-hidden="true"><canvas id="amb"></canvas></div>
     <div class="hero" id="hero" aria-hidden="true"></div>
+    <img class="console-over" src="assets/bg.webp" alt="" draggable="false">
     <img class="console-front" src="assets/console-front.webp" alt="" draggable="false">
     <div class="logo"><img src="assets/logo.webp" alt="Ghost Duels" draggable="false"></div>
     <div class="stage" id="stage">
       <div class="gridlines" aria-hidden="true"></div>
       <div class="reels" id="reels"></div>
-      <svg class="links" id="links" aria-hidden="true"></svg>
       <div class="floats" id="floats"></div>
     </div>
-    <div class="at msg" id="msg" aria-live="polite"><span class="lives" id="lives" hidden><i class="life"></i><i class="life"></i><i class="life"></i></span><span id="msgText">Drück auf Spin</span></div>
+    <div class="at msg" id="msg" aria-live="polite"><span class="lives" id="lives" hidden><i class="life"></i><i class="life"></i><i class="life"></i></span><span id="msgText">Press Spin</span></div>
+    <button type="button" class="hot turbo" id="turboBtn" aria-label="Turbo" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 5 13.5h6L9.5 22 19 9.5h-6.2z"/></svg><span class="tb-lbl">Turbo</span></button>
     <div class="at val" id="balVal">1.000,00 €</div>
-    <button type="button" class="hot" id="betMinus" aria-label="Einsatz verringern"></button>
+    <button type="button" class="hot" id="betMinus" aria-label="Decrease bet"></button>
     <div class="at val" id="betVal">1,00</div>
-    <button type="button" class="hot" id="betPlus" aria-label="Einsatz erhöhen"></button>
+    <button type="button" class="hot" id="betPlus" aria-label="Increase bet"></button>
     <div class="at val" id="winVal">0,00 €</div>
     <span class="at mult" id="multChip" hidden></span>
     <button type="button" class="hot round" id="autoBtn" aria-label="Autoplay" aria-pressed="false" aria-haspopup="true" aria-expanded="false"><img class="disc" src="assets/disc-auto.webp" alt=""><span class="auto-left" id="autoLeft" hidden></span></button>
-    <div class="auto-menu" id="autoMenu" role="dialog" aria-label="Autoplay wählen" hidden>
+    <div class="auto-menu" id="autoMenu" role="dialog" aria-label="Choose autoplay" hidden>
       <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
       <div class="am-title">Autoplay</div><div class="am-rule" aria-hidden="true"></div>
-      <div class="am-grid" role="group" aria-label="Anzahl Spins">
+      <div class="am-grid" role="group" aria-label="Number of spins">
         <button type="button" data-n="10">10</button><button type="button" data-n="25">25</button><button type="button" data-n="50">50</button><button type="button" data-n="100">100</button>
         <button type="button" data-n="250">250</button><button type="button" data-n="1000">1000</button><button type="button" class="inf" data-n="Infinity">∞</button>
       </div>
-      <div class="am-foot"><button type="button" id="amStart" class="am-start">Start</button><button type="button" id="amClose" class="am-close" aria-label="Schließen">✕</button></div>
+      <div class="am-foot"><button type="button" id="amStart" class="am-start">Start</button><button type="button" id="amClose" class="am-close" aria-label="Close">✕</button></div>
     </div>
-    <button type="button" class="hot round" id="spin" aria-label="Drehen"><img class="disc" src="assets/disc-spin.webp" alt=""></button>
-    <button type="button" class="hot round" id="infoBtn" aria-label="Gewinntabelle anzeigen"></button>
-    <button type="button" class="hot round" id="musicBtn" aria-label="Ton" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M3 9.5h4l5-4.5v14l-5-4.5H3z"/><path class="on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
-    <div class="auto-menu snd-menu" id="sndMenu" role="dialog" aria-label="Lautstärke" hidden>
+    <button type="button" class="hot round" id="spin" aria-label="Spin"><img class="disc" src="assets/disc-spin.webp" alt=""></button>
+    <button type="button" class="hot round" id="infoBtn" aria-label="Show paytable"></button>
+    <button type="button" class="hot round" id="musicBtn" aria-label="Sound" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M3 9.5h4l5-4.5v14l-5-4.5H3z"/><path class="on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
+    <div class="auto-menu snd-menu" id="sndMenu" role="dialog" aria-label="Volume" hidden>
       <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
       <div class="am-title">Sound</div><div class="am-rule" aria-hidden="true"></div>
-      <label class="snd-row"><span id="lblMusic">Musik</span><input type="range" id="volMusic" min="0" max="100" step="1"><output id="outMusic"></output></label>
-      <label class="snd-row"><span id="lblSfx">Effekte</span><input type="range" id="volSfx" min="0" max="100" step="1"><output id="outSfx"></output></label>
-      <div class="am-foot snd-foot"><button type="button" id="muteAll" aria-pressed="false">Stumm</button></div>
+      <label class="snd-row"><span id="lblMusic">Music</span><input type="range" id="volMusic" min="0" max="100" step="1"><output id="outMusic"></output></label>
+      <label class="snd-row"><span id="lblSfx">Effects</span><input type="range" id="volSfx" min="0" max="100" step="1"><output id="outSfx"></output></label>
+      <div class="am-foot snd-foot"><button type="button" id="muteAll" aria-pressed="false">Mute</button></div>
     </div>
     <div class="duel" id="duel" hidden></div>
     <div class="banner" id="banner" hidden><h3 id="bTitle"></h3><p id="bSub"></p></div>
     <canvas class="fx" id="fx"></canvas>
     <canvas class="motes" id="motes" aria-hidden="true"></canvas>
+    <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introGo" tabindex="-1"></div>
   </section>
 
   <section class="paytable" id="paytable">
-    <h2>Gewinntabelle</h2>
-    <p class="hint">Werte für 1,00 € Einsatz, je nach Größe der Gruppe (ab 4 Symbolen). Auszahlungsquote (RTP) laut Simulation ca. 96,3 %, maximaler Gewinn 25.000× Einsatz. Tippe auf ein Symbol, um seine Gewinn-Animation zu sehen.</p>
+    <h2>Paytable</h2>
+    <p class="hint">Values for the current bet, by group size (4 or more symbols). Tap a symbol to see its win animation.</p>
   </section>
 </div>
 <script src="rgs.js"></script>

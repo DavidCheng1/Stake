@@ -8,7 +8,7 @@ const RGS = (() => {
   const lang = (url.get("lang") || "en").toLowerCase();
   const replay = url.get("replay") === "true";
   const base = /^https?:\/\//.test(rgsUrl) ? rgsUrl : "https://" + rgsUrl;
-  const MODE = "BASE";
+  const MODE = "BASE"; // default bet mode; the bonus buy plays "BONUS"
 
   // https://stake-engine.com/docs/rgs: symbol, decimals, symbol after the amount
   const CURRENCIES = {
@@ -79,9 +79,9 @@ const RGS = (() => {
         round: r && r.active && r.state && r.state.length ? { state: r.state, active: true, amount: r.amount / API } : null,
       };
     },
-    // Debits the bet; returns { balance, round: { state, active, payoutMultiplier } }
-    async play(bet) {
-      const data = await call("POST", "/wallet/play", { sessionID, currency, mode: MODE, amount: Math.round(bet * API) });
+    // Debits the bet (times the mode's cost, done by the RGS); returns { balance, round: { state, active, payoutMultiplier } }
+    async play(bet, mode = MODE) {
+      const data = await call("POST", "/wallet/play", { sessionID, currency, mode, amount: Math.round(bet * API) });
       if (!data.round || !data.round.state || !data.round.state.length) throw new RGSError("ERR_EMPTY_ROUND");
       return { balance: data.balance.amount / API, round: data.round };
     },

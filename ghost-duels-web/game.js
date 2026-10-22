@@ -6,7 +6,30 @@ let BETS = [1], betIdx = 0, bet = 1, balance = 0;
 const money = v => RGS.formatMoney(v);
 // German for lang=de, English for every other language
 const i18n = (de, en) => RGS.lang === "de" ? de : en;
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+// ---------- Pace: turbo plays a round faster; a click during a round (slam stop) hurries the rest of it ----------
+// Every wait (sleep, later) and every scripted animation runs at pace(); the idle CSS loops keep their own speed.
+const TURBO = 2, SLAM = 6;
+let turbo = false, slam = false;
+const pace = () => (turbo ? TURBO : 1) * (slam ? SLAM : 1);
+const waits = new Set();
+const sleep = ms => new Promise(res => {
+  const d = ms / pace(), w = { res, end: performance.now() + d };
+  w.t = setTimeout(() => { waits.delete(w); res(); }, d); waits.add(w);
+});
+const later = (fn, ms) => setTimeout(fn, ms / pace());
+const nativeAnimate = Element.prototype.animate;
+Element.prototype.animate = function (keyframes, opt) {
+  const p = pace();
+  if (p !== 1) opt = typeof opt === "number" ? opt / p
+    : opt && { ...opt, ...(typeof opt.duration === "number" && { duration: opt.duration / p }), ...(opt.delay && { delay: opt.delay / p }) };
+  return nativeAnimate.call(this, keyframes, opt);
+};
+// re-time what is already running: pending waits and scripted animations finish SLAM times sooner
+function hurry() {
+  const now = performance.now();
+  waits.forEach(w => { clearTimeout(w.t); const left = Math.max(0, w.end - now) / SLAM; w.end = now + left; w.t = setTimeout(() => { waits.delete(w); w.res(); }, left); });
+  document.getAnimations().forEach(a => { if (!(window.CSSAnimation && a instanceof CSSAnimation) && !(window.CSSTransition && a instanceof CSSTransition)) a.updatePlaybackRate(a.playbackRate * SLAM); });
+}
 const rnd = n => Math.floor(Math.random() * n);
 const pick = a => a[rnd(a.length)];
 const q = (el, s) => el.querySelector(s), qa = (el, s) => [...el.querySelectorAll(s)];
@@ -280,7 +303,7 @@ function shake(px = 7, dur = 420) {
 }
 
 // ---------- Board ----------
-const reelsEl = document.getElementById("reels"), linksEl = document.getElementById("links"), floatsEl = document.getElementById("floats");
+const reelsEl = document.getElementById("reels"), floatsEl = document.getElementById("floats");
 const duelEl = document.getElementById("duel"), bannerEl = document.getElementById("banner");
 const winVal = document.getElementById("winVal"), multChip = document.getElementById("multChip");
 const msgEl = document.getElementById("msg"), balVal = document.getElementById("balVal"), betVal = document.getElementById("betVal");
@@ -300,7 +323,7 @@ for (let c = 0; c < COLS; c++) {
 function clearBoard() {
   fx.size();
   qa(reelsEl, ".cell, .tall").forEach(c => c.classList.remove("win", "dim"));
-  linksEl.replaceChildren(); floatsEl.replaceChildren();
+  clearLit(); floatsEl.replaceChildren();
   multChip.hidden = true; winVal.classList.remove("hit");
 }
 
@@ -314,7 +337,8 @@ const vxBack = () => {
 function skullKing() {
   const k = div("vx-king"), inner = div("vk"), body = new Image(), lamp = new Image();
   body.src = "assets/img24.webp"; lamp.src = "assets/img25.webp"; body.alt = lamp.alt = ""; lamp.className = "vk-lamp";
-  inner.append(body, lamp); k.appendChild(inner); return k;
+  inner.append(body, lamp); k.appendChild(inner);
+  const win = div("vx-window"); win.appendChild(k); return win; // the frame's inner window clips him like a portrait
 }
 function showTallVS(rl, small) {
   const t = rl.tall; t.hidden = false; t.className = "tall vsx" + (small ? " small" : ""); t.style.removeProperty("--c");
@@ -429,7 +453,7 @@ async function spinReels(res) {
   });
   void reelsEl.offsetHeight;
   // one knock per reel when its bottom symbol hits (that drop peaks at 64% of 340 + 6 × 24 ms); VS reels land at 82% of 460 ms
-  for (let c = 0; c < COLS; c++) sound.land(c, (stops[c] + (RM ? 0 : vsReels.includes(c) ? 377 : 310)) / 1000, vsReels.includes(c));
+  for (let c = 0; c < COLS; c++) sound.land(c, (stops[c] + (RM ? 0 : vsReels.includes(c) ? 377 : 310)) / 1000 / pace(), vsReels.includes(c));
   const done = [];
   fills.forEach(([c, r, el]) => {
     const delay = stops[c] + (ROWS - 1 - r) * 50;
@@ -446,14 +470,14 @@ async function spinReels(res) {
   // tease overlays (blurred fast spin) run until that reel's drop starts
   tease.forEach((on, c) => {
     if (!on) return;
-    sound.tease(Math.max(0, stops[c] - 1500) / 1000, 1.5);
-    setTimeout(() => {
+    sound.tease(Math.max(0, stops[c] - 1500) / 1000 / pace(), 1.5 / pace());
+    later(() => {
       const rl = reels[c], ov = div("teasefx");
       for (let r = 0; r < ROWS; r++) { const im = new Image(); im.src = IMG[randSym()]; im.alt = ""; ov.appendChild(im); }
       rl.el.classList.add("tease"); rl.el.appendChild(ov);
       say(i18n("Noch ein FS…", "One more FS…")); shake(4, 300);
       const iv = setInterval(() => qa(ov, "img").forEach(im => im.src = IMG[randSym()]), 90);
-      setTimeout(() => { clearInterval(iv); ov.remove(); rl.el.classList.remove("tease"); }, 1500);
+      later(() => { clearInterval(iv); ov.remove(); rl.el.classList.remove("tease"); }, 1500);
     }, Math.max(0, stops[c] - 1500));
   });
   await Promise.all(done);
@@ -511,22 +535,26 @@ function findClusters() {
   return out;
 }
 function cellCenter([c, r]) { return centerOf(reels[c].cells[r]); }
-function drawLinks(cl) {
-  const s = stage.getBoundingClientRect();
-  linksEl.setAttribute("viewBox", `0 0 ${s.width} ${s.height}`);
-  const NS = "http://www.w3.org/2000/svg";
-  cl.links.forEach(([a, b], i) => {
-    const [x1, y1] = cellCenter(a), [x2, y2] = cellCenter(b), len = Math.hypot(x2 - x1, y2 - y1);
-    for (const cls of ["beam-glow", "beam"]) {
-      const l = document.createElementNS(NS, "line");
-      Object.entries({ x1, y1, x2, y2 }).forEach(([k, v]) => l.setAttribute(k, v));
-      l.setAttribute("class", cls);
-      if (cls === "beam-glow") l.style.stroke = `rgb(${SYM[cl.id].rgb})`;
-      l.style.strokeDasharray = len; l.style.strokeDashoffset = RM ? 0 : len; l.style.animationDelay = (i * .06) + "s";
-      linksEl.appendChild(l);
-    }
+// ---------- Lit boxes: connected cells light up as one shape, outlined only along the group's outer edge ----------
+// delayOf(i, cell) staggers the light-up; joined(c, r) marks extra cells (a VS reel) that count as part of the group.
+// A cell that is already lit the same way stays as it is, so re-lighting a board (bonus spins) only animates what changed.
+function lightUp(cells, rgb, delayOf = () => 0, joined = () => false) {
+  const set = new Set(cells.map(([c, r]) => c + "," + r));
+  const inside = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS && (set.has(c + "," + r) || joined(c, r));
+  cells.forEach(([c, r], i) => {
+    const sides = [!inside(c, r - 1), !inside(c + 1, r), !inside(c, r + 1), !inside(c - 1, r)], key = rgb + sides.join();
+    const cell = reels[c].cells[r]; let lit = q(cell, ":scope > .lit");
+    if (lit && lit.dataset.key === key) { lit.classList.remove("stale"); return; }
+    lit?.remove(); lit = div("lit"); lit.dataset.key = key; lit.style.setProperty("--c", rgb);
+    const [t, rt, b, l] = sides;
+    lit.style.borderWidth = sides.map(s => s ? "var(--lw)" : "0").join(" ");
+    lit.style.borderRadius = [t && l, t && rt, b && rt, b && l].map(k => k ? "var(--lr)" : "0").join(" ");
+    cell.appendChild(lit);
+    if (!RM) lit.animate([{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1.08)", offset: .5 }, { opacity: 1, transform: "none" }],
+      { duration: 460, delay: delayOf(i, [c, r]), easing: "ease-out", fill: "backwards" });
   });
 }
+const clearLit = () => qa(reelsEl, ".lit").forEach(e => e.remove());
 function floatText(x, y, text, rgb, big, small) {
   const f = div("float" + (small ? " small" : "")); f.style.left = x + "px"; f.style.top = y + "px"; f.style.setProperty("--c", rgb);
   // multipliers ("×5") get the spooky lettering
@@ -539,7 +567,7 @@ function floatText(x, y, text, rgb, big, small) {
 
 let shown = 0;
 function countTo(target, dur = 700) {
-  const from = shown, t0 = performance.now();
+  const from = shown, t0 = performance.now(); dur /= pace();
   return new Promise(res => (function step(t) {
     const k = Math.min(1, (t - t0) / dur); shown = from + (target - from) * (1 - Math.pow(1 - k, 3));
     winVal.textContent = money(shown); if (k < 1) requestAnimationFrame(step); else res();
@@ -558,16 +586,16 @@ async function showWins(clusters, before) {
   clusters.sort((a, b) => a.win - b.win);
   let total = before;
   for (const cl of clusters) {
-    drawLinks(cl);
+    lightUp(cl.cells, SYM[cl.id].rgb, i => i * 60, c => cl.vsCols.includes(c));
     cl.vsCols.forEach(c => { const t = reels[c].tall; t.classList.add("win"); t.style.setProperty("--wc", SYM[cl.id].rgb); animWin(q(t, ".sym")); });
-    cl.cells.forEach(([c, r], k) => setTimeout(() => {
+    cl.cells.forEach(([c, r], k) => later(() => {
       const cell = reels[c].cells[r], el = q(cell, ".sym");
       cell.classList.add("win"); cell.style.setProperty("--wc", SYM[cl.id].rgb); animWin(el);
       const [x, y, w] = centerOf(el);
       fx.emit(x, y, { n: SYM[cl.id].tier === "rune" ? 8 : 18, scale: w / 120, rgb: SYM[cl.id].rgb, kind: cl.id === "potion" ? "bubble" : "wisp" });
     }, k * 60));
     const pts = (cl.cells.length ? cl.cells : cl.wilds).map(cellCenter), cx = pts.reduce((s2, p) => s2 + p[0], 0) / pts.length, cy = pts.reduce((s2, p) => s2 + p[1], 0) / pts.length;
-    setTimeout(() => floatText(cx, cy, cl.mult > 1 ? `${money(cl.base)} ×${cl.mult}` : money(cl.win), SYM[cl.id].rgb), 300);
+    later(() => floatText(cx, cy, cl.mult > 1 ? `${money(cl.base)} ×${cl.mult}` : money(cl.win), SYM[cl.id].rgb), 300);
     total += cl.win; countTo(total);
     await sleep(Math.min(1100, 420 + cl.cells.length * 70));
   }
@@ -593,7 +621,7 @@ async function tumble(ev) {
   });
   await Promise.all(bursts);
   usedVs.forEach(c => { const rl = reels[c]; rl.tall.getAnimations().forEach(x => x.cancel()); rl.tall.hidden = true; rl.tall.replaceChildren(); rl.tall.className = "tall"; rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = ""; }); vsReels = vsReels.filter(v => v !== c); });
-  linksEl.replaceChildren(); floatsEl.replaceChildren();
+  clearLit(); floatsEl.replaceChildren();
   qa(reelsEl, ".cell, .tall").forEach(c => c.classList.remove("win", "dim"));
   const P = pitchPx(), anims = [];
   stage.classList.add("dropping");
@@ -621,7 +649,7 @@ async function tumble(ev) {
 const MULTS = [2, 2, 3, 3, 4, 5, 5, 10, 10, 15, 20, 25, 50, 100];
 async function rollBadge(b, final, dur, pool = MULTS) {
   const t0 = performance.now();
-  while (performance.now() - t0 < dur) { b.textContent = "×" + pick(pool); await sleep(70); }
+  while (performance.now() - t0 < dur / pace()) { b.textContent = "×" + pick(pool); await sleep(70); }
   b.textContent = "×" + final;
   if (!RM) b.animate([{ transform: "scale(1.8)" }, { transform: "scale(.9)", offset: .6 }, { transform: "scale(1)" }], { duration: 380 });
 }
@@ -708,7 +736,7 @@ async function reelDuel(d) {
   };
   // ---- round 1: two ghosts, x2 - x10
   await Promise.all([enter(top, true), enter(bot, false, 100)]);
-  animWin(top.sy, "taunt"); setTimeout(() => animWin(bot.sy, "taunt"), 220);
+  animWin(top.sy, "taunt"); later(() => animWin(bot.sy, "taunt"), 220);
   await slamVs();
   await Promise.all([rollBadge(top.bd, m1, 1000, DUEL_T1.map(v => v[0])), rollBadge(bot.bd, m1b, 1300, DUEL_T1.map(v => v[0]))]);
   await sleep(200);
@@ -789,19 +817,19 @@ function dropIn(el, heavy) {
 function placeRune(c, r, v, id) {
   K[c][r] = { t: "r", v };
   const el = makeRune(v, id); reels[c].cells[r].replaceChildren(el); dropIn(el, false);
-  setTimeout(() => { const [x, y, w] = cellCenter([c, r]); fx.emit(x, y + w * .2, { n: 8, kind: "spark", rgb: el.style.getPropertyValue("--c"), scale: w / 140 }); }, RM ? 0 : 400);
+  later(() => { const [x, y, w] = cellCenter([c, r]); fx.emit(x, y + w * .2, { n: 8, kind: "spark", rgb: el.style.getPropertyValue("--c"), scale: w / 140 }); }, RM ? 0 : 400);
 }
 function placeCrate(c, r, id, m, intro) {
   K[c][r] = { t: "c", id, m };
-  if (!intro && N4.some(([dx, dy]) => at(c + dx, r + dy)?.t === "c")) setTimeout(() => {
+  if (!intro && N4.some(([dx, dy]) => at(c + dx, r + dy)?.t === "c")) later(() => {
     const CH = crateChains(), ch = CH.chains[CH.id.get(c + "," + r)];
-    const [x, y] = cellCenter([c, r]); floatText(x, y - 20, `Kette ×${ch.mult}`, "246 196 79");
+    const [x, y] = cellCenter([c, r]); floatText(x, y - 20, `${i18n("Kette", "Chain")} ×${ch.mult}`, "246 196 79");
     drawGroupLinks(linkGroups());
   }, RM ? 0 : 800);
   const el = makeCrate(id, m); reels[c].cells[r].replaceChildren(el);
   if (!intro) {
     dropIn(el, true);
-    setTimeout(() => { shake(10, 450); const [x, y, w] = cellCenter([c, r]); fx.emit(x, y + w * .35, { n: 26, kind: "spark", rgb: SYM[id].rgb, scale: w / 110 }); animWin(q(el, ".sym")); }, RM ? 0 : 560);
+    later(() => { shake(10, 450); const [x, y, w] = cellCenter([c, r]); fx.emit(x, y + w * .35, { n: 26, kind: "spark", rgb: SYM[id].rgb, scale: w / 110 }); animWin(q(el, ".sym")); }, RM ? 0 : 560);
   }
   return el;
 }
@@ -860,33 +888,25 @@ function linkGroups() {
 const bonusValue = () => Math.min(MAX_WIN, linkGroups().reduce((s, g) => s + (g.ok ? g.sum * g.mult : 0), 0)) * bet;
 
 function drawGroupLinks(groups) {
-  linksEl.replaceChildren();
   qa(reelsEl, ".rtok.linked").forEach(e => e.classList.remove("linked"));
   qa(reelsEl, ".crate.active").forEach(e => e.classList.remove("active"));
-  const s = stage.getBoundingClientRect(); linksEl.setAttribute("viewBox", `0 0 ${s.width} ${s.height}`);
-  const NS = "http://www.w3.org/2000/svg";
-  const line = (a, b, rgb, delay) => {
-    const [x1, y1] = cellCenter(a), [x2, y2] = cellCenter(b), len = Math.hypot(x2 - x1, y2 - y1);
-    for (const cls of ["beam-glow", "beam"]) {
-      const l = document.createElementNS(NS, "line"); Object.entries({ x1, y1, x2, y2 }).forEach(([k, v]) => l.setAttribute(k, v));
-      l.setAttribute("class", cls); if (cls === "beam-glow") l.style.stroke = `rgb(${rgb})`;
-      l.style.strokeDasharray = len; l.style.strokeDashoffset = RM ? 0 : len; l.style.animationDelay = delay + "s"; linksEl.appendChild(l);
-    }
-  };
-  // crate chains always show their gold link
-  crateChains().chains.forEach(ch => ch.links.forEach(([a1, b1], i) => line(a1, b1, "246 196 79", i * .05)));
+  qa(reelsEl, ".lit").forEach(e => e.classList.add("stale"));
+  // crates touching each other glow gold together, unless their group already lights up in its own colour
+  const inGroup = new Set(groups.filter(g => g.ok).flatMap(g => g.chains[0].cells.map(([c, r]) => c + "," + r)));
+  crateChains().chains.forEach(ch => { if (ch.cells.length > 1 && !ch.cells.some(([c, r]) => inGroup.has(c + "," + r))) lightUp(ch.cells, "246 196 79", i => i * 50); });
   for (const g of groups) {
     if (!g.ok) continue;
     g.chains.forEach(ch => ch.cells.forEach(([c, r]) => q(reels[c].cells[r], ".crate").classList.add("active")));
     const top = g.crates.map(k => K[k.cell[0]][k.cell[1]]).sort((a, b) => b.m - a.m)[0], rgb = SYM[top.id].rgb;
-    // energy flows from the crate outward, ring by ring
-    g.edges.forEach(e => line(e.a, e.b, e.crateLink ? "246 196 79" : SYM[e.id].rgb, e.d * .16));
+    // the light spreads from the crates outward, ring by ring
+    lightUp(g.chains[0].cells.concat(g.cells), rgb, (i, [c, r]) => (g.depth.get(c + "," + r) ?? 0) * 160);
     g.cells.forEach(([c, r]) => {
       const t = q(reels[c].cells[r], ".rtok"); t.style.setProperty("--lc", rgb);
       const d = g.depth.get(c + "," + r) ?? 1;
-      setTimeout(() => t.classList.add("linked"), RM ? 0 : d * 160 + 120);
+      later(() => t.classList.add("linked"), RM ? 0 : d * 160 + 120);
     });
   }
+  qa(reelsEl, ".lit.stale").forEach(e => e.remove());
 }
 
 function setLives(n) {
@@ -901,11 +921,11 @@ async function loseLife(n) {
     lf.className = "life"; t.textContent = n === 0 ? i18n("Letzte Chance vorbei", "Last chance gone") : (n === 1 ? i18n("Noch 1 Leben", "1 life left") : i18n(`Noch ${n} Leben`, `${n} lives left`));
     big.append(lf, t); stage.appendChild(big);
     big.animate([{ opacity: 0, transform: "translate(-50%,-50%) scale(.4)" }, { opacity: 1, transform: "translate(-50%,-50%) scale(1.1)", offset: .25 }, { opacity: 1, transform: "translate(-50%,-50%) scale(1)", offset: .5 }, { opacity: 0, transform: "translate(-50%,-60%) scale(.9)" }], { duration: 1300, fill: "forwards" });
-    setTimeout(() => { lf.classList.add("out"); const [x, y] = [stage.clientWidth / 2, stage.clientHeight * .44]; fx.emit(x, y, { n: 18, rgb: "160 175 170", scale: stage.clientWidth / 500 }); }, 520);
-    setTimeout(() => big.remove(), 1350);
+    later(() => { lf.classList.add("out"); const [x, y] = [stage.clientWidth / 2, stage.clientHeight * .44]; fx.emit(x, y, { n: 18, rgb: "160 175 170", scale: stage.clientWidth / 500 }); }, 520);
+    later(() => big.remove(), 1350);
     l.animate([{ transform: "scale(1)" }, { transform: "scale(1.8)", filter: "brightness(2)" }, { transform: "scale(1)" }], { duration: 500 });
   }
-  setTimeout(() => setLives(n), RM ? 0 : 450);
+  later(() => setLives(n), RM ? 0 : 450);
   await sleep(RM ? 300 : 1050);
 }
 function refillLives(prev) {
@@ -968,7 +988,7 @@ async function harvest(start, spinEvents, end) {
     const [x, y, w] = cellCenter([c, r]); fx.emit(x, y, { n: 30, kind: "spark", rgb: SYM[id].rgb, scale: w / 100 });
     if (!RM) el.animate([{ transform: "scale(0) rotate(-20deg)" }, { transform: "scale(1.25) rotate(4deg)", offset: .6 }, { transform: "none" }], { duration: 520, easing: "ease-out" });
     const plate = q(el, ".cr-plate"), t0 = performance.now();
-    while (!RM && performance.now() - t0 < 900) { plate.textContent = "×" + pick(MULT_POOL); await sleep(65); }
+    while (!RM && performance.now() - t0 < 900 / pace()) { plate.textContent = "×" + pick(MULT_POOL); await sleep(65); }
     plate.textContent = "×" + m;
     if (!RM) plate.animate([{ transform: "translateX(-50%) scale(1.8)" }, { transform: "translateX(-50%) scale(1)" }], { duration: 320 });
     animWin(q(el, ".sym")); await sleep(250);
@@ -1014,7 +1034,7 @@ async function harvest(start, spinEvents, end) {
   }
   // Collect (the event total is authoritative; it already includes the max-win cap)
   const total = end.totalWin / 100 * bet;
-  linksEl.replaceChildren(); shown = 0; winVal.textContent = money(0);
+  clearLit(); shown = 0; winVal.textContent = money(0);
   const mOf = new Map();
   groups.forEach(g => g.cells.forEach(([c, r]) => mOf.set(c + "," + r, g.ok ? g.mult : 0)));
   const dead = kCells("r").filter(([c, r]) => !mOf.get(c + "," + r));
@@ -1063,8 +1083,9 @@ async function showCascade(duels, ev, rounds) {
   const clusters = clustersFor(ev);
   if (duels.length) {
     const cols = duels.map(d => d.reel);
-    drawLinks({ id: clusters.find(cl => cl.vsCols.includes(cols[0])).id, links: clusters.filter(cl => cl.vsCols.some(c => cols.includes(c))).flatMap(cl => cl.links) });
-    say(clusters.some(cl => cl.wildOnly) ? i18n("VS-Walzen nebeneinander · Duell!", "VS reels side by side · Duel!") : i18n("VS verbunden · Duell!", "VS connected · Duel!")); await sleep(RM ? 200 : 1000); linksEl.replaceChildren();
+    // the groups that reach a VS reel light up before the duel starts
+    clusters.filter(cl => cl.vsCols.some(c => cols.includes(c))).forEach(cl => lightUp(cl.cells, SYM[cl.id].rgb, i => i * 40, c => cl.vsCols.includes(c)));
+    say(clusters.some(cl => cl.wildOnly) ? i18n("VS-Walzen nebeneinander · Duell!", "VS reels side by side · Duel!") : i18n("VS verbunden · Duell!", "VS connected · Duel!")); await sleep(RM ? 200 : 1000); clearLit();
     if (duels.length > 1) await banner(MULTI_NAME[duels.length], i18n(`${duels.length} VS-Walzen verbunden · Multiplikatoren werden addiert`, `${duels.length} VS reels connected · multipliers add up`), 1300);
     for (const d of duels) {
       const res = await reelDuel(d); vsMult[d.reel] = res.mult; vsWinner[d.reel] = res.winner;
@@ -1082,8 +1103,8 @@ async function showCascade(duels, ev, rounds) {
 
 async function showFsTrigger(ev) {
   const fsCells = ev.positions.map(p => [p.reel, p.row]);
-  qa(reelsEl, ".cell, .tall").forEach(c => c.classList.remove("win", "dim")); linksEl.replaceChildren();
-  fsCells.forEach(([c, r], i) => setTimeout(() => {
+  qa(reelsEl, ".cell, .tall").forEach(c => c.classList.remove("win", "dim")); clearLit();
+  fsCells.forEach(([c, r], i) => later(() => {
     const el = q(reels[c].cells[r], ".sym"); reels[c].cells[r].classList.add("win"); animWin(el);
     const [x, y, w] = centerOf(el); fx.emit(x, y, { n: 24, kind: "spark", rgb: SYM.fs.rgb, scale: w / 120 });
   }, i * 160));
@@ -1159,17 +1180,21 @@ function updateBet() {
   document.getElementById("betMinus").disabled = busy || RGS.replay || betIdx === 0;
   document.getElementById("betPlus").disabled = busy || RGS.replay || betIdx === BETS.length - 1;
 }
-const buttons = ["spin", "betMinus", "betPlus", "autoBtn"].map(id => document.getElementById(id));
+const buttons = ["betMinus", "betPlus", "autoBtn"].map(id => document.getElementById(id));
 const spinBtn = document.getElementById("spin"), autoBtn = document.getElementById("autoBtn");
-let autoOn = false;
-const lock = on => { busy = on; buttons.forEach(b => b.disabled = on); if (!on) updateBet(); };
+let autoOn = false, loading = true;
+const canSkip = () => !loading && !RGS.jurisdiction.disabledSlamstop;
+// during a round Spin stays clickable: it skips the rest of the round instead of starting a new one
+const lock = on => { busy = on; buttons.forEach(b => b.disabled = on); spinBtn.disabled = on && !canSkip(); if (!on) { slam = false; updateBet(); } };
+// slam stop: a click on Spin or the board (or Space) during a round plays the rest of it SLAM times faster
+function skip() { if (!busy || slam || !canSkip()) return; slam = true; hurry(); }
 
 // Wallet flow: play debits the bet and returns the book; end-round credits a win.
 async function play() {
   if (busy || RGS.replay) return;
   if (balance < bet) { say(i18n("Guthaben reicht nicht für diesen Einsatz", "Balance too low for this bet")); if (autoOn) stopAuto(); return; }
   lock(true); spinBtn.classList.add("turning");
-  setTimeout(() => spinBtn.classList.remove("turning"), 1600);
+  later(() => spinBtn.classList.remove("turning"), 1600);
   const t0 = performance.now();
   try {
     const res = await RGS.play(bet);
@@ -1229,8 +1254,19 @@ document.addEventListener("pointerdown", e => { if (!autoMenu.hidden && !autoMen
 document.getElementById("betMinus").addEventListener("click", () => { if (!busy && betIdx > 0) { betIdx--; updateBet(); } });
 document.getElementById("betPlus").addEventListener("click", () => { if (!busy && betIdx < BETS.length - 1) { betIdx++; updateBet(); } });
 document.getElementById("infoBtn").addEventListener("click", () => document.getElementById("paytable").scrollIntoView({ behavior: RM ? "auto" : "smooth" }));
-document.getElementById("spin").addEventListener("click", () => play());
-addEventListener("keydown", e => { if (e.code === "Space" && e.target === document.body && !RGS.jurisdiction.disabledSpacebar) { e.preventDefault(); play(); } });
+document.getElementById("spin").addEventListener("click", () => busy ? skip() : play());
+addEventListener("keydown", e => { if (e.code === "Space" && e.target === document.body && !RGS.jurisdiction.disabledSpacebar) { e.preventDefault(); busy ? skip() : play(); } });
+game.addEventListener("pointerdown", e => { if (busy && !e.target.closest("button, .auto-menu, #intro")) skip(); });
+// turbo: every round plays TURBO times faster; remembered between visits
+const turboBtn = document.getElementById("turboBtn");
+try { turbo = localStorage.getItem("ghostDuels.turbo") === "on"; } catch {}
+const showTurbo = () => turboBtn.setAttribute("aria-pressed", String(turbo));
+turboBtn.addEventListener("click", () => {
+  turbo = !turbo; showTurbo();
+  try { localStorage.setItem("ghostDuels.turbo", turbo ? "on" : "off"); } catch {}
+  if (!busy) say(turbo ? i18n("Turbo an", "Turbo on") : i18n("Turbo aus", "Turbo off"));
+});
+showTurbo();
 
 // ---------- Sound: one Web Audio graph with a music bus and an effects bus, each with its own volume ----------
 // Browsers only allow sound after a tap or key press, so everything starts on the first one. Volumes and mute are remembered.
@@ -1359,7 +1395,10 @@ async function boot() {
     balance = s.balance; BETS = s.betLevels;
     betIdx = Math.max(0, BETS.indexOf(s.defaultBet));
     if (s.jurisdiction.disabledAutoplay) autoBtn.hidden = true;
+    if (s.jurisdiction.disabledTurbo) { turbo = false; turboBtn.hidden = true; }
+    loading = false;
     updateBal(); updateBet(); winVal.textContent = money(0);
+    await introDone; // an interrupted round resumes only once the player has seen the intro
     if (s.round) {
       if (s.round.amount) { const i = BETS.indexOf(s.round.amount); if (i >= 0) betIdx = i; bet = s.round.amount; }
       lock(true);
@@ -1836,28 +1875,66 @@ sp.append(sh, spc); pt.appendChild(sp);
 // pay values follow the current bet and currency
 function refreshPays() { qa(pt, "dd[data-x]").forEach(d => d.textContent = money(d.dataset.x * bet)); }
 
-q(document, "#paytable .hint").textContent = `Werte für den aktuellen Einsatz, je nach Größe der Gruppe (ab 4 Symbolen). Auszahlungsquote (RTP) ${RTP_TEXT}, maximaler Gewinn ${MAX_WIN_X.toLocaleString("de")}× Einsatz. Tippe auf ein Symbol, um seine Gewinn-Animation zu sehen.`;
-// static page texts from index.html, for every language but German
-if (RGS.lang !== "de") {
-  document.documentElement.lang = "en";
+q(document, "#paytable .hint").textContent = `Values for the current bet, by group size (4 or more symbols). Return to player (RTP) ${RTP_TEXT}, maximum win ${MAX_WIN_X.toLocaleString("en")}× bet. Tap a symbol to see its win animation.`;
+// index.html is written in English; German replaces its static texts for lang=de
+if (RGS.lang === "de") {
+  document.documentElement.lang = "de";
   const set = (sel, text, attr) => { const el = q(document, sel); if (el) attr ? el.setAttribute(attr, text) : (el.textContent = text); };
-  set("header h1", "Ghost Duels");
-  set("header .sub", "Groups of 4 or more matching symbols win, disappear and new ones drop in. The VS reel is wild and starts a duel as soon as a group connects through it.");
-  set("#paytable h2", "Paytable");
-  set("#paytable .hint", `Values for the current bet, by group size (4 or more symbols). Return to player (RTP) ${RTP_TEXT}, maximum win ${MAX_WIN_X.toLocaleString("en")}× bet. Tap a symbol to see its win animation.`);
-  set("#game", "Slot", "aria-label");
-  set("#betMinus", "Decrease bet", "aria-label");
-  set("#betPlus", "Increase bet", "aria-label");
-  set("#autoMenu", "Choose autoplay", "aria-label");
-  set(".am-grid", "Number of spins", "aria-label");
-  set("#amClose", "Close", "aria-label");
-  set("#spin", "Spin", "aria-label");
-  set("#infoBtn", "Show paytable", "aria-label");
-  set("#musicBtn", "Sound", "aria-label");
-  set("#sndMenu", "Volume", "aria-label");
-  set("#lblMusic", "Music");
-  set("#lblSfx", "Effects");
-  set("#muteAll", "Mute");
+  set("header h1", "Geisterduell");
+  set("header .sub", "Gruppen ab 4 gleichen Symbolen gewinnen, verschwinden und neue fallen nach. Die VS-Walze ist wild und startet ein Duell, sobald eine Gruppe über sie verbunden ist.");
+  set("#paytable h2", "Gewinntabelle");
+  set("#paytable .hint", `Werte für den aktuellen Einsatz, je nach Größe der Gruppe (ab 4 Symbolen). Auszahlungsquote (RTP) ${RTP_TEXT}, maximaler Gewinn ${MAX_WIN_X.toLocaleString("de")}× Einsatz. Tippe auf ein Symbol, um seine Gewinn-Animation zu sehen.`);
+  set("#msgText", "Drück auf Spin");
+  set("#betMinus", "Einsatz verringern", "aria-label");
+  set("#betPlus", "Einsatz erhöhen", "aria-label");
+  set("#autoMenu", "Autoplay wählen", "aria-label");
+  set(".am-grid", "Anzahl Spins", "aria-label");
+  set("#amClose", "Schließen", "aria-label");
+  set("#spin", "Drehen", "aria-label");
+  set("#infoBtn", "Gewinntabelle anzeigen", "aria-label");
+  set("#musicBtn", "Ton", "aria-label");
+  set("#sndMenu", "Lautstärke", "aria-label");
+  set("#lblMusic", "Musik");
+  set("#lblSfx", "Effekte");
+  set("#muteAll", "Stumm");
 }
+
+// ---------- Intro: the three features, until the first click or key press (replays skip it) ----------
+// The click also counts as the gesture that starts the audio, so the music begins as the game appears.
+const introDone = new Promise(resolve => {
+  const el = document.getElementById("intro");
+  if (RGS.replay) { el.remove(); resolve(); return; }
+  const card = (cls, art, title, text) => {
+    const c = div("icard " + cls), a = div("ic-art"), h = document.createElement("h2"), p = document.createElement("p");
+    c.append(...["tl", "tr", "bl", "br"].map(k => { const i = document.createElement("i"); i.className = "am-corner " + k; return i; }));
+    a.append(...art); h.textContent = title; p.textContent = text; c.append(a, h, p); return c;
+  };
+  const sym = (id, cls) => { const s2 = makeSym(id); s2.classList.add(cls); return s2; };
+  const mult = div("ic-mult badge t3"); mult.textContent = "×1000";
+  const logo = new Image(); logo.src = "assets/logo.webp"; logo.alt = "Ghost Duels"; logo.className = "intro-logo";
+  const cards = div("intro-cards");
+  cards.append(
+    card("c-fs", [sym("fs", "f1"), sym("fs", "f3"), sym("fs", "f2")], i18n("Geisterkisten", "Ghost Crates"),
+      i18n("3 FS-Symbole starten den Bonus: Kisten mit Multiplikatoren und 3 Leben", "Land 3 FS symbols to start the bonus: crates with multipliers and 3 lives")),
+    card("c-vs mid", [sym("blue", "g1"), sym("witch", "g2"), sym("vs", "v"), mult], i18n("VS-Duelle", "VS Duels"),
+      i18n("VS-Walzen sind wild. Jede verbundene Gruppe startet ein Duell um Multiplikatoren bis ×1000", "VS reels are wild. Every connected group starts a duel for multipliers up to ×1000")),
+    card("c-max", [skullKing()], "Max Win",
+      i18n(`Gewinne bis zu ${MAX_WIN_X.toLocaleString("de")}× deinen Einsatz`, `Win up to ${MAX_WIN_X.toLocaleString("en")}× your bet`)));
+  const go = div("intro-go"); go.id = "introGo"; go.textContent = i18n("Klicken zum Fortfahren", "Click to continue");
+  el.append(logo, cards, go);
+  if (!RM) [...cards.children].forEach((c, i) => c.animate([{ opacity: 0, transform: "translateY(18%) scale(.9)" }, { opacity: 1 }], { duration: 520, delay: 120 + i * 140, easing: "cubic-bezier(.2,.9,.3,1.1)", fill: "backwards" }));
+  let closed = false;
+  const close = () => {
+    if (closed) return; closed = true;
+    removeEventListener("keydown", onKey, true);
+    sound.spin();
+    (RM ? Promise.resolve() : el.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(1.04)" }], { duration: 380, easing: "ease-in", fill: "forwards" }).finished).then(() => el.remove());
+    resolve();
+  };
+  // keys only continue: Space must not also start a spin underneath
+  const onKey = e => { if (e.key === "Tab") return; e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) close(); };
+  el.addEventListener("click", close); addEventListener("keydown", onKey, true);
+  el.focus();
+});
 
 boot();

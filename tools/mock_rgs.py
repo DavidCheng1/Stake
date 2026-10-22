@@ -1,7 +1,8 @@
 """Local stand-in for the Stake Engine RGS, for testing ghost-duels-web against the real math books.
 
 Serves the frontend and the wallet endpoints (authenticate, play, end-round, bet/event, replay).
-Rounds are drawn from the published books by lookup-table weight, like the RGS does.
+Rounds are drawn from the published books by lookup-table weight, like the RGS does. Every bet mode in
+index.json is served: play with mode "BONUS" draws from the bonus buy books and debits amount x its cost.
 
     python tools/mock_rgs.py            then open the printed URL
     python tools/mock_rgs.py --port 8080 --books 20000 --currency EUR
@@ -50,15 +51,15 @@ def categories(book):
     return out
 
 
-def load_books(limit, scan):
-    """Keep the first `limit` books for normal play and, while scanning up to `scan`, examples of rare kinds."""
+def load_books(mode, limit, scan):
+    """Keep the first `limit` books of a mode for normal play and, while scanning up to `scan`, examples of rare kinds."""
     weights = {}
-    with open(os.path.join(PUBLISH, "lookUpTable_base_0.csv"), encoding="UTF-8") as f:
+    with open(os.path.join(PUBLISH, mode["weights"]), encoding="UTF-8") as f:
         for line in f:
             i, w, _ = line.strip().split(",")
             weights[int(i)] = int(w)
     books, forced = {}, {}
-    with open(os.path.join(PUBLISH, "books_base.jsonl.zst"), "rb") as f:
+    with open(os.path.join(PUBLISH, mode["events"]), "rb") as f:
         reader = io.TextIOWrapper(zstandard.ZstdDecompressor().stream_reader(f), encoding="UTF-8")
         for n, line in enumerate(reader):
             if n >= scan:
@@ -83,16 +84,22 @@ class State:
         self.round = None  # active round
         self.event = None
         print("Loading books…", flush=True)
-        self.books, self.ids, self.weights, self.forced = load_books(args.books, args.scan)
-        print(f"{len(self.ids)} books for play; forced kinds: " + ", ".join(f"{k} {len(v)}" for k, v in self.forced.items()))
+        with open(os.path.join(PUBLISH, "index.json"), encoding="UTF-8") as f:
+            index = json.load(f)["modes"]
+        self.modes = {}
+        for m in index:
+            books, ids, weights, forced = load_books(m, args.books, args.scan)
+            self.modes[m["name"].upper()] = {"cost": m["cost"], "books": books, "ids": ids, "weights": weights, "forced": forced}
+            print(f"{m['name']} (cost {m['cost']}x): {len(ids)} books for play; forced kinds: " + ", ".join(f"{k} {len(v)}" for k, v in forced.items()))
 
-    def pick(self, force):
-        if force and self.forced.get(force):
-            return self.book(random.choice(self.forced[force]))
-        return self.book(random.choices(self.ids, self.weights)[0])
+    def pick(self, mode, force):
+        m = self.modes[mode]
+        if force and m["forced"].get(force):
+            return self.book(mode, random.choice(m["forced"][force]))
+        return self.book(mode, random.choices(m["ids"], m["weights"])[0])
 
-    def book(self, book_id):
-        line = self.books.get(book_id)
+    def book(self, mode, book_id):
+        line = self.modes[mode]["books"].get(book_id)
         return json.loads(line) if line else None
 
 
@@ -128,11 +135,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         _, path = self.split_force()
         if path.startswith("/bet/replay/"):
-            book_id = int(path.rstrip("/").split("/")[-1])
-            book = self.state.book(book_id)
+            *_, mode, book_id = path.rstrip("/").split("/")
+            mode = mode.upper()
+            book = self.state.book(mode, int(book_id)) if mode in self.state.modes else None
             if not book:
                 return self.send_json(404, {"error": "ERR_VAL", "message": "book not loaded"})
-            return self.send_json(200, {"payoutMultiplier": book["payoutMultiplier"] / 100, "costMultiplier": 1, "state": book["events"]})
+            return self.send_json(200, {"payoutMultiplier": book["payoutMultiplier"] / 100, "costMultiplier": self.state.modes[mode]["cost"], "state": book["events"]})
         file = os.path.normpath(os.path.join(WEB, unquote(path).lstrip("/") or "index.html"))
         if not file.startswith(WEB) or not os.path.isfile(file):
             self.send_response(404)
@@ -160,25 +168,28 @@ class Handler(BaseHTTPRequestHandler):
                         "minBet": levels[0], "maxBet": levels[-1], "stepBet": 10000,
                         "defaultBetLevel": API, "betLevels": levels,
                         "jurisdiction": {"socialCasino": False, "disabledAutoplay": False, "disabledSpacebar": False,
+                                         "disabledTurbo": False, "disabledSlamstop": False, "disabledBuyFeature": False,
                                          "displayRTP": True, "minimumRoundDuration": 0},
                     },
                     "round": dict(st.round, event=st.event) if st.round else None,
                 })
             if path == "/wallet/play":
                 amount = int(body.get("amount", 0))
+                mode = str(body.get("mode") or "BASE").upper()
                 if st.round:
                     return self.send_json(400, {"error": "ERR_VAL", "message": "round already active"})
-                if amount <= 0 or amount % 10000:
-                    return self.send_json(400, {"error": "ERR_VAL", "message": "invalid amount"})
-                if amount > st.balance:
+                if amount <= 0 or amount % 10000 or mode not in st.modes:
+                    return self.send_json(400, {"error": "ERR_VAL", "message": "invalid amount or mode"})
+                cost = int(round(amount * st.modes[mode]["cost"]))  # amount is the base bet; a mode costs amount x its cost
+                if cost > st.balance:
                     return self.send_json(400, {"error": "ERR_IPB", "message": "insufficient balance"})
-                book = st.pick(force)
-                st.balance -= amount
+                book = st.pick(mode, force)
+                st.balance -= cost
                 mult = book["payoutMultiplier"] / 100
                 rnd = {"roundID": book["id"], "amount": amount, "payout": int(round(mult * amount)),
-                       "payoutMultiplier": mult, "active": mult > 0, "mode": "BASE", "state": book["events"]}
+                       "payoutMultiplier": mult, "active": mult > 0, "mode": mode, "state": book["events"]}
                 st.round, st.event = (rnd if mult > 0 else None), None
-                print(f"  book {book['id']}  payout {mult}x  force={force}", flush=True)
+                print(f"  {mode.lower()} book {book['id']}  payout {mult}x  force={force}", flush=True)
                 return self.send_json(200, {"balance": bal(), "round": rnd})
             if path == "/wallet/end-round":
                 if st.round:
@@ -203,10 +214,18 @@ def main():
     args = ap.parse_args()
     Handler.state = State(args)
     host = f"127.0.0.1:{args.port}"
-    print(f"\nPlay:   http://{host}/?sessionID=local&lang=de&rgs_url=http://{host}")
-    print(f"Bonus:  http://{host}/?sessionID=local&lang=de&rgs_url=http://{host}/force/bonus")
-    print(f"Replay: http://{host}/?replay=true&game=ghost_duels&version=1&mode=base&event=<book id>&amount=1000000&rgs_url=http://{host}\n")
-    ThreadingHTTPServer(("127.0.0.1", args.port), Handler).serve_forever()
+    print(f"\nPlay:   http://{host}/?sessionID=local&lang=en&rgs_url=http://{host}")
+    print(f"Bonus:  http://{host}/?sessionID=local&lang=en&rgs_url=http://{host}/force/bonus")
+    print(f"Replay: http://{host}/?replay=true&game=ghost_duels&version=1&mode=base&event=<book id>&amount=1000000&rgs_url=http://{host}")
+    print("        (mode=bonus replays a bonus buy round)\n")
+    Server(("127.0.0.1", args.port), Handler).serve_forever()
+
+
+class Server(ThreadingHTTPServer):
+    # The default backlog of 5 is too small: a browser loading a board opens many image requests at once,
+    # and on Windows the overflow is refused, which shows up as broken symbol images.
+    request_queue_size = 128
+    daemon_threads = True
 
 
 if __name__ == "__main__":
