@@ -25,8 +25,8 @@ Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not 
   | Ghost Crates (3–5 FS) | 182× | 96.09% | 25,000× | 21.6% |
   | Big Ghost Crates (exactly 4 FS) | 324× | 96.08% | 25,000× | 19.9% |
   | Mega Ghost Crates (exactly 5 FS) | 650× | 95.93% | 25,000× | 18.9% |
-  | VS Spin (at least one VS reel) | 5.27× | 95.98% | 4,064× | 49.7% |
-  - The price must match in `game_config.py` (`buy_modes`) and `game.js` (`BUYS`): price = mean payout of the mode / 0.96, whole bets (VS Spin to 0.01, since 5.2× would be 97.3% and 5.3× 95.43%); each mode also declares `rtp` = mean payout / price. Stake allows at most 96.7% per mode.
+  | VS Spin (at least one VS reel) | 5× | 96.30% | 4,064× | 49.7% |
+  - The price must match in `game_config.py` (`buy_modes`) and `game.js` (`BUYS`): price = mean payout of the mode / 0.96 in whole bets, so every buy costs whole cents at any bet level; each mode also declares `rtp` = mean payout / price. VS Spin reaches ~96% at 5× with its own VS reel counts (fewer 2-reel spins than the base game). Stake allows at most 96.7% per mode.
 - [x] **Approval checklist fixes** (Engine's review prompt is `engine-review-prompt.md` in the repo root; guideline IDs in brackets):
   - The page is only the game, scaled to the window; nothing scrolls [227, 193, 195].
   - Phones held upright get their own layout: the reels on top, a touch panel with every control below [194].

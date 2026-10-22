@@ -71,7 +71,7 @@ const BUYS = [
     text: i18n("Genau 4 FS: der Bonus startet mit 4 Kisten.", "Exactly 4 FS: the bonus starts with 4 crates.") },
   { mode: "BONUS5", cost: 650, rtp: 95.93, maxWin: 25000, fs: 5, name: i18n("Mega-Geisterkisten", "Mega Ghost Crates"),
     text: i18n("Genau 5 FS: 5 Kisten, öfter mit ×3.", "Exactly 5 FS: 5 crates, more often at ×3.") },
-  { mode: "VSSPIN", cost: 5.27, rtp: 95.98, maxWin: 4064, vs: true, name: i18n("VS-Spin", "VS Spin"),
+  { mode: "VSSPIN", cost: 5, rtp: 96.3, maxWin: 4064, vs: true, name: i18n("VS-Spin", "VS Spin"),
     text: i18n("Ein Spin mit mindestens einer VS-Walze: jede Gruppe, die sie erreicht, startet ein Duell.", "A spin with at least one VS reel: every group that reaches it starts a duel.") },
 ];
 const BASE_INFO = { rtp: 95.67, maxWin: 6144 };
@@ -581,13 +581,21 @@ function floatText(x, y, text, rgb, big, small) {
 }
 
 let shown = 0;
+// Only the newest count-up writes the win field: a new one takes over where the running one is (they used to
+// overlap while runes were collected, so the number jumped back and forth). Values in motion keep the currency's
+// decimals; only the final value may show more (an exact sub-cent amount).
+let countId = 0;
+// sets the win field at once and stops any running count-up, which would otherwise keep writing its older value
+function setWin(v) { countId++; shown = v; winVal.textContent = money(v); }
 function countTo(target, dur = 700) {
-  const from = shown, t0 = performance.now(); dur /= pace();
+  const id = ++countId, from = shown, t0 = performance.now(); dur /= pace();
   let lastTick = 0;
   return new Promise(res => (function step(t) {
-    const k = Math.min(1, (t - t0) / dur); shown = from + (target - from) * (1 - Math.pow(1 - k, 3));
+    if (id !== countId) return res();
+    // a frame's timestamp can be slightly older than t0; below 0 the easing curve would swing far negative
+    const k = Math.min(1, Math.max(0, (t - t0) / dur)); shown = k < 1 ? from + (target - from) * (1 - Math.pow(1 - k, 3)) : target;
     if (dur > 300 && k < 1 && t - lastTick > 85) { lastTick = t; sound.tick(); }
-    winVal.textContent = money(shown); if (k < 1) requestAnimationFrame(step); else res();
+    winVal.textContent = money(k < 1 ? RGS.roundMoney(shown) : shown); if (k < 1) requestAnimationFrame(step); else res();
   })(t0));
 }
 
@@ -955,7 +963,7 @@ function refillLives(prev) {
   if (prev < 3 && !RM) qa(livesEl, ".life").forEach((l, i) => i >= prev && l.animate([{ transform: "scale(0)", filter: "brightness(3)" }, { transform: "scale(1.7)", offset: .5 }, { transform: "scale(1)", filter: "brightness(1)" }], { duration: 520, delay: (i - prev) * 90 }));
 }
 function bonusHud(extra) {
-  const v = bonusValue(); winVal.textContent = money(v);
+  const v = bonusValue(); setWin(v);
   say(extra || `${i18n("Wert", "Value")} ${money(v)}`);
 }
 
@@ -1050,26 +1058,27 @@ async function harvest(start, spinEvents, end) {
     await sleep(500);
     await Promise.all(g.cells.map(([c, r], i) => sleep(i * 40).then(() => {
       const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v * bet, to = from * g.mult, t0 = performance.now();
-      return new Promise(res => (function step(tt) { const k = Math.min(1, (tt - t0) / 500); t.textContent = fmtV(from + (to - from) * k); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
+      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); t.textContent = fmtV(k < 1 ? RGS.roundMoney(from + (to - from) * k) : to); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
     })));
     shake(6, 300);
     await sleep(450);
   }
   // Collect (the event total is authoritative; it already includes the max-win cap)
   const total = end.totalWin / 100 * bet;
-  clearLit(); shown = 0; winVal.textContent = money(0);
+  clearLit(); setWin(0);
   const mOf = new Map();
   groups.forEach(g => g.cells.forEach(([c, r]) => mOf.set(c + "," + r, g.ok ? g.mult : 0)));
   const dead = kCells("r").filter(([c, r]) => !mOf.get(c + "," + r));
   if (dead.length) {
     say(`${dead.length} ${dead.length === 1 ? i18n("Rune ohne Verbindung zerfällt", "unlinked rune crumbles") : i18n("Runen ohne Verbindung zerfallen", "unlinked runes crumble")}`);
+    sound.crumble();
     await Promise.all(dead.map(([c, r], i) => { const el = q(reels[c].cells[r], ".rtok"); return RM ? null : el.animate([{ filter: "none", opacity: 1, transform: "none" }, { filter: "grayscale(1) brightness(.6)", opacity: 1, offset: .4 }, { filter: "grayscale(1) brightness(.4)", opacity: 0, transform: "translateY(25%) scale(.7)" }], { duration: 700, delay: i * 40, fill: "forwards" }).finished; }));
   }
   const runes = kCells("r").filter(([c, r]) => mOf.get(c + "," + r));
   let run = 0;
-  for (const [c, r] of runes) {
+  for (const [i, [c, r]] of runes.entries()) {
     run += K[c][r].v * mOf.get(c + "," + r) * bet;
-    const el = q(reels[c].cells[r], ".rtok");
+    const el = q(reels[c].cells[r], ".rtok"); sound.collect(i);
     if (!RM) el.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(1.4)", offset: .4 }, { transform: "scale(0)", opacity: 0 }], { duration: 380, fill: "forwards" });
     countTo(Math.min(run, total), 180);
     await sleep(runes.length > 16 ? 60 : 110);
@@ -1137,7 +1146,7 @@ async function showFsTrigger(ev) {
 
 // Returns the round's total win in currency
 async function playRound(events, resumed) {
-  clearBoard(); shown = 0; winVal.textContent = money(0);
+  clearBoard(); setWin(0);
   say(resumed ? i18n("Runde wird fortgesetzt", "Resuming round") : i18n("Viel Glück!", "Good luck!"));
   vsMult = {}; vsWinner = {};
   let won = 0, rounds = 0, summarised = false;
@@ -1171,7 +1180,7 @@ async function playRound(events, resumed) {
         RGS.saveEvent(ev.index);
         break;
       case "wincap":
-        won = amt(ev.amount); shown = won; winVal.textContent = money(won);
+        won = amt(ev.amount); setWin(won);
         bigPlayed = true; sound.bigWin(true);
         await banner("MAX WIN", `${MAX_WIN_X.toLocaleString(RGS.lang)}× ${i18n("Einsatz", "bet")}`, 2600);
         break;
@@ -1188,7 +1197,7 @@ async function playRound(events, resumed) {
       }
       case "setTotalWin":
         baseSummary();
-        won = amt(ev.amount); shown = won; winVal.textContent = money(won);
+        won = amt(ev.amount); setWin(won);
         if (won >= 20 * bet && !bigPlayed) { bigPlayed = true; sound.bigWin(); }
         break;
       case "finalWin":
@@ -1508,6 +1517,10 @@ const sound = (() => {
     // bonus: a rune lands (glass chime, rising through the scale), a crate lands (heavy hit plus a bell)
     rune(step = 0) { const t = at(); if (t == null) return; bell(t, NOTE(SCALE[(step % 8) + 4]) * 2, .05, .7, .5); },
     crate() { const t = at(); if (t == null) return; bell(t + .02, NOTE(0), .09, 1.6, .55); },
+    // runes without a crate crumble to dust: a dry, grinding rattle sinking into the crypt
+    crumble() { const t = at(); if (t == null) return; for (let i = 0; i < 6; i++) hiss(t + i * .045, { f: 1800 - i * 220, q: 1.4, a: .004, d: .07, vol: .07, rev: .25 }); tone(t, { f: 70, f2: 40, a: .01, d: .45, vol: .14, rev: .4 }); },
+    // a linked rune is collected into the win: a soul-chime that climbs with every rune
+    collect(step = 0) { const t = at(); if (t == null) return; bell(t, NOTE(SCALE[(step % 8) + 4]) * 2, .035, .5, .45); },
     // a life is lost: a heartbeat and a crack; lives refilled: rising chimes
     lifeLost() {
       const t = at(); if (t == null) return;
@@ -1602,7 +1615,7 @@ async function boot() {
       const u = new URL(location.href); u.searchParams.set("social", "true"); location.replace(u); return;
     }
     loading = false;
-    updateBal(); updateBet(); winVal.textContent = money(0);
+    updateBal(); updateBet(); setWin(0);
     await introDone; // an interrupted round resumes only once the player has seen the intro
     if (RGS.replay) return await replayLoop(s.round);
     if (s.round) {

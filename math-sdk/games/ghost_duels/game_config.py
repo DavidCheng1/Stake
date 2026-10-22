@@ -117,16 +117,19 @@ class GameConfig(Config):
         # Buyable modes. Each round starts on a normal board.
         #   bonus   Ghost Crates: 3-5 FS planted on distinct reels, by the natural odds of 3, 4 or 5 FS given a trigger
         #   bonus4  Big Ghost Crates: exactly 4 FS        bonus5  Mega Ghost Crates: exactly 5 FS
-        #   vsspin  VS Spin: a normal spin with at least one VS reel (1-6, by the natural VS reel counts)
+        #   vsspin  VS Spin: a normal spin with at least one VS reel (1-6, weighted towards a single reel)
         # Costs (in bets) are set from the simulated books so every buy mode's RTP is close to 96%:
-        # cost = mean payout of the mode / 0.96, rounded to a whole bet (VS Spin to 0.01), and rtp = mean payout / cost,
+        # cost = mean payout of the mode / 0.96, rounded to a whole bet, and rtp = mean payout / cost,
         # from the 100k-round books. Stake allows at most 96.7% per mode. Rerun run.py after any math change,
         # then set cost and rtp here and in BUYS in ghost-duels-web/game.js.
         self.buy_modes = {
             "bonus": {"cost": 182.0, "rtp": 0.9609, "buy_fs": [(3, 961), (4, 38.7), (5, 0.9)]},
             "bonus4": {"cost": 324.0, "rtp": 0.9608, "buy_fs": [(4, 1)]},
             "bonus5": {"cost": 650.0, "rtp": 0.9593, "buy_fs": [(5, 1)]},
-            "vsspin": {"cost": 5.27, "rtp": 0.9598, "force_vs": True},
+            # VS Spin uses fewer 2-reel spins than the base game (86.1/9.5 instead of 80/15.5), so it pays ~96% at a whole 5x:
+            # buy prices with fractions of a cent (5.27 x 0.10 = 0.527) are not valid bet amounts
+            "vsspin": {"cost": 5.0, "rtp": 0.963, "force_vs": True,
+                       "vs_count": [(1, 86.1), (2, 9.5), (3, 3.2), (4, 0.9), (5, 0.3), (6, 0.1)]},
         }
 
         # No reelstrips: every cell is drawn independently by symbol weight.
@@ -150,7 +153,7 @@ class GameConfig(Config):
             )
 
         self.bet_modes = [mode("base", 1.0, self.rtp, {"force_freegame": False})] + [
-            mode(name, m["cost"], m["rtp"], {"force_freegame": "buy_fs" in m, "buy_fs": m.get("buy_fs"), "force_vs": m.get("force_vs", False)})
+            mode(name, m["cost"], m["rtp"], {"force_freegame": "buy_fs" in m, "buy_fs": m.get("buy_fs"), "force_vs": m.get("force_vs", False), "vs_count": m.get("vs_count")})
             for name, m in self.buy_modes.items()
         ]
 

@@ -39,7 +39,7 @@ class GameCalculations(Executables):
         """Most spins have no VS reel; otherwise 1-6 distinct reels. VS Spin always has at least one."""
         if not self.get_current_distribution_conditions().get("force_vs") and random.random() >= self.config.vs_chance:
             return []
-        n = weighted(self.config.vs_count)
+        n = weighted(self.get_current_distribution_conditions().get("vs_count") or self.config.vs_count)
         return sorted(random.sample(range(self.config.num_reels), n))
 
     def draw_base_board(self):

@@ -28,6 +28,8 @@ const RGS = (() => {
     while (k < 6 && Math.abs(Math.round(v * 10 ** k) - v * 10 ** k) > 1e-6) k++;
     return Number(v).toLocaleString(lang, { minimumFractionDigits: k, maximumFractionDigits: k });
   };
+  // to the currency's own decimals: for values in motion (count-ups), which would otherwise show up to 6 decimals
+  const roundMoney = v => { const f = 10 ** meta()[1]; return Math.round(v * f) / f; };
   const formatMoney = v => {
     const [sym, , after] = meta();
     return after ? `${formatNumber(v)} ${sym}` : `${sym}${formatNumber(v)}`;
@@ -69,7 +71,7 @@ const RGS = (() => {
   }
 
   const api = {
-    lang, replay, social, socialText, formatMoney, formatNumber, RGSError,
+    lang, replay, social, socialText, formatMoney, formatNumber, roundMoney, RGSError,
     jurisdiction: {},
     minimumRoundDuration: 0,
 

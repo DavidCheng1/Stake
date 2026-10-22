@@ -714,3 +714,6 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .portrait .ui .buy-opt .am-corner { width: 7cqw; height: 7cqw; }
 .portrait .ui .buy-price b { font-size: 6.4cqw; }
 .portrait .ui .buy-price small { font-size: 3cqw; }
+
+/* every digit the same width, so counting numbers do not shift the text around */
+#winVal, #balVal, #betVal, .rtok .rv, .cr-plate, .badge { font-variant-numeric: tabular-nums; }
