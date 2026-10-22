@@ -12,6 +12,7 @@ Force a feature by putting it in rgs_url, e.g. rgs_url=http://127.0.0.1:8080/for
 """
 
 import argparse
+import sys
 import io
 import json
 import mimetypes
@@ -212,13 +213,18 @@ def main():
     ap.add_argument("--balance", type=float, default=1000)
     ap.add_argument("--currency", default="EUR")
     args = ap.parse_args()
+    # claim the port before the slow book loading, so a clash is reported right away
+    try:
+        server = Server(("127.0.0.1", args.port), Handler)
+    except OSError:
+        sys.exit(f"Port {args.port} is already in use, probably by an older mock_rgs.py. Stop it first, or use --port.")
     Handler.state = State(args)
     host = f"127.0.0.1:{args.port}"
     print(f"\nPlay:   http://{host}/?sessionID=local&lang=en&rgs_url=http://{host}")
     print(f"Bonus:  http://{host}/?sessionID=local&lang=en&rgs_url=http://{host}/force/bonus")
     print(f"Replay: http://{host}/?replay=true&game=ghost_duels&version=1&mode=base&event=<book id>&amount=1000000&rgs_url=http://{host}")
     print("        (mode=bonus replays a bonus buy round)\n")
-    Server(("127.0.0.1", args.port), Handler).serve_forever()
+    server.serve_forever()
 
 
 class Server(ThreadingHTTPServer):
@@ -226,6 +232,9 @@ class Server(ThreadingHTTPServer):
     # and on Windows the overflow is refused, which shows up as broken symbol images.
     request_queue_size = 128
     daemon_threads = True
+    # Python's default reuse lets a second server on Windows share the port with an old one, which then answers
+    # some requests with outdated code. Without it, starting a second server fails instead.
+    allow_reuse_address = False
 
 
 if __name__ == "__main__":
