@@ -2,20 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Ghost Duels</title>
 <link rel="icon" href="assets/vs.webp">
 <link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>Ghost Duels</h1>
-    <p class="sub">Groups of 4 or more matching symbols win, disappear and new ones drop in. The VS reel is wild and starts a duel as soon as a group connects through it.</p>
-  </header>
-
-  <section class="game" id="game" aria-label="Slot">
+<section class="game" id="game" aria-label="Slot">
     <img class="bg" src="assets/bg.webp" alt="" draggable="false">
     <div class="ambient" id="ambient" aria-hidden="true"><canvas id="amb"></canvas></div>
     <div class="hero" id="hero" aria-hidden="true"></div>
@@ -47,7 +41,7 @@
       <div class="am-foot"><button type="button" id="amStart" class="am-start">Start</button><button type="button" id="amClose" class="am-close" aria-label="Close">✕</button></div>
     </div>
     <button type="button" class="hot round" id="spin" aria-label="Spin"><img class="disc" src="assets/disc-spin.webp" alt=""></button>
-    <button type="button" class="hot round" id="infoBtn" aria-label="Show paytable"></button>
+    <button type="button" class="hot round" id="infoBtn" aria-label="Game rules"></button>
     <button type="button" class="hot round" id="musicBtn" aria-label="Sound" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M3 9.5h4l5-4.5v14l-5-4.5H3z"/><path class="on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
     <div class="auto-menu snd-menu" id="sndMenu" role="dialog" aria-label="Volume" hidden>
       <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
@@ -71,14 +65,35 @@
         <div class="am-foot buy-foot"><button type="button" id="buyGo" class="am-start">Buy</button><button type="button" id="buyCancel">Cancel</button></div>
       </div>
     </div>
+    <div class="rules" id="rules" role="dialog" aria-modal="true" aria-labelledby="rulesTitle" hidden>
+      <div class="rules-card">
+        <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
+        <div class="rules-head"><h2 id="rulesTitle">Game Rules</h2><button type="button" class="rules-close" id="rulesClose" aria-label="Close">✕</button></div>
+        <div class="rules-body" id="rulesBody" tabindex="0">
+          <section class="paytable" id="paytable"><h3 class="r-h" id="ptTitle">Paytable</h3><p class="hint"></p></section>
+        </div>
+      </div>
+    </div>
+    <div class="replay-bar" id="replayBar" hidden></div>
+    <div class="msg-dlg" id="replayDlg" role="dialog" aria-modal="true" aria-labelledby="replayTitle" hidden>
+      <div class="icard msg-card">
+        <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
+        <h2 id="replayTitle">Replay</h2>
+        <p id="replayInfo"></p>
+        <div class="am-foot msg-foot"><button type="button" id="replayGo" class="am-start">Play</button></div>
+      </div>
+    </div>
+    <div class="msg-dlg err-dlg" id="errDlg" role="alertdialog" aria-modal="true" aria-labelledby="errTitle" aria-describedby="errText" hidden>
+      <div class="icard msg-card">
+        <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
+        <h2 id="errTitle">Connection problem</h2>
+        <p id="errText"></p>
+        <div class="am-foot msg-foot"><button type="button" id="errReload" class="am-start">Reload</button></div>
+      </div>
+    </div>
     <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introGo" tabindex="-1"></div>
   </section>
 
-  <section class="paytable" id="paytable">
-    <h2>Paytable</h2>
-    <p class="hint">Values for the current bet, by group size (4 or more symbols). Tap a symbol to see its win animation.</p>
-  </section>
-</div>
 <script src="rgs.js"></script>
 <script src="game.js"></script>
 </body>

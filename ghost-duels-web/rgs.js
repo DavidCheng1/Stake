@@ -7,6 +7,8 @@ const RGS = (() => {
   const rgsUrl = url.get("rgs_url") || "";
   const lang = (url.get("lang") || "en").toLowerCase();
   const replay = url.get("replay") === "true";
+  // social casino (Stake.us): restricted gambling words are replaced, English only
+  const social = url.get("social") === "true";
   const base = /^https?:\/\//.test(rgsUrl) ? rgsUrl : "https://" + rgsUrl;
   const MODE = "BASE"; // default bet mode; the bonus buy plays "BONUS"
 
@@ -15,18 +17,37 @@ const RGS = (() => {
     USD: ["$", 2], CAD: ["CA$", 2], JPY: ["¥", 0], EUR: ["€", 2], RUB: ["₽", 2], CNY: ["CN¥", 2], PHP: ["₱", 2],
     INR: ["₹", 2], IDR: ["Rp", 0], KRW: ["₩", 0], BRL: ["R$", 2], MXN: ["MX$", 2], DKK: ["KR", 2, true],
     PLN: ["zł", 2, true], VND: ["₫", 0, true], TRY: ["₺", 2], CLP: ["CLP", 0, true], ARS: ["ARS", 2, true],
-    PEN: ["S/", 2, true], XGC: ["GC", 2], XSC: ["SC", 2],
+    PEN: ["S/", 2, true], XGC: ["GC", 2, true], XSC: ["SC", 2, true], XEC: ["SC", 2, true],
   };
   let currency = url.get("currency") || "USD";
   const meta = () => CURRENCIES[currency] || [currency, 2, true];
+  // the currency's decimals, or more when an amount needs them (a 0.005 payout must not show as 0.01); the API has 6
   const formatNumber = v => {
     const d = meta()[1];
-    return Number(v).toLocaleString(lang, { minimumFractionDigits: d, maximumFractionDigits: d });
+    let k = d;
+    while (k < 6 && Math.abs(Math.round(v * 10 ** k) - v * 10 ** k) > 1e-6) k++;
+    return Number(v).toLocaleString(lang, { minimumFractionDigits: k, maximumFractionDigits: k });
   };
   const formatMoney = v => {
     const [sym, , after] = meta();
     return after ? `${formatNumber(v)} ${sym}` : `${sym}${formatNumber(v)}`;
   };
+
+  // Social wording: whole words, case kept (Bet -> Play, BUY -> GET). Longer phrases first.
+  const SOCIAL = [
+    ["buy bonus", "get bonus"], ["bonus buy", "bonus"], ["total bet", "total play"], ["paytable", "win table"], ["pay table", "win table"],
+    ["bets", "plays"], ["betting", "playing"], ["bet", "play amount"], ["buy", "get"], ["bought", "triggered"], ["purchase", "play"],
+    ["pays out", "wins"], ["pay out", "win"], ["paid out", "won"], ["pays", "wins"], ["paid", "won"], ["pay", "win"], ["payer", "winner"],
+    ["gambling", "play"], ["gamble", "play"], ["wager", "play"], ["stake", "play amount"], ["cash", "coins"], ["money", "coins"],
+    ["currency", "token"], ["credit", "balance"], ["deposit", "get coins"], ["withdraw", "redeem"], ["fund", "balance"], ["rebet", "respin"],
+  ];
+  const keepCase = (from, to) => from === from.toUpperCase() ? to.toUpperCase()
+    : !/^[A-Z]/.test(from) ? to
+    : /\s[A-Z]/.test(from) ? to.replace(/\b\w/g, c => c.toUpperCase()) // Title Case stays Title Case
+    : to[0].toUpperCase() + to.slice(1);
+  const socialRe = new RegExp(`\\b(${SOCIAL.map(([a]) => a.replace(/ /g, "\\s+")).join("|")})\\b`, "gi");
+  const socialMap = Object.fromEntries(SOCIAL);
+  const socialText = t => social ? String(t).replace(socialRe, m => keepCase(m, socialMap[m.toLowerCase().replace(/\s+/g, " ")])) : t;
 
   class RGSError extends Error {
     constructor(code, message) { super(message || code); this.code = code; }
@@ -48,7 +69,7 @@ const RGS = (() => {
   }
 
   const api = {
-    lang, replay, formatMoney, formatNumber, RGSError,
+    lang, replay, social, socialText, formatMoney, formatNumber, RGSError,
     jurisdiction: {},
     minimumRoundDuration: 0,
 
@@ -59,7 +80,8 @@ const RGS = (() => {
         const amount = (Number(url.get("amount")) || API) / API;
         const p = ["game", "version", "mode", "event"].map(k => encodeURIComponent(url.get(k) || ""));
         const data = await call("GET", `/bet/replay/${p.join("/")}`);
-        return { balance: 0, betLevels: [amount], defaultBet: amount, jurisdiction: {}, round: { state: data.state, active: false, amount } };
+        const mode = (url.get("mode") || MODE).toUpperCase(), cost = Number(data.costMultiplier) || 1;
+        return { balance: 0, betLevels: [amount], defaultBet: amount, jurisdiction: {}, round: { state: data.state, active: false, amount, mode, cost, payoutMultiplier: data.payoutMultiplier } };
       }
       const data = await call("POST", "/wallet/authenticate", { sessionID, language: lang });
       currency = data.balance.currency;
@@ -101,7 +123,7 @@ const RGS = (() => {
         ERR_IPB: de ? "Guthaben reicht nicht" : "Insufficient balance",
         ERR_IS: de ? "Sitzung abgelaufen, bitte neu laden" : "Session expired, please reload",
         ERR_ATE: de ? "Anmeldung abgelaufen, bitte neu laden" : "Authentication expired, please reload",
-        ERR_GLE: de ? "Spiellimit erreicht" : "Gambling limit reached",
+        ERR_GLE: de ? "Spiellimit erreicht" : "Play limit reached",
         ERR_LOC: de ? "In deinem Land nicht verfügbar" : "Not available in your location",
         ERR_MAINTENANCE: de ? "Wartungsarbeiten, bitte später erneut versuchen" : "Under maintenance, please try again later",
         ERR_NETWORK: de ? "Keine Verbindung, bitte erneut versuchen" : "Connection lost, please try again",

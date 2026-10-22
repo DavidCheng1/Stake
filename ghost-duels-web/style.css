@@ -17,24 +17,19 @@
   --ui: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   color-scheme: dark;
 }
-html, body { background: var(--bg); color: var(--text); }
-body {
-  font-family: var(--ui);
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 20px 56px;
-  background: radial-gradient(70% 40% at 50% 0%, rgb(109 255 179 / .10), transparent 70%), var(--bg);
-}
-.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 24px; }
-header { display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline; }
-h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 5vw, 3rem); margin: 0; line-height: 1; letter-spacing: .02em;
-  background: linear-gradient(90deg, var(--ghost), #c9fff0 45%, var(--hex)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.sub { margin: 0; color: var(--muted); font-size: 1.08rem; max-width: 70ch; line-height: 1.35; }
+/* Page: the game alone, scaled to fit the window at its own proportions; the page never scrolls.
+   Space around it shows a blurred copy of the crypt instead of black bars. */
+:root { padding: 0; }
+html, body { margin: 0; height: 100%; overflow: hidden; color: var(--text); }
+html { background: var(--bg); } /* body stays transparent so the blurred crypt behind it shows */
+body { display: grid; place-items: center; background: transparent; font-family: var(--ui); touch-action: manipulation; overscroll-behavior: none; }
+body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-events: none;
+  background: url(assets/bg.webp) center / cover; filter: blur(24px) brightness(.38) saturate(1.15); }
 .lbl { font-size: .8rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
 
 /* Game frame */
-.game { position: relative; width: 100%; aspect-ratio: 1024 / 572; container-type: inline-size; border-radius: 14px; overflow: hidden;
-  box-shadow: 0 0 0 2px #000, 0 30px 80px rgb(0 0 0 / .7); user-select: none; -webkit-tap-highlight-color: transparent; }
+.game { position: relative; width: min(100vw, calc(100vh * 1024 / 572)); width: min(100vw, calc(100dvh * 1024 / 572)); aspect-ratio: 1024 / 572;
+  container-type: inline-size; overflow: hidden; box-shadow: 0 0 6vmin rgb(0 0 0 / .8); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
 .game > .bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none; }
 .at { position: absolute; }
 .stage { position: absolute; left: 28.37%; top: 21.9%; width: 43.18%; height: 57.86%; }
@@ -464,7 +459,6 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 5vw, 
 /* Paytable */
 .paytable { display: grid; gap: 26px; }
 .paytable.offscreen * { animation-play-state: paused !important; }
-.paytable h2 { font-family: var(--display); font-weight: 400; font-size: 2.2rem; margin: 0; color: var(--text); }
 .tier { display: grid; gap: 12px; }
 .tier-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .tier-head h3 { margin: 0; font-size: 1.35rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
@@ -554,3 +548,51 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 5vw, 
 .buy-foot button { font-size: 1.6cqw; padding: .8cqw 0; }
 .buy-foot button:disabled { opacity: .45; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .buy-btn { animation: none !important; } }
+
+/* Game rules: opened by Info, scrolls inside its own frame (same stone and gold as the menus) */
+.rules { position: absolute; inset: 0; z-index: 58; display: flex; align-items: center; justify-content: center; background: rgb(3 10 9 / .74); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.rules-card { position: relative; width: 88%; height: 88%; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: .8cqw; padding: 1.3cqw 1.2cqw 1.2cqw 1.8cqw; box-sizing: border-box; border-radius: 1.2cqw;
+  background: url(assets/img0.webp) 40% 30% / 165% auto, #2e363a; border: .45cqw solid transparent; background-clip: padding-box;
+  box-shadow: 0 0 0 .2cqw #15131a, inset 0 0 0 .2cqw #15131a, inset 0 0 2.4cqw rgb(0 0 0 / .7), 0 1.4cqw 3cqw rgb(0 0 0 / .75); }
+.rules-card::before { content: ""; position: absolute; inset: -.45cqw; border-radius: 1.2cqw; padding: .45cqw; pointer-events: none;
+  background: linear-gradient(160deg, #f6dd8f 0%, #c99a3e 22%, #8a6122 45%, #e2bb62 62%, #a77a2c 80%, #f0d184 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.rules-head { display: flex; align-items: center; justify-content: space-between; gap: 1cqw; padding-right: .6cqw; }
+.rules-head h2 { margin: 0; font: 400 clamp(18px, 3.4cqw, 44px)/1 var(--display); letter-spacing: .02em; color: #ffd877; -webkit-text-stroke: .06em #2a1700; paint-order: stroke fill; text-shadow: 0 0 .3em rgb(255 200 80 / .6); }
+.rules-close { all: unset; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; width: clamp(28px, 3.4cqw, 44px); aspect-ratio: 1; border-radius: 50%;
+  font: 800 clamp(14px, 1.8cqw, 22px)/1 var(--ui); color: #f3ead2; background: linear-gradient(#25222f, #14111a); border: .2cqw solid #d0a54c; }
+.rules-close:hover { color: #c9ffe6; box-shadow: 0 0 .8cqw rgb(109 255 179 / .55); }
+.rules-close:focus-visible { outline: .25cqw solid #6dffb3; outline-offset: .15cqw; }
+.rules-body { overflow-y: auto; overscroll-behavior: contain; padding-right: 1cqw; display: grid; gap: clamp(14px, 2cqw, 26px); align-content: start;
+  font-size: clamp(12px, 1.45cqw, 17px); line-height: 1.4; color: #e9f6f1; scrollbar-color: #c99a3e transparent; scrollbar-width: thin; }
+.rules-body:focus-visible { outline: .2cqw solid #6dffb3; outline-offset: .2cqw; }
+.rules-body p { margin: .35em 0 0; color: #cfe3dc; }
+.r-sec { display: grid; gap: .2em; }
+.r-h { margin: 0 0 .2em; font: 800 1.25em/1.1 var(--ui); letter-spacing: .06em; text-transform: uppercase; color: #ffd877; }
+.r-sec ul { margin: .2em 0 0; padding-left: 1.2em; display: grid; gap: .35em; color: #cfe3dc; }
+.r-sec li b { color: #f3ead2; }
+.r-table { border-collapse: collapse; width: 100%; max-width: 40em; font-variant-numeric: tabular-nums; }
+.r-table th, .r-table td { text-align: left; padding: .35em .6em; border-bottom: 1px solid rgb(201 154 62 / .35); }
+.r-table th { color: #ffd877; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; font-size: .85em; }
+.rules .paytable { gap: clamp(12px, 1.8cqw, 22px); }
+.rules .cards { grid-template-columns: repeat(auto-fill, minmax(9.5em, 1fr)); }
+.rules .card { background: rgb(13 29 27 / .85); }
+.rules .special { grid-template-columns: repeat(auto-fit, minmax(17em, 1fr)); }
+.rules .special .card { grid-template-columns: 5.5em 1fr; }
+.rules .pays { grid-template-columns: auto 1fr auto 1fr; column-gap: .6em; }
+
+/* Social mode: covers the "BET" label painted into the art (x 403-469, y 507-525 of 1024x572) with "PLAY" */
+.art-label { left: 39.36%; top: 88.72%; width: 6.45%; height: 3.06%; display: grid; place-items: center; pointer-events: none;
+  background: linear-gradient(rgb(50 54 60), rgb(48 56 63)); font: 800 2.25cqw/1 var(--ui); letter-spacing: .03em; text-transform: uppercase;
+  color: #f1e3c9; -webkit-text-stroke: .08em #0d0f12; paint-order: stroke fill; }
+
+/* Replay start / replay again, and the launch error: small centred cards in the menu frame */
+.msg-dlg { position: absolute; inset: 0; z-index: 56; display: flex; align-items: center; justify-content: center; background: rgb(3 10 9 / .6); }
+.err-dlg { z-index: 70; background: rgb(3 10 9 / .85); } /* above the intro: a launch that failed must say so at once */
+.msg-card { width: min(34cqw, 92%); aspect-ratio: auto; grid-template-rows: auto auto auto; padding: 1.8cqw 1.8cqw 1.6cqw; cursor: default; }
+.msg-card h2 { font-size: clamp(18px, 3.3cqw, 42px); }
+.msg-card p { font-size: clamp(11px, 1.4cqw, 17px); }
+.msg-foot { width: 100%; grid-template-columns: 1fr; margin-top: .6cqw; }
+.msg-foot button { font-size: clamp(13px, 1.7cqw, 20px); padding: .8cqw 0; }
+.replay-bar { position: absolute; left: 50%; top: 1%; translate: -50% 0; z-index: 31; max-width: 70%; padding: .45cqw 1.2cqw; border-radius: 1cqw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: 800 clamp(10px, 1.3cqw, 16px)/1.1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: #ffd877; background: rgb(6 14 12 / .82); border: .15cqw solid #c99a3e; pointer-events: none; }

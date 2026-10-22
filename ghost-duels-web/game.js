@@ -5,7 +5,8 @@ const COLS = 7, ROWS = 7;
 let BETS = [1], betIdx = 0, bet = 1, balance = 0;
 const money = v => RGS.formatMoney(v);
 // German for lang=de, English for every other language
-const i18n = (de, en) => RGS.lang === "de" ? de : en;
+// social mode (Stake.us) is English only, with restricted gambling words replaced
+const i18n = (de, en) => RGS.lang === "de" && !RGS.social ? de : RGS.socialText(en);
 // ---------- Pace: turbo plays a round faster; a click during a round (slam stop) hurries the rest of it ----------
 // Every wait (sleep, later) and every scripted animation runs at pace(); the idle CSS loops keep their own speed.
 const TURBO = 2, SLAM = 6;
@@ -1256,10 +1257,10 @@ addEventListener("keydown", e => { if (e.key === "Escape" && !autoMenu.hidden) o
 document.addEventListener("pointerdown", e => { if (!autoMenu.hidden && !autoMenu.contains(e.target) && !autoBtn.contains(e.target)) openAutoMenu(false); });
 document.getElementById("betMinus").addEventListener("click", () => { if (!busy && betIdx > 0) { betIdx--; updateBet(); } });
 document.getElementById("betPlus").addEventListener("click", () => { if (!busy && betIdx < BETS.length - 1) { betIdx++; updateBet(); } });
-document.getElementById("infoBtn").addEventListener("click", () => document.getElementById("paytable").scrollIntoView({ behavior: RM ? "auto" : "smooth" }));
+document.getElementById("infoBtn").addEventListener("click", () => openRules(true));
 document.getElementById("spin").addEventListener("click", () => busy ? skip() : play());
 addEventListener("keydown", e => { if (e.code === "Space" && e.target === document.body && !RGS.jurisdiction.disabledSpacebar) { e.preventDefault(); busy ? skip() : play(); } });
-game.addEventListener("pointerdown", e => { if (busy && !e.target.closest("button, .auto-menu, #intro")) skip(); });
+game.addEventListener("pointerdown", e => { if (busy && !e.target.closest("button, .auto-menu, #intro, #rules")) skip(); });
 // turbo: every round plays TURBO times faster; remembered between visits
 const turboBtn = document.getElementById("turboBtn");
 try { turbo = localStorage.getItem("ghostDuels.turbo") === "on"; } catch {}
@@ -1411,24 +1412,55 @@ showSound();
 document.addEventListener("click", e => { if (e.target.closest(".hot, .buy-btn, .am-grid button, .am-foot button")) sound.click(); });
 
 // ---------- Start: authenticate (or load a replay), apply bet levels and rules, resume an open round ----------
+// a launch that cannot reach the RGS (bad rgs_url, expired session) stops here with a clear message
+function showError(text) {
+  document.getElementById("errText").textContent = text;
+  document.getElementById("errDlg").hidden = false;
+  document.getElementById("errReload").focus();
+}
+document.getElementById("errReload").addEventListener("click", () => location.reload());
+
+// Replay: a panel shows bet, mode and real cost and starts the round; afterwards it offers to watch it again.
+async function replayLoop(round) {
+  const dlg = document.getElementById("replayDlg"), go = document.getElementById("replayGo"), info = document.getElementById("replayInfo");
+  const bonus = round.mode === BUY.mode, modeName = bonus ? i18n("Bonuskauf", "Bonus buy") : i18n("Basisspiel", "Base game");
+  const line = `${modeName} · ${i18n("Einsatz", "Bet")} ${money(round.amount)}` + (round.cost > 1 ? ` · ×${num(round.cost)} · ${i18n("Echte Kosten", "Real cost")} ${money(round.amount * round.cost)}` : "");
+  const bar = document.getElementById("replayBar"); bar.textContent = `${i18n("Wiederholung", "Replay")} · ${line}`; bar.hidden = false;
+  say(i18n("Wiederholung", "Replay"));
+  for (let first = true; ; first = false) {
+    info.textContent = first ? line : `${line} · ${i18n("Gewinn", "Win")} ${money(round.amount * (round.payoutMultiplier || 0))}`;
+    go.textContent = first ? i18n("Abspielen", "Play") : i18n("Nochmal ansehen", "Replay again");
+    dlg.hidden = false; go.focus();
+    await new Promise(res => go.addEventListener("click", res, { once: true }));
+    dlg.hidden = true;
+    lock(true); slam = false; // a skip in the last viewing must not carry over
+    await playRound(round.state, false);
+    say(i18n("Wiederholung beendet", "Replay finished"));
+  }
+}
+
 async function boot() {
   lock(true);
   say(i18n("Lädt…", "Loading…"));
+  let s;
+  try { s = await RGS.init(); } catch (err) { console.error(err); say(RGS.errorText(err)); showError(RGS.errorText(err)); return; }
   try {
-    const s = await RGS.init();
     balance = s.balance; BETS = s.betLevels;
     betIdx = Math.max(0, BETS.indexOf(s.defaultBet));
     if (s.jurisdiction.disabledAutoplay) autoBtn.hidden = true;
     if (s.jurisdiction.disabledTurbo) { turbo = false; turboBtn.hidden = true; }
     if (s.jurisdiction.disabledBuyFeature) buyBtn.hidden = true;
+    if (s.jurisdiction.socialCasino && !RGS.social) {
+      const u = new URL(location.href); u.searchParams.set("social", "true"); location.replace(u); return;
+    }
     loading = false;
     updateBal(); updateBet(); winVal.textContent = money(0);
     await introDone; // an interrupted round resumes only once the player has seen the intro
+    if (RGS.replay) return await replayLoop(s.round);
     if (s.round) {
       if (s.round.amount) { const i = BETS.indexOf(s.round.amount); if (i >= 0) betIdx = i; bet = s.round.amount; }
       lock(true);
-      await runRound(s.round, !RGS.replay);
-      if (RGS.replay) { say(i18n("Wiederholung beendet", "Replay finished")); return; }
+      await runRound(s.round, true);
     } else say(i18n("Drück auf Spin", "Press Spin"));
     lock(false);
   } catch (err) {
@@ -1876,7 +1908,7 @@ function stagelet(id) {
 }
 function paysDL(pay) {
   const dl = document.createElement("dl"); dl.className = "pays";
-  [[0, "4er"], [2, "6er"], [5, "9+"]].forEach(([i, l]) => { const dt = document.createElement("dt"), dd = document.createElement("dd"); dt.textContent = l; dd.dataset.x = pay[i]; dd.textContent = money(pay[i] * bet); dl.append(dt, dd); });
+  ["4", "5", "6", "7", "8", "9+"].forEach((l, i) => { const dt = document.createElement("dt"), dd = document.createElement("dd"); dt.textContent = l; dd.dataset.x = pay[i]; dd.textContent = money(pay[i] * bet); dl.append(dt, dd); });
   return dl;
 }
 function tier(title, note, cls) {
@@ -1900,15 +1932,96 @@ sp.append(sh, spc); pt.appendChild(sp);
 // pay values follow the current bet and currency
 function refreshPays() { qa(pt, "dd[data-x]").forEach(d => d.textContent = money(d.dataset.x * bet)); }
 
-q(document, "#paytable .hint").textContent = `Values for the current bet, by group size (4 or more symbols). Return to player (RTP) ${RTP_TEXT}, maximum win ${MAX_WIN_X.toLocaleString("en")}× bet. Tap a symbol to see its win animation.`;
+q(document, "#paytable .hint").textContent = i18n("Gewinne für den aktuellen Einsatz, je nach Größe der Gruppe. Tippe auf ein Symbol, um seine Gewinn-Animation zu sehen.",
+  "Wins for the current bet, by group size. Tap a symbol to see its win animation.");
+
+// ---------- Game rules (Info button) ----------
+// RTP and max win per mode, from the published lookup tables (math-sdk library/stats_base.json and stats_bonus.json).
+// Update these after rerunning run.py.
+const MODE_INFO = [
+  { name: i18n("Basisspiel", "Base game"), cost: 1, rtp: 95.67, maxWin: 6144 },
+  { name: i18n("Bonuskauf", "Bonus buy"), cost: BUY.cost, rtp: 95.63, maxWin: 25000 },
+];
+const rulesEl = document.getElementById("rules"), rulesBody = document.getElementById("rulesBody");
+const num = v => v.toLocaleString(RGS.lang === "de" ? "de" : "en");
+// a rules section: a heading, then paragraphs (strings) and bullet lists (arrays)
+function rulesSection(title, parts, before = null) {
+  const sec = document.createElement("section"), h = document.createElement("h3");
+  sec.className = "r-sec"; h.className = "r-h"; h.textContent = title; sec.appendChild(h);
+  for (const part of parts) {
+    if (Array.isArray(part)) {
+      const ul = document.createElement("ul");
+      part.forEach(([label, text]) => { const li = document.createElement("li"), b = document.createElement("b"); b.textContent = label; li.append(b, " " + text); ul.appendChild(li); });
+      sec.appendChild(ul);
+    } else if (part instanceof Node) sec.appendChild(part);
+    else { const para = document.createElement("p"); para.textContent = part; sec.appendChild(para); }
+  }
+  rulesBody.insertBefore(sec, before);
+  return sec;
+}
+rulesSection(i18n("So gewinnst du", "How to win"), [
+  i18n("Gespielt wird auf einem 7×7-Raster. Gruppen aus 4 oder mehr gleichen Symbolen, die sich waagerecht oder senkrecht berühren, gewinnen. Der Gewinn hängt vom Symbol und der Größe der Gruppe ab (siehe Gewinntabelle) und wird mit dem Einsatz multipliziert.",
+    "The game is played on a 7×7 grid. Groups of 4 or more matching symbols that touch horizontally or vertically win. The win depends on the symbol and the size of the group (see the paytable) and is multiplied by the bet."),
+  i18n("Gewinnsymbole verschwinden, neue fallen von oben nach. Das wiederholt sich, bis keine neue Gruppe entsteht. Alle Gewinne eines Spins werden addiert. Kein Spin zahlt mehr als den maximalen Gewinn.",
+    "Winning symbols disappear and new ones drop in from above. This repeats until no new group forms. All wins of a spin are added up. No round pays more than the maximum win."),
+], document.getElementById("paytable"));
+rulesSection(i18n("Geisterkisten-Bonus", "Ghost Crates bonus"), [[
+  [i18n("Auslöser:", "Trigger:"), i18n("3 oder mehr FS-Symbole auf dem Spielfeld nach allen Kaskaden. Pro Walze landet höchstens ein FS.", "3 or more FS symbols on the board after all tumbles. At most one FS lands per reel.")],
+  [i18n("Kisten:", "Crates:"), i18n("Jedes FS wird zu einer Kiste mit Charakter und Multiplikator (×2 oder ×3).", "Every FS turns into a crate with a character and a multiplier (×2 or ×3).")],
+  [i18n("Spins:", "Spins:"), i18n("In jedem Spin können Runen (Wert 1 bis 10 × Einsatz) und selten neue Kisten in leere Felder fallen. Du startest mit 3 Leben: ein Spin ohne Treffer kostet eins, jeder Treffer füllt sie wieder auf.", "In every spin, runes (worth 1 to 10 × bet) and rarely new crates can land in empty cells. You start with 3 lives: a spin without a hit costs one, every hit refills them.")],
+  [i18n("Ende:", "End:"), i18n("Der Bonus endet ohne Leben oder wenn alle Felder belegt sind.", "The bonus ends when no lives are left or every cell is filled.")],
+  [i18n("Gewinn:", "Win:"), i18n("Gruppen aus mindestens 4 Runen, die eine Kiste berühren, zahlen die Summe ihrer Runen mal jeden Kisten-Multiplikator der Gruppe.", "Groups of at least 4 runes touching a crate pay the sum of their runes times every crate multiplier in the group.")],
+  [i18n("Wiederauslösung:", "Re-triggers:"), i18n("Keine. Im Bonus landen keine FS-Symbole.", "None. No FS symbols land during the bonus.")],
+]]);
+rulesSection(i18n("Bonuskauf", "Bonus buy"), [
+  i18n(`„Bonus kaufen“ startet den Geisterkisten-Bonus sofort, für ${num(BUY.cost)}× den aktuellen Einsatz. Die Runde beginnt auf einem normalen Spielfeld mit 3 bis 5 FS-Symbolen. Vor dem Kauf zeigt ein Fenster den Preis, gekauft wird erst nach deiner Bestätigung.`,
+    `Buy Bonus starts the Ghost Crates bonus right away, for ${num(BUY.cost)}× the current bet. The round begins on a normal board with 3 to 5 FS symbols. A window shows the price first; nothing is bought until you confirm.`),
+]);
+{
+  const table = document.createElement("table"), head = table.createTHead().insertRow(), tb = table.createTBody();
+  [i18n("Modus", "Mode"), i18n("Kosten", "Cost"), "RTP", i18n("Max. Gewinn", "Max win")].forEach(t => { const th = document.createElement("th"); th.textContent = t; head.appendChild(th); });
+  for (const m of MODE_INFO) {
+    const r = tb.insertRow();
+    [m.name, `${num(m.cost)}× ${i18n("Einsatz", "bet")}`, `${m.rtp.toLocaleString(RGS.lang === "de" ? "de" : "en", { minimumFractionDigits: 2 })} %`, `${num(m.maxWin)}× ${i18n("Einsatz", "bet")}`].forEach(t => { r.insertCell().textContent = t; });
+  }
+  table.className = "r-table";
+  rulesSection(i18n("Auszahlungsquote und maximaler Gewinn", "Return to player and maximum win"), [table,
+    i18n(`Die theoretische Auszahlungsquote (RTP) ist der erwartete Rückfluss über sehr viele Spiele. Der Gewinn einer Runde ist auf ${num(MAX_WIN_X)}× den Einsatz begrenzt.`,
+      `The theoretical return to player (RTP) is the expected return over a very large number of plays. The win of a round is capped at ${num(MAX_WIN_X)}× the bet.`)]);
+}
+rulesSection(i18n("Bedienung", "Controls"), [[
+  [i18n("Spin:", "Spin:"), i18n("Startet eine Runde mit dem aktuellen Einsatz. Während einer Runde überspringt ein erneuter Druck (oder ein Tipp auf das Spielfeld) die Animationen; das Ergebnis bleibt gleich.", "Starts a round at the current bet. During a round, press it again (or tap the board) to skip the animations; the result stays the same.")],
+  [i18n("Leertaste:", "Space bar:"), i18n("Wie Spin.", "Same as Spin.")],
+  [i18n("Einsatz − / +:", "Bet − / +:"), i18n("Senkt oder erhöht den Einsatz innerhalb der angebotenen Stufen.", "Lowers or raises the bet within the levels offered.")],
+  [i18n("Autoplay:", "Autoplay:"), i18n("Wähle die Anzahl Spins und drücke Start. Erneut drücken stoppt. Reicht das Guthaben nicht, endet Autoplay.", "Choose the number of spins, then press Start. Press again to stop. Autoplay ends when the balance is too low.")],
+  [i18n("Turbo:", "Turbo:"), i18n("Spielt Runden etwa doppelt so schnell. Erneut drücken schaltet ihn aus.", "Plays rounds about twice as fast. Press again to turn it off.")],
+  [i18n("Bonus kaufen:", "Buy Bonus:"), i18n("Öffnet den Bonuskauf mit seinem Preis (siehe oben).", "Opens the bonus buy with its price (see above).")],
+  [i18n("Ton (oben rechts):", "Sound (top right):"), i18n("Lautstärke für Musik und Effekte und Stummschalten aller Töne.", "Music and effects volume, and mute for all sound.")],
+  [i18n("Info:", "Info:"), i18n("Öffnet diese Regeln.", "Opens these rules.")],
+]]);
+rulesSection(i18n("Hinweis", "Disclaimer"), [
+  i18n("Fehlfunktionen machen alle Gewinne und Spiele ungültig. Eine stabile Internetverbindung ist erforderlich. Bei einer Unterbrechung lade das Spiel neu, um offene Runden abzuschließen. Die erwartete Auszahlung gilt über sehr viele Spiele. Die Darstellung entspricht keinem physischen Gerät und dient nur der Veranschaulichung. Gewinne werden nach dem Betrag abgerechnet, den der Remote Game Server meldet, nicht nach Ereignissen im Browser. TM und © 2026 Engine.",
+    "Malfunction voids all wins and plays. A consistent internet connection is required. In the event of a disconnection, reload the game to finish any uncompleted rounds. The expected return is calculated over many plays. The game display is not representative of any physical device and is for illustrative purposes only. Winnings are settled according to the amount received from the Remote Game Server and not from events within the web browser. TM and © 2026 Engine."),
+]);
+function openRules(open) {
+  rulesEl.hidden = !open;
+  if (open) { rulesBody.scrollTop = 0; document.getElementById("rulesClose").focus(); } else document.getElementById("infoBtn").focus();
+}
+document.getElementById("rulesClose").addEventListener("click", () => openRules(false));
+rulesEl.addEventListener("click", e => { if (e.target === rulesEl) openRules(false); });
+addEventListener("keydown", e => { if (e.key === "Escape" && !rulesEl.hidden) openRules(false); });
 // index.html is written in English; German replaces its static texts for lang=de
-if (RGS.lang === "de") {
+if (RGS.lang === "de" && !RGS.social) {
   document.documentElement.lang = "de";
   const set = (sel, text, attr) => { const el = q(document, sel); if (el) attr ? el.setAttribute(attr, text) : (el.textContent = text); };
   set("header h1", "Geisterduell");
   set("header .sub", "Gruppen ab 4 gleichen Symbolen gewinnen, verschwinden und neue fallen nach. Die VS-Walze ist wild und startet ein Duell, sobald eine Gruppe über sie verbunden ist.");
-  set("#paytable h2", "Gewinntabelle");
-  set("#paytable .hint", `Werte für den aktuellen Einsatz, je nach Größe der Gruppe (ab 4 Symbolen). Auszahlungsquote (RTP) ${RTP_TEXT}, maximaler Gewinn ${MAX_WIN_X.toLocaleString("de")}× Einsatz. Tippe auf ein Symbol, um seine Gewinn-Animation zu sehen.`);
+  set("#ptTitle", "Gewinntabelle");
+  set("#errTitle", "Verbindungsproblem");
+  set("#errReload", "Neu laden");
+  set("#replayTitle", "Wiederholung");
+  set("#rulesTitle", "Spielregeln");
+  set("#rulesClose", "Schließen", "aria-label");
   set("#msgText", "Drück auf Spin");
   set("#betMinus", "Einsatz verringern", "aria-label");
   set("#betPlus", "Einsatz erhöhen", "aria-label");
@@ -1916,7 +2029,7 @@ if (RGS.lang === "de") {
   set(".am-grid", "Anzahl Spins", "aria-label");
   set("#amClose", "Schließen", "aria-label");
   set("#spin", "Drehen", "aria-label");
-  set("#infoBtn", "Gewinntabelle anzeigen", "aria-label");
+  set("#infoBtn", "Spielregeln", "aria-label");
   set("#musicBtn", "Ton", "aria-label");
   set("#sndMenu", "Lautstärke", "aria-label");
   set("#lblMusic", "Musik");
@@ -1929,6 +2042,16 @@ if (RGS.lang === "de") {
   set("#buyPriceLbl", "Preis");
   set("#buyGo", "Kaufen");
   set("#buyCancel", "Abbrechen");
+}
+
+// ---------- Social mode: the static page texts too, and the "BET" label painted into the art ----------
+if (RGS.social) {
+  const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) n.nodeValue = RGS.socialText(n.nodeValue);
+  qa(document, "[aria-label]").forEach(el => el.setAttribute("aria-label", RGS.socialText(el.getAttribute("aria-label"))));
+  document.title = RGS.socialText(document.title);
+  const patch = div("at art-label"); patch.textContent = "PLAY"; patch.setAttribute("aria-hidden", "true");
+  game.insertBefore(patch, document.getElementById("betMinus"));
 }
 
 // ---------- Intro: the three features, until the first click or key press (replays skip it) ----------
