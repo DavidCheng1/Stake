@@ -20,7 +20,7 @@
 /* Page: the game alone, scaled to fit the window at its own proportions; the page never scrolls.
    Space around it shows a blurred copy of the crypt instead of black bars. */
 :root { padding: 0; }
-html, body { margin: 0; height: 100%; overflow: hidden; color: var(--text); }
+html, body { margin: 0; height: 100%; overflow: hidden; overflow: clip; color: var(--text); }
 html { background: var(--bg); } /* body stays transparent so the blurred crypt behind it shows */
 body { display: grid; place-items: center; background: transparent; font-family: var(--ui); touch-action: manipulation; overscroll-behavior: none; }
 body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-events: none;
@@ -596,3 +596,99 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .msg-foot button { font-size: clamp(13px, 1.7cqw, 20px); padding: .8cqw 0; }
 .replay-bar { position: absolute; left: 50%; top: 1%; translate: -50% 0; z-index: 31; max-width: 70%; padding: .45cqw 1.2cqw; border-radius: 1cqw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   font: 800 clamp(10px, 1.3cqw, 16px)/1.1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: #ffd877; background: rgb(6 14 12 / .82); border: .15cqw solid #c99a3e; pointer-events: none; }
+
+/* ===== Portrait (html.portrait, set by layout() when the window is narrower than 4:5) =====
+   The game art is shown from x 22% to 78% and y 0 to 80% (the reels with their frame), filling the width;
+   the touch panel covers the painted dashboard below it. */
+.hud, .ui { display: none; }
+.portrait body { display: block; position: fixed; inset: 0; } /* fixed: iOS cannot pan the over-wide game */
+.portrait .game { position: absolute; top: 0; left: calc(-22vw / .56); width: calc(100vw / .56); box-shadow: none; }
+.portrait .ui { display: block; position: fixed; inset: 0; z-index: 100; pointer-events: none; container-type: inline-size; }
+.portrait .ui > * { pointer-events: auto; }
+.portrait .hud { display: grid; position: absolute; left: 0; right: 0; top: calc(100vw / .56 * 572 / 1024 * .8); bottom: 0; z-index: 20;
+  grid-template-rows: auto auto 1fr auto; align-content: start; gap: 3.2vw; padding: 3vw 4vw calc(4vw + env(safe-area-inset-bottom, 0px));
+  background: url(assets/img0.webp) 40% 30% / 200% auto, #2e363a; border-top: .9vw solid #c99a3e;
+  box-shadow: 0 -.4vw 0 #15131a, inset 0 2vw 5vw rgb(0 0 0 / .55), 0 -3vw 6vw rgb(0 0 0 / .6); font-family: var(--ui); }
+/* message bar and lives */
+.portrait .hud .msg { position: static; width: auto; height: auto; min-height: 9vw; padding: 1.5vw 3vw; box-sizing: border-box; border-radius: 2.4vw;
+  font-size: 4.1vw; gap: 2vw; background: rgb(6 14 12 / .82); border: .5vw solid #c99a3e; white-space: normal; text-align: center; }
+.portrait .hud .lives { gap: 1.4vw; }
+.portrait .hud .life { width: 3.4vw; height: 4.8vw; }
+/* balance, bet, win */
+.h-vals { display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 2.2vw; }
+.h-box { display: grid; justify-items: center; align-content: center; gap: 1vw; padding: 1.8vw 1.2vw; border-radius: 2.6vw; min-width: 0;
+  background: linear-gradient(#25222f, #14111a); border: .6vw solid #d0a54c; box-shadow: 0 0 0 .3vw #15131a, inset 0 .8vw 1.6vw rgb(0 0 0 / .7); }
+.h-lbl { font: 800 2.9vw/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; color: #e9e2c8; }
+.h-slot { display: grid; grid-auto-flow: column; align-items: center; justify-content: center; gap: 1.6vw; min-width: 0; position: relative; }
+.portrait .hud .val { position: static; width: auto; height: auto; font-size: 4.6vw; text-shadow: 0 .3vw 0 #000; overflow: visible; }
+.portrait .hud .mult { position: absolute; left: auto; right: -2vw; top: -9vw; font-size: 5.4vw; }
+.portrait .hud :is(#betMinus, #betPlus) { position: relative; left: auto; top: auto; width: 8vw; height: 8vw; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 35%, #2e4a43, #12221e 75%); box-shadow: inset 0 0 0 .5vw #c99a3e; color: #f3ead2; font: 800 5.4vw/1 var(--ui); }
+.portrait .hud #betMinus::before { content: "\2212"; }
+.portrait .hud #betPlus::before { content: "+"; }
+.portrait .hud #betMinus:disabled, .portrait .hud #betPlus:disabled { opacity: .4; }
+/* controls row: turbo, autoplay, spin, info, sound */
+.h-ctrls { display: grid; grid-template-columns: 1fr 1fr 1.7fr 1fr 1fr; align-items: center; justify-items: center; }
+.h-c { display: grid; justify-items: center; gap: 1.2vw; }
+.h-c > .hot { order: -1; }
+.h-cap { font: 800 2.9vw/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: #e9e2c8; text-shadow: 0 .3vw 0 #000; }
+/* ids, so these beat the landscape positions set per button id */
+.portrait .hud :is(#autoBtn, #spin, #infoBtn, #musicBtn, #turboBtn) { position: relative; left: auto; top: auto; width: 13vw; height: 13vw; aspect-ratio: auto; border-radius: 50%; }
+.portrait .hud .hot.round, .portrait .hud #infoBtn { background: radial-gradient(circle at 50% 35%, #24443c, #0b1714 75%); box-shadow: 0 0 0 .9vw #c99a3e, 0 0 0 1.4vw #15131a, 0 1vw 2vw rgb(0 0 0 / .6); }
+.portrait .hud #spin { width: 22vw; height: 22vw; box-shadow: 0 0 0 1.3vw #c99a3e, 0 0 0 2vw #15131a, 0 0 5vw rgb(109 255 179 / .45); }
+.portrait .hud #infoBtn::before { content: "i"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 7.6vw/1 Georgia, serif; color: #e9f6f1; text-shadow: 0 0 2vw rgb(109 255 179 / .6); }
+.portrait .hud #turboBtn { border-radius: 2.6vw; width: 12vw; height: 12vw; }
+.portrait .hud #turboBtn .tb-lbl { font-size: 2.9vw; translate: -50% 1.2vw; }
+.portrait .hud #musicBtn { width: 12vw; height: 12vw; z-index: auto; }
+.portrait .hud .auto-left { font-size: 3vw; min-width: 6vw; padding: .4vw 1vw; border-radius: 3vw; }
+/* buy plaque */
+.h-buy { display: grid; }
+.portrait .hud .buy-btn { position: relative; left: auto; top: auto; width: 66vw; height: 15vw; margin: 0 auto; gap: 2.4vw; padding: 0 4vw 0 2.4vw; border-radius: 3vw; border-width: .8vw; }
+.portrait .hud .bb-fs { width: 10vw; }
+.portrait .hud .bb-top { font-size: 3.2vw; }
+.portrait .hud .bb-main { font-size: 7.4vw; }
+/* menus and dialogs in the phone layer (cqw = % of the screen width there) */
+.portrait .ui .auto-menu { left: 50%; top: 50%; right: auto; bottom: auto; translate: -50% -50%; width: 84cqw; padding: 6cqw 5cqw 5cqw; gap: 3.5cqw; border-radius: 3cqw; border-width: 1.2cqw; }
+.portrait .ui .auto-menu::before { inset: -1.2cqw; padding: 1.2cqw; border-radius: 3cqw; }
+.portrait .ui .auto-menu::after { display: none; }
+.portrait .ui .am-corner { width: 11cqw; height: 11cqw; }
+.portrait .ui .am-corner.tr { right: -3.4cqw; top: -3.4cqw; }
+.portrait .ui .am-corner.tl { left: -3.4cqw; top: -3.4cqw; }
+.portrait .ui .am-corner.br { right: -3.4cqw; bottom: -3.4cqw; }
+.portrait .ui .am-corner.bl { left: -3.4cqw; bottom: -3.4cqw; }
+.portrait .ui .am-title { font-size: 6cqw; }
+.portrait .ui .am-rule { height: 1cqw; }
+.portrait .ui .am-grid { gap: 2cqw; }
+.portrait .ui .am-grid button, .portrait .ui .am-foot button { font-size: 4.6cqw; padding: 2.6cqw 0; border-radius: 1.6cqw; border-width: .6cqw; }
+.portrait .ui .am-grid button.inf { font-size: 6cqw; padding: 1.6cqw 0; }
+.portrait .ui .am-foot { gap: 2cqw; }
+.portrait .ui .am-close { padding: 2.6cqw 4cqw !important; }
+.portrait .ui .snd-row { grid-template-columns: 22cqw minmax(0, 1fr) 10cqw; gap: 3cqw; font-size: 4.4cqw; }
+.portrait .ui .snd-row input { height: 7cqw; }
+.portrait .ui .icard { border-radius: 3cqw; border-width: 1.2cqw; padding: 5cqw; gap: 2.4cqw; }
+.portrait .ui .icard::before { inset: -1.2cqw; padding: 1.2cqw; border-radius: 3cqw; }
+.portrait .ui .icard h2 { font-size: 8cqw; }
+.portrait .ui .icard p { font-size: 3.9cqw; }
+.portrait .ui .buy-card { width: 86cqw; grid-template-rows: 40cqw auto auto auto auto auto; }
+.portrait .ui .buy-price span { font-size: 3.2cqw; }
+.portrait .ui .buy-price b { font-size: 10cqw; }
+.portrait .ui .buy-price small { font-size: 3.4cqw; }
+.portrait .ui .buy-foot button, .portrait .ui .msg-foot button { font-size: 5cqw; padding: 3cqw 0; }
+.portrait .ui .msg-card { width: 86cqw; }
+.portrait .ui .rules-card { width: 96%; height: 96%; padding: 4cqw 3cqw 3cqw 4.5cqw; border-radius: 3cqw; border-width: 1.2cqw; }
+.portrait .ui .rules-card::before { inset: -1.2cqw; padding: 1.2cqw; border-radius: 3cqw; }
+.portrait .ui .rules-body { font-size: 3.8cqw; }
+.portrait .ui .rules-head h2 { font-size: 8cqw; }
+.portrait .ui .rules-close { width: 10cqw; font-size: 5cqw; }
+.portrait .ui .replay-bar { font-size: 3.2cqw; padding: 1.4cqw 3cqw; max-width: 92%; top: 1.5cqw; }
+/* intro: the three cards stacked, art beside the text */
+.portrait .ui .intro { grid-template-rows: auto 1fr auto; padding: 6cqw 5cqw 7cqw; gap: 4cqw; }
+.portrait .ui .intro-logo { width: 56cqw; }
+.portrait .ui .intro-cards { grid-template-columns: 1fr; gap: 5cqw; width: 100%; }
+.portrait .ui .intro .icard { aspect-ratio: auto; grid-template-columns: 34cqw 1fr; grid-template-rows: auto auto; column-gap: 4cqw; row-gap: 1.6cqw; justify-items: start; text-align: left; padding: 4cqw; }
+.portrait .ui .intro .icard.mid { translate: none; scale: 1; }
+.portrait .ui .intro .ic-art { grid-row: 1 / 3; height: 26cqw; }
+.portrait .ui .intro .icard h2 { font-size: 7cqw; align-self: end; }
+.portrait .ui .intro .icard p { font-size: 3.4cqw; align-self: start; }
+.portrait .ui .ic-mult { font-size: 5cqw; }
+.portrait .ui .intro-go { font-size: 4.4cqw; }

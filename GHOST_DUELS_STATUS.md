@@ -18,26 +18,38 @@ Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not 
 - [x] **English first:** the page is written in English; German is the translation for `lang=de`.
 - [x] **Bonus buy:** `bonus` bet mode (cost 183×, RTP 95.63% from 100k rounds) that starts Ghost Crates directly, plus the Buy Bonus plaque and confirmation dialog. Follows Stake's `disabledBuyFeature`.
   - The price must match in two places: `buy_cost` in `game_config.py` and `BUY.cost` in `game.js`. After changing the math, rerun `run.py` and set both to the bonus mean payout divided by the base RTP.
+- [x] **Approval checklist fixes** (Engine's review prompt is `engine-review-prompt.md` in the repo root; guideline IDs in brackets):
+  - The page is only the game, scaled to the window; nothing scrolls [227, 193, 195].
+  - Phones held upright get their own layout: the reels on top, a touch panel with every control below [194].
+  - Info opens in-game rules: how to win, full paytable, the bonus, the bonus buy and its cost, RTP and max win per mode, every control and the general disclaimer [24–29, 235, 185].
+  - Social mode (`social=true`) uses Stake.us wording everywhere, including a PLAY patch over the BET label painted in the art; SC and GC show after the amount [77, 78, 188, 225].
+  - Replay: start panel with mode, bet and real cost, then Replay again [171–174].
+  - A launch without a working RGS shows an error dialog [274]; sub-cent amounts keep their digits [273]; no double-tap zoom [223].
+  - The background art is upscaled 4× (Real-ESRGAN) so it stays sharp on large and high-DPI screens.
 
 ## To do
 
 ### Before uploading
 
-- [ ] **Decide on the 25,000× max win.** The biggest of the 1M rounds paid 6,144×, so the advertised max win never happens in the published game.
-  - Option A: install Rust and run the SDK optimiser so a few rounds reach 25,000×.
-  - Option B: lower the advertised max win (`wincap` in `game_config.py`, `MAX_WIN_X` in `game.js`).
+- [ ] **Decide on the 25,000× max win.** The rules now state the real maximum per mode from the lookup tables (base game 6,144×, bonus buy 25,000×), which is what reviewers compare [25]. The cap stays 25,000×.
+  - Option A: install Rust and run the SDK optimiser so a few base rounds reach 25,000×.
+  - Option B: keep it as it is, or lower the cap (`wincap` in `game_config.py`, `MAX_WIN_X` in `game.js`).
+  - Whatever changes, update `MODE_INFO` in `game.js` (RTP and max win per mode) after rerunning `run.py`.
+- [ ] **Studio media:** a 16:9 cover art image next to the 3:4 game tile (the submit form checks both).
 - [ ] **Ask Stake Engine (or check their docs):**
   - Do they accept a frontend that isn't built on their Svelte web-sdk?
   - What unit is `minimumRoundDuration`? The code assumes values under 100 are seconds and larger ones are milliseconds (`ghost-duels-web/rgs.js`).
-  - What is the allowed RTP range, and are there required UI elements (rules screen, RTP display, sound toggle, turbo)?
+  - Does the `etl40b` volatility warning apply to buy modes (see below)?
 - [ ] **Review the pull request** and merge `ghost-duels` into `main`: https://github.com/DavidCheng1/Stake/pull/new/ghost-duels
 
 ### Upload (Stake Engine dashboard)
 
-- [ ] Run the math (see "Run it" below), then upload `math-sdk/games/ghost_duels/library/publish_files/`.
+- [ ] Upload the math and front versions. Build them with the release script (see `release/` locally) or upload directly:
+  - Math: `math-sdk/games/ghost_duels/library/publish_files/` after running the math.
   - The five files are `books_base.jsonl.zst`, `lookUpTable_base_0.csv`, `books_bonus.jsonl.zst`, `lookUpTable_bonus_0.csv` and `index.json`.
-- [ ] Upload the `ghost-duels-web/` folder as the frontend. You can leave its `README.md` out.
-- [ ] Test on Stake with a real session: spin, win, bonus, reload mid-round, and a replay link.
+  - Front: the `ghost-duels-web/` folder without its `README.md`.
+- [ ] Test on Stake with a real session: spin, win, bonus, bonus buy, reload mid-round, a replay link, and social mode.
+- [ ] Before submitting, have a coding agent run `engine-review-prompt.md` again and fix what it reports.
 
 - [ ] **Decide on bonus buys that pay nothing:** about 1 in 5 bought bonuses (22%) pays 0×, because Ghost Crates only pays when 4+ runes touch a crate. That feels harsh at 183×. Options: more lives or a guaranteed minimum in the bought bonus, then reprice.
 - [ ] The SDK's 3-star volatility check flags `etl40b` for the bonus buy (1.10, limit 0.9). The check adds up wins of 40× the mode cost in base-bet units, so for a 183× mode it is not comparable; ask Stake whether it applies to buy modes.
@@ -54,7 +66,7 @@ Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not 
 ### Whenever the math changes
 
 - [ ] Rerun `run.py` and update `self.rtp` in `game_config.py` to the RTP it prints.
-- [ ] Update the display values in `ghost-duels-web/game.js`: the pays in `SYM` and `RTP_TEXT`.
+- [ ] Update the display values in `ghost-duels-web/game.js`: the pays in `SYM`, `RTP_TEXT`, `MODE_INFO` (RTP and max win per mode) and `BUY.cost`.
 
 ## Working from another computer
 

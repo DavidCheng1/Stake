@@ -2017,6 +2017,10 @@ if (RGS.lang === "de" && !RGS.social) {
   set("header h1", "Geisterduell");
   set("header .sub", "Gruppen ab 4 gleichen Symbolen gewinnen, verschwinden und neue fallen nach. Die VS-Walze ist wild und startet ein Duell, sobald eine Gruppe über sie verbunden ist.");
   set("#ptTitle", "Gewinntabelle");
+  set("#hBalLbl", "Guthaben");
+  set("#hBetLbl", "Einsatz");
+  set("#hWinLbl", "Gewinn");
+  set("#hSoundCap", "Ton");
   set("#errTitle", "Verbindungsproblem");
   set("#errReload", "Neu laden");
   set("#replayTitle", "Wiederholung");
@@ -2053,6 +2057,29 @@ if (RGS.social) {
   const patch = div("at art-label"); patch.textContent = "PLAY"; patch.setAttribute("aria-hidden", "true");
   game.insertBefore(patch, document.getElementById("betMinus"));
 }
+
+// ---------- Portrait (phones held upright): reels on top, cropped from the art; a touch panel below ----------
+// The real controls and values move into the panel (listeners and ids stay), and menus and dialogs into a layer
+// sized for the phone; turning the phone back puts everything where it was.
+const PANEL = [["msg", "hMsg"], ["balVal", "hBal"], ["betMinus", "hBetM"], ["betVal", "hBetM"], ["betPlus", "hBetM"], ["winVal", "hWin"], ["multChip", "hWin"],
+  ["turboBtn", "hTurbo"], ["autoBtn", "hAuto"], ["spin", "hSpin"], ["infoBtn", "hInfo"], ["musicBtn", "hSound"], ["buyBtn", "hBuy"]];
+const LAYER = ["autoMenu", "sndMenu", "buyDlg", "rules", "replayBar", "replayDlg", "errDlg", "intro"];
+const homes = new Map(); // a comment marks each element's place in the landscape layout
+for (const id of [...PANEL.map(p => p[0]), ...LAYER]) { const el = document.getElementById(id), mark = document.createComment(id); el.before(mark); homes.set(id, mark); }
+if (RGS.social) document.getElementById("hBetLbl").textContent = "Play";
+let portrait = null;
+function layout() {
+  const p = innerWidth / innerHeight < .8;
+  if (p === portrait) return;
+  portrait = p;
+  document.documentElement.classList.toggle("portrait", p);
+  const put = (id, target) => { const el = document.getElementById(id); if (el) target ? target.appendChild(el) : homes.get(id).after(el); };
+  PANEL.forEach(([id, slot]) => put(id, p && document.getElementById(slot)));
+  LAYER.forEach(id => put(id, p && document.getElementById("ui")));
+  fx.size();
+}
+layout();
+addEventListener("resize", layout);
 
 // ---------- Intro: the three features, until the first click or key press (replays skip it) ----------
 // The click also counts as the gesture that starts the audio, so the music begins as the game appears.

@@ -94,6 +94,25 @@
     <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introGo" tabindex="-1"></div>
   </section>
 
+<!-- Portrait (phones held upright): the game's own controls and values move into this panel below the reels,
+     and its menus and dialogs into the layer after it, sized for the phone. Empty in landscape. -->
+<div class="hud" id="hud" aria-label="Controls">
+  <div class="h-msg" id="hMsg"></div>
+  <div class="h-vals">
+    <div class="h-box"><span class="h-lbl" id="hBalLbl">Balance</span><div class="h-slot" id="hBal"></div></div>
+    <div class="h-box"><span class="h-lbl" id="hBetLbl">Bet</span><div class="h-slot h-bet" id="hBetM"></div></div>
+    <div class="h-box"><span class="h-lbl" id="hWinLbl">Win</span><div class="h-slot" id="hWin"></div></div>
+  </div>
+  <div class="h-ctrls">
+    <div class="h-c" id="hTurbo"></div>
+    <div class="h-c" id="hAuto"><span class="h-cap">Autoplay</span></div>
+    <div class="h-c h-spin" id="hSpin"></div>
+    <div class="h-c" id="hInfo"><span class="h-cap">Info</span></div>
+    <div class="h-c" id="hSound"><span class="h-cap" id="hSoundCap">Sound</span></div>
+  </div>
+  <div class="h-buy" id="hBuy"></div>
+</div>
+<div class="ui" id="ui"></div>
 <script src="rgs.js"></script>
 <script src="game.js"></script>
 </body>
