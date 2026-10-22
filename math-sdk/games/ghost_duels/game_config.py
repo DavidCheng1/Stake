@@ -118,7 +118,7 @@ class GameConfig(Config):
         #   bonus   Ghost Crates: 3-5 FS planted on distinct reels, by the natural odds of 3, 4 or 5 FS given a trigger
         #   bonus4  Big Ghost Crates: exactly 4 FS        bonus5  Mega Ghost Crates: exactly 5 FS
         #   vsspin  VS Spin: a normal spin with at least one VS reel (1-6, by the natural VS reel counts)
-        # Costs (in bets) are set from the simulated books so every mode's RTP matches the base game:
+        # Costs (in bets) are set from the simulated books so every buy mode's RTP is close to 96%:
         # cost = mean payout of the mode / 0.96, rounded to a whole bet (VS Spin to 0.01), and rtp = mean payout / cost,
         # from the 100k-round books. Stake allows at most 96.7% per mode. Rerun run.py after any math change,
         # then set cost and rtp here and in BUYS in ghost-duels-web/game.js.
