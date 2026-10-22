@@ -258,6 +258,14 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 5vw, 
 @keyframes discSpin { to { transform: rotate(360deg); } }
 @keyframes discGlow { 50% { filter: brightness(1.25) drop-shadow(0 0 .7cqw rgb(109 255 179 / .7)); } }
 #infoBtn { left: 82.47%; top: 87.76%; width: 4.88%; height: 8.74%; }
+/* music toggle: a small gold-rimmed seal in the top-right corner, clear of the console art */
+#musicBtn { left: 94%; top: 2.8%; width: 4%; aspect-ratio: 1; z-index: 30; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 35%, #2e363a, #15131a 75%); box-shadow: 0 0 0 .22cqw #c99a3e, 0 0 0 .38cqw #15131a, 0 .5cqw 1cqw rgb(0 0 0 / .6); }
+#musicBtn svg { width: 60%; height: 60%; fill: none; stroke: #c9ffe6; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 .4cqw rgb(109 255 179 / .7)); }
+#musicBtn .spk { fill: #c9ffe6; }
+#musicBtn[aria-pressed="true"] .off, #musicBtn[aria-pressed="false"] .on { display: none; }
+#musicBtn[aria-pressed="false"] svg { stroke: var(--muted); filter: none; }
+#musicBtn[aria-pressed="false"] .spk { fill: var(--muted); }
 .cell.dim, .tall.dim { filter: brightness(.38) saturate(.5); transition: filter .35s; }
 .cell.win::after, .tall.win::after { content: ""; position: absolute; inset: 0; border-radius: 8px; pointer-events: none;
   box-shadow: 0 0 0 2px rgb(var(--wc, 246 196 79)) inset, 0 0 16px rgb(var(--wc, 246 196 79) / .55); animation: frame 1s ease-in-out infinite; }

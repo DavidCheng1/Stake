@@ -1140,6 +1140,49 @@ document.getElementById("infoBtn").addEventListener("click", () => document.getE
 document.getElementById("spin").addEventListener("click", () => play());
 addEventListener("keydown", e => { if (e.code === "Space" && e.target === document.body && !RGS.jurisdiction.disabledSpacebar) { e.preventDefault(); play(); } });
 
+// ---------- Background music: "Spooky Carousel", looped without a gap through Web Audio ----------
+// Browsers only allow sound after a tap or key press, so it starts on the first one. Muting is remembered.
+const musicBtn = document.getElementById("musicBtn");
+const music = (() => {
+  const SRC = "assets/spooky-carousel.mp3", VOL = 0.45, KEY = "ghostDuels.music";
+  let on = true; try { on = localStorage.getItem(KEY) !== "off"; } catch {}
+  let ctx, gain, started = false;
+  const file = fetch(SRC).then(r => { if (!r.ok) throw new Error("music " + r.status); return r.arrayBuffer(); });
+  file.catch(() => {}); // reported in start()
+  const fade = (to, sec) => { const t = ctx.currentTime; gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(gain.gain.value, t); gain.gain.linearRampToValueAtTime(to, t + sec); };
+  async function start() {
+    started = true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = new AC(); ctx.resume(); // created inside the gesture, so it may play
+    gain = ctx.createGain(); gain.gain.value = 0; gain.connect(ctx.destination);
+    try {
+      const buf = await ctx.decodeAudioData(await file);
+      // loop between the first and last audible sample, so silence or decoder padding at the ends never leaves a gap
+      const ch = [...Array(buf.numberOfChannels)].map((_, c) => buf.getChannelData(c));
+      const edge = (i, step) => { while (i >= 0 && i < buf.length && !ch.some(d => Math.abs(d[i]) > 1e-3)) i += step; return Math.min(Math.max(i, 0), buf.length - 1); };
+      const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+      src.loopStart = edge(0, 1) / buf.sampleRate; src.loopEnd = (edge(buf.length - 1, -1) + 1) / buf.sampleRate;
+      src.connect(gain); src.start(0, src.loopStart);
+      if (on && !document.hidden) fade(VOL, 2); else ctx.suspend();
+    } catch (err) { console.warn(err); }
+  }
+  function set(v) {
+    on = v; musicBtn.setAttribute("aria-pressed", String(on));
+    try { localStorage.setItem(KEY, on ? "on" : "off"); } catch {}
+    if (!started) { if (on) start(); return; }
+    if (!ctx) return;
+    if (on) { ctx.resume(); fade(VOL, .4); } else fade(0, .3);
+  }
+  // first gesture starts the music; later ones wake it if the browser suspended it (iOS interruptions)
+  const wake = () => { if (!on) return; if (!started) start(); else if (ctx && ctx.state !== "running" && !document.hidden) ctx.resume(); };
+  addEventListener("pointerdown", wake); addEventListener("keydown", wake);
+  document.addEventListener("visibilitychange", () => { if (!ctx) return; if (document.hidden) ctx.suspend(); else if (on) ctx.resume(); });
+  musicBtn.setAttribute("aria-pressed", String(on));
+  return { toggle: () => set(!on) };
+})();
+musicBtn.addEventListener("click", () => music.toggle());
+
 // ---------- Start: authenticate (or load a replay), apply bet levels and rules, resume an open round ----------
 async function boot() {
   lock(true);
@@ -1643,6 +1686,7 @@ if (RGS.lang !== "de") {
   set("#amClose", "Close", "aria-label");
   set("#spin", "Spin", "aria-label");
   set("#infoBtn", "Show paytable", "aria-label");
+  set("#musicBtn", "Music", "aria-label");
 }
 
 boot();

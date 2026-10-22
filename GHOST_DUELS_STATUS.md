@@ -39,7 +39,8 @@ Last updated: 2026-10-20. All work is on the `ghost-duels` branch, which is not 
 - [ ] Resume continues from the saved event instead of replaying the round from the start.
 - [ ] Bonus buy mode: a new bet mode in `game_config.py` plus a buy button in the frontend.
 - [ ] More languages: right now German is shown for `lang=de` and English for everything else.
-- [ ] Sound: the prototype has none.
+- [x] Background music: "Spooky Carousel" loops gaplessly, with a mute toggle in the top-right corner.
+- [ ] Sound effects (spin, wins, duels, free spins) and lowering the music during big wins.
 
 ### Whenever the math changes
 

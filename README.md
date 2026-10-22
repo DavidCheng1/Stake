@@ -122,14 +122,14 @@ The generated build output is for local validation and deployment preparation. B
 
 The math SDK defines game rules, symbols, events, simulations, and win distributions. Its detailed documentation is in [`math-sdk/docs/`](math-sdk/docs/) and its own [`math-sdk/README.md`](math-sdk/README.md).
 
-From the repository root, create and activate a Python virtual environment:
+From the repository root, create the Python virtual environment in `math-sdk\env` (the same steps as `make setup`, and the path the commands above use):
 
 ```powershell
 cd math-sdk
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m venv env
+env\Scripts\python.exe -m pip install --upgrade pip
+env\Scripts\python.exe -m pip install -r requirements.txt
+env\Scripts\python.exe -m pip install -e .
 ```
 
 The included math examples are under [`math-sdk/games/`](math-sdk/games/). Use the documentation in [`math-sdk/docs/math_docs/`](math-sdk/docs/math_docs/) to understand the game-state format, events, tests, and simulations before creating a new game math model.
