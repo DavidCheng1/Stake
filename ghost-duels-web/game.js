@@ -61,6 +61,8 @@ const SYM_IDS = Object.keys(SYM).filter(id => SYM[id].w > 0), SYM_CUM = []; let 
 for (const id of SYM_IDS) { SYM_TOT += SYM[id].w; SYM_CUM.push(SYM_TOT); }
 const randSym = () => { const x = Math.random() * SYM_TOT; for (let i = 0; i < SYM_CUM.length; i++) if (x < SYM_CUM[i]) return SYM_IDS[i]; return SYM_IDS[0]; };
 const MAX_WIN_X = 25000;
+// Bonus buy bet mode; cost must match the "bonus" mode in math-sdk/games/ghost_duels/game_config.py (buy_cost)
+const BUY = { mode: "BONUS", cost: 183 };
 // RTP of the published lookup table (math-sdk/games/ghost_duels, 1M spins)
 const RTP_TEXT = (95.67).toLocaleString(RGS.lang) + " %";
 
@@ -1185,19 +1187,20 @@ const spinBtn = document.getElementById("spin"), autoBtn = document.getElementBy
 let autoOn = false, loading = true;
 const canSkip = () => !loading && !RGS.jurisdiction.disabledSlamstop;
 // during a round Spin stays clickable: it skips the rest of the round instead of starting a new one
-const lock = on => { busy = on; buttons.forEach(b => b.disabled = on); spinBtn.disabled = on && !canSkip(); if (!on) { slam = false; updateBet(); } };
+const lock = on => { busy = on; buttons.forEach(b => b.disabled = on); spinBtn.disabled = on && !canSkip(); if (!on) { slam = false; updateBet(); } updateBuy(); };
 // slam stop: a click on Spin or the board (or Space) during a round plays the rest of it SLAM times faster
 function skip() { if (!busy || slam || !canSkip()) return; slam = true; hurry(); }
 
-// Wallet flow: play debits the bet and returns the book; end-round credits a win.
-async function play() {
+// Wallet flow: play debits the bet (x the mode's cost) and returns the book; end-round credits a win.
+async function play(mode = "BASE") {
   if (busy || RGS.replay) return;
-  if (balance < bet) { say(i18n("Guthaben reicht nicht für diesen Einsatz", "Balance too low for this bet")); if (autoOn) stopAuto(); return; }
+  const cost = bet * (mode === BUY.mode ? BUY.cost : 1);
+  if (balance < cost) { say(i18n("Guthaben reicht nicht für diesen Einsatz", "Balance too low for this bet")); if (autoOn) stopAuto(); return; }
   lock(true); spinBtn.classList.add("turning");
   later(() => spinBtn.classList.remove("turning"), 1600);
   const t0 = performance.now();
   try {
-    const res = await RGS.play(bet);
+    const res = await RGS.play(bet, mode);
     balance = res.balance; updateBal();
     await runRound(res.round, false);
     const wait = RGS.minimumRoundDuration - (performance.now() - t0);
@@ -1218,7 +1221,7 @@ async function runRound(round, resumed) {
 const autoMenu = document.getElementById("autoMenu"), autoLeftEl = document.getElementById("autoLeft"), amStart = document.getElementById("amStart");
 let autoLeft = 0, autoChoice = 0;
 function showAutoLeft() { autoLeftEl.hidden = !autoOn; autoLeftEl.textContent = autoLeft === Infinity ? "∞" : autoLeft; }
-function stopAuto(msg) { autoOn = false; autoLeft = 0; autoBtn.setAttribute("aria-pressed", "false"); showAutoLeft(); if (msg) say(msg); }
+function stopAuto(msg) { autoOn = false; autoLeft = 0; autoBtn.setAttribute("aria-pressed", "false"); showAutoLeft(); updateBuy(); if (msg) say(msg); }
 async function autoLoop() {
   while (autoOn && autoLeft > 0) {
     if (balance < bet) { stopAuto(i18n("Guthaben reicht nicht · Autoplay beendet", "Balance too low · Autoplay ended")); break; }
@@ -1244,7 +1247,7 @@ qa(autoMenu, "[data-n]").forEach(b => {
 amStart.addEventListener("click", () => {
   if (!autoChoice) return;
   openAutoMenu(false);
-  autoOn = true; autoLeft = autoChoice; autoBtn.setAttribute("aria-pressed", "true"); showAutoLeft();
+  autoOn = true; autoLeft = autoChoice; autoBtn.setAttribute("aria-pressed", "true"); showAutoLeft(); updateBuy();
   say(autoChoice === Infinity ? i18n("Autoplay · endlos", "Autoplay · endless") : `Autoplay · ${autoChoice} Spins`);
   if (!busy) autoLoop(); else (async () => { while (busy) await sleep(200); autoLoop(); })();
 });
@@ -1267,6 +1270,27 @@ turboBtn.addEventListener("click", () => {
   if (!busy) say(turbo ? i18n("Turbo an", "Turbo on") : i18n("Turbo aus", "Turbo off"));
 });
 showTurbo();
+
+// ---------- Bonus buy: pay BUY.cost bets to start the Ghost Crates bonus right away ----------
+const buyBtn = document.getElementById("buyBtn"), buyDlg = document.getElementById("buyDlg"), buyGo = document.getElementById("buyGo");
+q(buyBtn, ".bb-fs").appendChild(makeSym("fs", { lite: true }));
+["f1", "f3", "f2"].forEach(cls => { const s2 = makeSym("fs"); s2.classList.add(cls); document.getElementById("buyArt").appendChild(s2); });
+function updateBuy() { buyBtn.disabled = busy || autoOn || loading || RGS.replay; }
+function openBuy(open) {
+  buyDlg.hidden = !open;
+  if (!open) return buyBtn.focus();
+  const price = bet * BUY.cost, short = balance < price, note = document.getElementById("buyNote");
+  document.getElementById("buyPrice").textContent = money(price);
+  document.getElementById("buyPriceX").textContent = `${BUY.cost.toLocaleString(RGS.lang)}× ${i18n("Einsatz", "bet")} · ${money(bet)}`;
+  note.hidden = !short; note.textContent = i18n("Guthaben reicht nicht · senke den Einsatz", "Balance too low · lower the bet");
+  buyGo.disabled = short; (short ? document.getElementById("buyCancel") : buyGo).focus();
+  if (!RM) q(buyDlg, ".buy-card").animate([{ opacity: 0, transform: "scale(.85)" }, { opacity: 1, transform: "none" }], { duration: 280, easing: "cubic-bezier(.2,.9,.3,1.2)" });
+}
+buyBtn.addEventListener("click", () => openBuy(true));
+document.getElementById("buyCancel").addEventListener("click", () => openBuy(false));
+buyDlg.addEventListener("click", e => { if (e.target === buyDlg) openBuy(false); });
+addEventListener("keydown", e => { if (e.key === "Escape" && !buyDlg.hidden) openBuy(false); });
+buyGo.addEventListener("click", () => { openBuy(false); play(BUY.mode); });
 
 // ---------- Sound: one Web Audio graph with a music bus and an effects bus, each with its own volume ----------
 // Browsers only allow sound after a tap or key press, so everything starts on the first one. Volumes and mute are remembered.
@@ -1384,7 +1408,7 @@ addEventListener("keydown", e => { if (e.key === "Escape" && !sndMenu.hidden) { 
 document.addEventListener("pointerdown", e => { if (!sndMenu.hidden && !sndMenu.contains(e.target) && !musicBtn.contains(e.target)) openSndMenu(false); });
 showSound();
 // every button on the console and in the menus clicks (disabled buttons get no click event)
-document.addEventListener("click", e => { if (e.target.closest(".hot, .am-grid button, .am-foot button")) sound.click(); });
+document.addEventListener("click", e => { if (e.target.closest(".hot, .buy-btn, .am-grid button, .am-foot button")) sound.click(); });
 
 // ---------- Start: authenticate (or load a replay), apply bet levels and rules, resume an open round ----------
 async function boot() {
@@ -1396,6 +1420,7 @@ async function boot() {
     betIdx = Math.max(0, BETS.indexOf(s.defaultBet));
     if (s.jurisdiction.disabledAutoplay) autoBtn.hidden = true;
     if (s.jurisdiction.disabledTurbo) { turbo = false; turboBtn.hidden = true; }
+    if (s.jurisdiction.disabledBuyFeature) buyBtn.hidden = true;
     loading = false;
     updateBal(); updateBet(); winVal.textContent = money(0);
     await introDone; // an interrupted round resumes only once the player has seen the intro
@@ -1897,6 +1922,13 @@ if (RGS.lang === "de") {
   set("#lblMusic", "Musik");
   set("#lblSfx", "Effekte");
   set("#muteAll", "Stumm");
+  set("#buyBtn .bb-top", "Bonus");
+  set("#buyBtn .bb-main", "Kaufen");
+  set("#buyTitle", "Geisterkisten");
+  set("#buyText", "Startet den Geisterkisten-Bonus sofort: 3 oder mehr FS werden zu Kisten mit Multiplikatoren.");
+  set("#buyPriceLbl", "Preis");
+  set("#buyGo", "Kaufen");
+  set("#buyCancel", "Abbrechen");
 }
 
 // ---------- Intro: the three features, until the first click or key press (replays skip it) ----------

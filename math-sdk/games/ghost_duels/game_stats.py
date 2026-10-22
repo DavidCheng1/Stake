@@ -1,4 +1,5 @@
-"""RTP and hit-rate summary from the published lookup table (weights are all 1 without optimization)."""
+"""RTP and hit-rate summary from the published lookup table (weights are all 1 without optimization).
+RTP is the mean payout divided by the mode cost (1 for base, the buy price for the bonus buy)."""
 
 import json
 import os
@@ -11,10 +12,13 @@ def print_stats(config, mode="base"):
     pays = [int(line.split(",")[2]) / 100 for line in open(lut_path, encoding="UTF-8")]
     free = [float(line.split(",")[3]) for line in open(split_path, encoding="UTF-8")]
     n = len(pays)
+    cost = next(bm.get_cost() for bm in config.bet_modes if bm.get_name() == mode)
     stats = {
         "mode": mode,
+        "cost": cost,
         "spins": n,
-        "rtp": round(sum(pays) / n, 6),
+        "rtp": round(sum(pays) / n / cost, 6),
+        "mean_payout": round(sum(pays) / n, 3),
         "rtp_base": round((sum(pays) - sum(free)) / n, 6),
         "rtp_bonus": round(sum(free) / n, 6),
         "std_dev": round(statistics.pstdev(pays), 3),

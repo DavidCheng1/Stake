@@ -11,14 +11,15 @@ from src.write_data.write_configs import generate_configs
 
 if __name__ == "__main__":
 
-    num_threads = 10
-    batching_size = 50000
+    num_threads = 5  # fits a 16 GB machine and splits 1M / 100k into whole batches; each simulation seeds itself
+    batching_size = 20000  # books held in memory per worker before writing; results do not depend on it
     compression = True
     profiling = False
 
-    # Pass a number to override, e.g. `python games/ghost_duels/run.py 10000` for a quick check
+    # Pass numbers to override (base, then bonus buy), e.g. `python games/ghost_duels/run.py 10000 2000` for a quick check
     num_sim_args = {
         "base": int(sys.argv[1]) if len(sys.argv) > 1 else int(1e6),
+        "bonus": int(sys.argv[2]) if len(sys.argv) > 2 else int(1e5),
     }
 
     # Optimization needs Rust/cargo and a forced-criteria setup; this game publishes its natural distribution.
@@ -49,7 +50,8 @@ if __name__ == "__main__":
     generate_configs(gamestate)
 
     if run_conditions["run_analysis"]:
-        print_stats(config)
+        for bm in config.bet_modes:
+            print_stats(config, bm.get_name())
 
     if run_conditions["run_format_checks"]:
         execute_all_tests(config)

@@ -29,6 +29,7 @@
     </div>
     <div class="at msg" id="msg" aria-live="polite"><span class="lives" id="lives" hidden><i class="life"></i><i class="life"></i><i class="life"></i></span><span id="msgText">Press Spin</span></div>
     <button type="button" class="hot turbo" id="turboBtn" aria-label="Turbo" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 5 13.5h6L9.5 22 19 9.5h-6.2z"/></svg><span class="tb-lbl">Turbo</span></button>
+    <button type="button" class="buy-btn" id="buyBtn"><span class="bb-fs" aria-hidden="true"></span><span class="bb-txt"><span class="bb-top">Buy</span><span class="bb-main">Bonus</span></span></button>
     <div class="at val" id="balVal">1.000,00 €</div>
     <button type="button" class="hot" id="betMinus" aria-label="Decrease bet"></button>
     <div class="at val" id="betVal">1,00</div>
@@ -59,6 +60,17 @@
     <div class="banner" id="banner" hidden><h3 id="bTitle"></h3><p id="bSub"></p></div>
     <canvas class="fx" id="fx"></canvas>
     <canvas class="motes" id="motes" aria-hidden="true"></canvas>
+    <div class="buy-dlg" id="buyDlg" role="dialog" aria-modal="true" aria-labelledby="buyTitle" hidden>
+      <div class="icard buy-card">
+        <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
+        <div class="ic-art buy-art" id="buyArt"></div>
+        <h2 id="buyTitle">Ghost Crates</h2>
+        <p id="buyText">Starts the Ghost Crates bonus right away: 3 or more FS turn into crates with multipliers.</p>
+        <div class="buy-price"><span id="buyPriceLbl">Price</span><b id="buyPrice"></b><small id="buyPriceX"></small></div>
+        <p class="buy-note" id="buyNote" hidden></p>
+        <div class="am-foot buy-foot"><button type="button" id="buyGo" class="am-start">Buy</button><button type="button" id="buyCancel">Cancel</button></div>
+      </div>
+    </div>
     <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introGo" tabindex="-1"></div>
   </section>
 

@@ -16,6 +16,8 @@ Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not 
 - [x] **Presentation:** intro screen with the three features (click to continue); the VS reel lands small and bursts open into a framed reel with the Skull King and smoke; spooky multiplier lettering; connected groups light up as one glowing shape instead of lines; the big Skull King stands behind the dashboard.
 - [x] **Turbo and skip:** the bolt button on the dashboard plays rounds about twice as fast; a click on the board or Spin during a round skips the rest of it. Both respect Stake's `disabledTurbo` and `disabledSlamstop`.
 - [x] **English first:** the page is written in English; German is the translation for `lang=de`.
+- [x] **Bonus buy:** `bonus` bet mode (cost 183×, RTP 95.63% from 100k rounds) that starts Ghost Crates directly, plus the Buy Bonus plaque and confirmation dialog. Follows Stake's `disabledBuyFeature`.
+  - The price must match in two places: `buy_cost` in `game_config.py` and `BUY.cost` in `game.js`. After changing the math, rerun `run.py` and set both to the bonus mean payout divided by the base RTP.
 
 ## To do
 
@@ -33,14 +35,16 @@ Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not 
 ### Upload (Stake Engine dashboard)
 
 - [ ] Run the math (see "Run it" below), then upload `math-sdk/games/ghost_duels/library/publish_files/`.
-  - The three files are `books_base.jsonl.zst`, `lookUpTable_base_0.csv` and `index.json`.
+  - The five files are `books_base.jsonl.zst`, `lookUpTable_base_0.csv`, `books_bonus.jsonl.zst`, `lookUpTable_bonus_0.csv` and `index.json`.
 - [ ] Upload the `ghost-duels-web/` folder as the frontend. You can leave its `README.md` out.
 - [ ] Test on Stake with a real session: spin, win, bonus, reload mid-round, and a replay link.
+
+- [ ] **Decide on bonus buys that pay nothing:** about 1 in 5 bought bonuses (22%) pays 0×, because Ghost Crates only pays when 4+ runes touch a crate. That feels harsh at 183×. Options: more lives or a guaranteed minimum in the bought bonus, then reprice.
+- [ ] The SDK's 3-star volatility check flags `etl40b` for the bonus buy (1.10, limit 0.9). The check adds up wins of 40× the mode cost in base-bet units, so for a 183× mode it is not comparable; ask Stake whether it applies to buy modes.
 
 ### Nice to have
 
 - [ ] Resume continues from the saved event instead of replaying the round from the start.
-- [ ] **Bonus buy (in progress):** a `bonus` bet mode that starts the Ghost Crates bonus directly, priced so its RTP matches the base game, plus a Buy Bonus button with a confirmation dialog. The test server already serves every mode in `index.json`.
 - [ ] More languages: right now German is shown for `lang=de` and English for everything else.
 - [x] The local test server no longer drops image requests (its connection backlog was 5).
 - [x] Background music: "Spooky Carousel" loops gaplessly. The speaker in the top-right corner opens Music and Effects volume sliders and a mute.
@@ -74,7 +78,7 @@ Everything is in the repo **except** the generated math files, which are too big
    ```
 4. Run it:
    ```powershell
-   env\Scripts\python.exe games\ghost_duels\run.py   # about 2 minutes, writes library/publish_files
+   env\Scripts\python.exe games\ghost_duels\run.py   # about 7 minutes (base + bonus buy), writes library/publish_files
    cd ..
    math-sdk\env\Scripts\python.exe tools\mock_rgs.py   # then open the printed URL
    ```

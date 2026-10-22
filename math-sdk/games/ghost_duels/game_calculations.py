@@ -56,6 +56,20 @@ class GameCalculations(Executables):
         self.vs_reels = self.pick_vs_reels()
         for c in self.vs_reels:
             self.board[c] = ["vs"] * rows
+        if self.get_current_distribution_conditions()["force_freegame"]:
+            self.plant_buy_fs()
+
+    def plant_buy_fs(self):
+        """Bonus buy: replace the board's FS with 3-5 FS on distinct non-VS reels, one per reel."""
+        cols, rows = self.config.num_reels, self.config.num_rows[0]
+        for c in range(cols):
+            for r in range(rows):
+                if self.board[c][r] == "fs":
+                    self.board[c][r] = self.draw_symbol(exclude=("fs",))
+        free = [c for c in range(cols) if c not in self.vs_reels]
+        n = min(weighted(self.config.buy_fs), len(free))
+        for c in random.sample(free, n):
+            self.board[c][random.randrange(rows)] = "fs"
 
     # ---------- Clusters ----------
     def find_clusters(self):

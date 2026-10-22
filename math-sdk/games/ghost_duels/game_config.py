@@ -114,6 +114,12 @@ class GameConfig(Config):
         }
         self.anticipation_triggers = {self.basegame_type: self.bonus_min_fs - 1, self.freegame_type: 0}
 
+        # Bonus buy: the round starts on a normal board with FS planted on distinct reels.
+        # FS count weights follow the natural odds of 3, 4 or 5 FS given that the bonus triggered.
+        self.buy_fs = [(3, 961), (4, 38.7), (5, 0.9)]
+        # Price in bets, set from the simulated bonus books so the mode RTP matches the base game
+        self.buy_cost = 183.0
+
         # No reelstrips: every cell is drawn independently by symbol weight.
         # A single unforced distribution keeps lookup weights at 1, so the simulated RTP is the real RTP.
         self.bet_modes = [
@@ -133,6 +139,26 @@ class GameConfig(Config):
                             "reel_weights": {self.basegame_type: {}, self.freegame_type: {}},
                             "force_wincap": False,
                             "force_freegame": False,
+                        },
+                    ),
+                ],
+            ),
+            BetMode(
+                name="bonus",
+                cost=self.buy_cost,
+                rtp=self.rtp,
+                max_win=self.wincap,
+                auto_close_disabled=False,
+                is_feature=False,
+                is_buybonus=True,
+                distributions=[
+                    Distribution(
+                        criteria="freegame",
+                        quota=1.0,
+                        conditions={
+                            "reel_weights": {self.basegame_type: {}, self.freegame_type: {}},
+                            "force_wincap": False,
+                            "force_freegame": True,
                         },
                     ),
                 ],

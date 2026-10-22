@@ -524,3 +524,33 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 5vw, 
 .intro-go { font: 800 1.8cqw/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; color: #c9ffe6; text-shadow: 0 0 1cqw rgb(109 255 179 / .8), 0 .15cqw 0 #000; animation: goPulse 1.6s ease-in-out infinite; }
 @keyframes goPulse { 50% { opacity: .4; } }
 @media (prefers-reduced-motion: reduce) { .intro-logo, .intro-go { animation: none !important; } }
+
+/* Bonus buy: a gold plaque docked on the dashboard's left wing, and its confirmation dialog */
+.buy-btn { all: unset; box-sizing: border-box; position: absolute; left: 8.6%; top: 71%; width: 15%; height: 10.2%; z-index: 12; cursor: pointer;
+  display: grid; grid-template-columns: auto 1fr; align-items: center; gap: .5cqw; padding: 0 .9cqw 0 .5cqw; border-radius: 1cqw;
+  background: url(assets/img0.webp) 40% 30% / 260% auto, #2e363a; border: .3cqw solid #c99a3e;
+  box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .7), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 1.4cqw rgb(255 79 210 / .45);
+  animation: buyGlow 2.2s ease-in-out infinite; transition: transform .1s, filter .2s; }
+@keyframes buyGlow { 50% { box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .7), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 2.4cqw rgb(255 79 210 / .8); } }
+.buy-btn:hover { filter: brightness(1.15); }
+.buy-btn:active { transform: scale(.95); }
+.buy-btn:focus-visible { outline: .3cqw solid var(--ghost); outline-offset: .2cqw; }
+.buy-btn:disabled { cursor: default; filter: grayscale(.85) brightness(.7); animation: none; }
+.bb-fs { width: 3.6cqw; aspect-ratio: 1; display: block; }
+.bb-fs .sym { width: 100%; }
+.bb-txt { display: grid; justify-items: center; line-height: .9; }
+.bb-top { font: 800 1.15cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: #e9e2c8; text-shadow: 0 .1cqw 0 #000; }
+.bb-main { font: 400 2.5cqw/1 var(--display); letter-spacing: .03em; color: #ffd877; -webkit-text-stroke: .08em #2a1700; paint-order: stroke fill; text-shadow: 0 0 .3em rgb(255 200 80 / .7), 0 .1em 0 #1c0f00; }
+.buy-dlg { position: absolute; inset: 0; z-index: 55; display: grid; place-items: center; background: rgb(3 10 9 / .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.buy-card { width: 27cqw; aspect-ratio: auto; grid-template-rows: 13cqw auto auto auto auto auto; cursor: default; }
+.buy-art { --c: 255 79 210; }
+.buy-art .f1 { left: 21%; width: 36%; top: 54%; rotate: -16deg; } .buy-art .f2 { left: 50%; width: 44%; z-index: 2; } .buy-art .f3 { left: 79%; width: 36%; top: 54%; rotate: 16deg; }
+.buy-price { display: grid; justify-items: center; gap: .2cqw; margin-top: .3cqw; }
+.buy-price span { font: 800 1.1cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.buy-price b { font: 400 3.6cqw/1 var(--display); letter-spacing: .03em; color: #dfffee; -webkit-text-stroke: .08em #04120d; paint-order: stroke fill; text-shadow: 0 0 .3em rgb(109 255 179 / .9); }
+.buy-price small { font: 700 1.1cqw/1 var(--ui); letter-spacing: .06em; color: #e9e2c8; }
+.icard p.buy-note { color: #ff9a7a; }
+.buy-foot { width: 100%; grid-template-columns: 1fr 1fr; margin-top: .4cqw; }
+.buy-foot button { font-size: 1.6cqw; padding: .8cqw 0; }
+.buy-foot button:disabled { opacity: .45; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .buy-btn { animation: none !important; } }
