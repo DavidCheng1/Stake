@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- Source of cover-16x9.png (1920x1080), built from the game's own art. Re-render from the repo root with:
+  & "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new --hide-scrollbars --allow-file-access-from-files --window-size=1920,1080 --virtual-time-budget=4000 --screenshot="$PWD\media\cover-16x9.png" "file:///$($PWD -replace '\','/')/media/cover-16x9.html"
+-->
+<html><head><meta charset="utf-8"><style>
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #071a17; }
+  .c { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+  /* zoomed to the top of the art so the game's control bar is cropped off */
+  .bg { position: absolute; left: -12%; top: -4%; width: 124%; height: 150%; object-fit: cover; object-position: 50% 0; filter: brightness(.66) saturate(1.1) blur(2.5px); }
+  .shade { position: absolute; inset: 0; background:
+    radial-gradient(60% 70% at 38% 55%, transparent 0 40%, rgba(2,12,10,.55) 100%),
+    linear-gradient(0deg, rgba(3,14,12,.92), rgba(3,14,12,.5) 22%, transparent 45%); }
+  .glow { position: absolute; border-radius: 50%; filter: blur(60px); mix-blend-mode: screen; }
+  .king { position: absolute; right: 40px; bottom: -40px; height: 1060px; filter: drop-shadow(0 0 40px rgba(89,255,156,.45)); }
+  .logo { position: absolute; left: 150px; top: 70px; width: 820px; filter: drop-shadow(0 10px 30px rgba(0,0,0,.6)); }
+  .duel { position: absolute; left: 190px; top: 640px; width: 760px; height: 330px; }
+  .duel img { position: absolute; filter: drop-shadow(0 8px 18px rgba(0,0,0,.6)); }
+  .vs { left: 255px; top: 20px; width: 250px; z-index: 2; filter: drop-shadow(0 0 30px rgba(120,220,255,.8)) !important; }
+  .blue { left: 0; top: 40px; width: 270px; transform: rotate(-8deg); }
+  .witch { right: 0; top: 40px; width: 270px; transform: rotate(8deg); }
+  .mult { position: absolute; left: 50%; top: 255px; transform: translateX(-50%); font: 90px Creepster, cursive; color: #ffd84a;
+    -webkit-text-stroke: 4px #4a1300; text-shadow: 0 0 24px rgba(255,140,40,.9), 0 6px 0 #4a1300; letter-spacing: 4px; z-index: 3; }
+  .side { position: absolute; width: 190px; filter: drop-shadow(0 8px 18px rgba(0,0,0,.6)); }
+</style>
+<link rel="stylesheet" href="../ghost-duels-web/fonts/fonts.css">
+</head><body><div class="c">
+  <img class="bg" src="../ghost-duels-web/assets/bg.webp" alt="">
+  <div class="shade"></div>
+  <div class="glow" style="left:1180px;top:260px;width:620px;height:620px;background:rgba(89,255,156,.28)"></div>
+  <div class="glow" style="left:260px;top:620px;width:620px;height:380px;background:rgba(211,107,255,.3)"></div>
+  <img class="king" src="../ghost-duels-web/assets/img23.webp" alt="">
+  <img class="logo" src="../ghost-duels-web/assets/logo.webp" alt="Ghost Duels">
+  <img class="side" src="../ghost-duels-web/assets/devil.webp" style="left:30px;top:560px;transform:rotate(-12deg)" alt="">
+  <img class="side" src="../ghost-duels-web/assets/pirate.webp" style="left:960px;top:600px;transform:rotate(10deg)" alt="">
+  <img class="side" src="../ghost-duels-web/assets/fs.webp" style="left:1000px;top:860px;width:150px;transform:rotate(-8deg)" alt="">
+  <div class="duel">
+    <img class="blue" src="../ghost-duels-web/assets/blue.webp" alt="">
+    <img class="vs" src="../ghost-duels-web/assets/vs.webp" alt="">
+    <img class="witch" src="../ghost-duels-web/assets/witch.webp" alt="">
+    <div class="mult">×1000</div>
+  </div>
+</div></body></html>
