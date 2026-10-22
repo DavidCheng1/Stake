@@ -119,13 +119,13 @@ class GameConfig(Config):
         #   bonus4  Big Ghost Crates: exactly 4 FS        bonus5  Mega Ghost Crates: exactly 5 FS
         #   vsspin  VS Spin: a normal spin with at least one VS reel (1-6, by the natural VS reel counts)
         # Costs (in bets) are set from the simulated books so every mode's RTP matches the base game:
-        # cost = mean payout of the mode / base RTP, rounded to a whole bet. Rerun run.py after any math change.
-        # bonus4, bonus5 and vsspin are provisional (from a 500-round test) until the full run prices them.
+        # cost = mean payout of the mode / base RTP, rounded to a whole bet (to 0.1 below 20 bets).
+        # Rerun run.py after any math change, then set the costs here and in BUYS in ghost-duels-web/game.js.
         self.buy_modes = {
             "bonus": {"cost": 183.0, "buy_fs": [(3, 961), (4, 38.7), (5, 0.9)]},
-            "bonus4": {"cost": 310.0, "buy_fs": [(4, 1)]},
-            "bonus5": {"cost": 590.0, "buy_fs": [(5, 1)]},
-            "vsspin": {"cost": 5.0, "force_vs": True},
+            "bonus4": {"cost": 325.0, "buy_fs": [(4, 1)]},
+            "bonus5": {"cost": 652.0, "buy_fs": [(5, 1)]},
+            "vsspin": {"cost": 5.3, "force_vs": True},
         }
 
         # No reelstrips: every cell is drawn independently by symbol weight.
