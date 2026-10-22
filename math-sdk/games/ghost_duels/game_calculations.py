@@ -36,8 +36,8 @@ class GameCalculations(Executables):
                 return sym
 
     def pick_vs_reels(self):
-        """Most spins have no VS reel; otherwise 1-6 distinct reels."""
-        if random.random() >= self.config.vs_chance:
+        """Most spins have no VS reel; otherwise 1-6 distinct reels. VS Spin always has at least one."""
+        if not self.get_current_distribution_conditions().get("force_vs") and random.random() >= self.config.vs_chance:
             return []
         n = weighted(self.config.vs_count)
         return sorted(random.sample(range(self.config.num_reels), n))
@@ -56,18 +56,22 @@ class GameCalculations(Executables):
         self.vs_reels = self.pick_vs_reels()
         for c in self.vs_reels:
             self.board[c] = ["vs"] * rows
-        if self.get_current_distribution_conditions()["force_freegame"]:
-            self.plant_buy_fs()
+        buy_fs = self.get_current_distribution_conditions().get("buy_fs")
+        if buy_fs:
+            self.plant_buy_fs(weighted(buy_fs))
 
-    def plant_buy_fs(self):
-        """Bonus buy: replace the board's FS with 3-5 FS on distinct non-VS reels, one per reel."""
+    def plant_buy_fs(self, n):
+        """Bonus buy: replace the board's FS with n FS on distinct non-VS reels, one per reel.
+        If VS reels leave fewer than n free reels, the extra VS reels turn back into normal reels."""
         cols, rows = self.config.num_reels, self.config.num_rows[0]
+        while cols - len(self.vs_reels) < n:
+            c = self.vs_reels.pop(random.randrange(len(self.vs_reels)))
+            self.board[c] = [self.draw_symbol(exclude=("fs",)) for _ in range(rows)]
         for c in range(cols):
             for r in range(rows):
                 if self.board[c][r] == "fs":
                     self.board[c][r] = self.draw_symbol(exclude=("fs",))
         free = [c for c in range(cols) if c not in self.vs_reels]
-        n = min(weighted(self.config.buy_fs), len(free))
         for c in random.sample(free, n):
             self.board[c][random.randrange(rows)] = "fs"
 

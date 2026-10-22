@@ -114,55 +114,43 @@ class GameConfig(Config):
         }
         self.anticipation_triggers = {self.basegame_type: self.bonus_min_fs - 1, self.freegame_type: 0}
 
-        # Bonus buy: the round starts on a normal board with FS planted on distinct reels.
-        # FS count weights follow the natural odds of 3, 4 or 5 FS given that the bonus triggered.
-        self.buy_fs = [(3, 961), (4, 38.7), (5, 0.9)]
-        # Price in bets, set from the simulated bonus books so the mode RTP matches the base game
-        self.buy_cost = 183.0
+        # Buyable modes. Each round starts on a normal board.
+        #   bonus   Ghost Crates: 3-5 FS planted on distinct reels, by the natural odds of 3, 4 or 5 FS given a trigger
+        #   bonus4  Big Ghost Crates: exactly 4 FS        bonus5  Mega Ghost Crates: exactly 5 FS
+        #   vsspin  VS Spin: a normal spin with at least one VS reel (1-6, by the natural VS reel counts)
+        # Costs (in bets) are set from the simulated books so every mode's RTP matches the base game:
+        # cost = mean payout of the mode / base RTP, rounded to a whole bet. Rerun run.py after any math change.
+        # bonus4, bonus5 and vsspin are provisional (from a 500-round test) until the full run prices them.
+        self.buy_modes = {
+            "bonus": {"cost": 183.0, "buy_fs": [(3, 961), (4, 38.7), (5, 0.9)]},
+            "bonus4": {"cost": 310.0, "buy_fs": [(4, 1)]},
+            "bonus5": {"cost": 590.0, "buy_fs": [(5, 1)]},
+            "vsspin": {"cost": 5.0, "force_vs": True},
+        }
 
         # No reelstrips: every cell is drawn independently by symbol weight.
-        # A single unforced distribution keeps lookup weights at 1, so the simulated RTP is the real RTP.
-        self.bet_modes = [
-            BetMode(
-                name="base",
-                cost=1.0,
+        # A single unforced distribution per mode keeps lookup weights at 1, so the simulated RTP is the real RTP.
+        def mode(name, cost, conditions):
+            return BetMode(
+                name=name,
+                cost=cost,
                 rtp=self.rtp,
                 max_win=self.wincap,
                 auto_close_disabled=False,
-                is_feature=True,
-                is_buybonus=False,
+                is_feature=name == "base",
+                is_buybonus=name != "base",
                 distributions=[
                     Distribution(
-                        criteria="natural",
+                        criteria="natural" if name == "base" else name,
                         quota=1.0,
-                        conditions={
-                            "reel_weights": {self.basegame_type: {}, self.freegame_type: {}},
-                            "force_wincap": False,
-                            "force_freegame": False,
-                        },
+                        conditions={"reel_weights": {self.basegame_type: {}, self.freegame_type: {}}, "force_wincap": False, **conditions},
                     ),
                 ],
-            ),
-            BetMode(
-                name="bonus",
-                cost=self.buy_cost,
-                rtp=self.rtp,
-                max_win=self.wincap,
-                auto_close_disabled=False,
-                is_feature=False,
-                is_buybonus=True,
-                distributions=[
-                    Distribution(
-                        criteria="freegame",
-                        quota=1.0,
-                        conditions={
-                            "reel_weights": {self.basegame_type: {}, self.freegame_type: {}},
-                            "force_wincap": False,
-                            "force_freegame": True,
-                        },
-                    ),
-                ],
-            ),
+            )
+
+        self.bet_modes = [mode("base", 1.0, {"force_freegame": False})] + [
+            mode(name, m["cost"], {"force_freegame": "buy_fs" in m, "buy_fs": m.get("buy_fs"), "force_vs": m.get("force_vs", False)})
+            for name, m in self.buy_modes.items()
         ]
 
     def p_rune(self, num_fs: int) -> float:

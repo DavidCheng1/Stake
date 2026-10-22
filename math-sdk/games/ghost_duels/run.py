@@ -11,20 +11,23 @@ from src.write_data.write_configs import generate_configs
 
 if __name__ == "__main__":
 
-    num_threads = 5  # fits a 16 GB machine and splits 1M / 100k into whole batches; each simulation seeds itself
-    batching_size = 20000  # books held in memory per worker before writing; results do not depend on it
+    num_threads = 4  # fits a 16 GB machine and splits 1M / 100k into whole batches; each simulation seeds itself
+    batching_size = 10000  # books held in memory per worker before writing; results do not depend on it
     compression = True
     profiling = False
 
-    # Pass numbers to override (base, then bonus buy), e.g. `python games/ghost_duels/run.py 10000 2000` for a quick check
-    num_sim_args = {
-        "base": int(sys.argv[1]) if len(sys.argv) > 1 else int(1e6),
-        "bonus": int(sys.argv[2]) if len(sys.argv) > 2 else int(1e5),
-    }
+    # Pass numbers to override (base, then each buy mode), e.g. `python games/ghost_duels/run.py 10000 2000` for a quick check.
+    # `--configs-only` skips the simulation and rewrites index.json, stats and checks from the existing books
+    # (after changing a mode cost in game_config.py).
+    configs_only = "--configs-only" in sys.argv
+    counts = [int(a) for a in sys.argv[1:] if a.isdigit()]
+    num_sim_args = {"base": counts[0] if counts else int(1e6)}
+    for name in ("bonus", "bonus4", "bonus5", "vsspin"):
+        num_sim_args[name] = counts[1] if len(counts) > 1 else int(1e5)
 
     # Optimization needs Rust/cargo and a forced-criteria setup; this game publishes its natural distribution.
     run_conditions = {
-        "run_sims": True,
+        "run_sims": not configs_only,
         "run_analysis": True,
         "run_format_checks": True,
     }

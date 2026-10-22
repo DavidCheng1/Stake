@@ -55,14 +55,10 @@
     <canvas class="fx" id="fx"></canvas>
     <canvas class="motes" id="motes" aria-hidden="true"></canvas>
     <div class="buy-dlg" id="buyDlg" role="dialog" aria-modal="true" aria-labelledby="buyTitle" hidden>
-      <div class="icard buy-card">
+      <div class="buy-menu">
         <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
-        <div class="ic-art buy-art" id="buyArt"></div>
-        <h2 id="buyTitle">Ghost Crates</h2>
-        <p id="buyText">Starts the Ghost Crates bonus right away: 3 or more FS turn into crates with multipliers.</p>
-        <div class="buy-price"><span id="buyPriceLbl">Price</span><b id="buyPrice"></b><small id="buyPriceX"></small></div>
-        <p class="buy-note" id="buyNote" hidden></p>
-        <div class="am-foot buy-foot"><button type="button" id="buyGo" class="am-start">Buy</button><button type="button" id="buyCancel">Cancel</button></div>
+        <div class="rules-head"><h2 id="buyTitle">Bonus Menu</h2><button type="button" class="rules-close" id="buyClose" aria-label="Close">✕</button></div>
+        <div class="buy-opts" id="buyOpts"></div>
       </div>
     </div>
     <div class="rules" id="rules" role="dialog" aria-modal="true" aria-labelledby="rulesTitle" hidden>

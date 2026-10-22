@@ -62,8 +62,20 @@ const SYM_IDS = Object.keys(SYM).filter(id => SYM[id].w > 0), SYM_CUM = []; let 
 for (const id of SYM_IDS) { SYM_TOT += SYM[id].w; SYM_CUM.push(SYM_TOT); }
 const randSym = () => { const x = Math.random() * SYM_TOT; for (let i = 0; i < SYM_CUM.length; i++) if (x < SYM_CUM[i]) return SYM_IDS[i]; return SYM_IDS[0]; };
 const MAX_WIN_X = 25000;
-// Bonus buy bet mode; cost must match the "bonus" mode in math-sdk/games/ghost_duels/game_config.py (buy_cost)
-const BUY = { mode: "BONUS", cost: 183 };
+// Buyable modes. cost must match buy_modes in math-sdk/games/ghost_duels/game_config.py; rtp and maxWin come from the
+// published lookup tables (math-sdk library/stats_<mode>.json). Update all three after rerunning run.py.
+const BUYS = [
+  { mode: "BONUS", cost: 183, rtp: 95.63, maxWin: 25000, fs: 3, name: i18n("Geisterkisten", "Ghost Crates"),
+    text: i18n("3 bis 5 FS: der Geisterkisten-Bonus startet sofort.", "3 to 5 FS: the Ghost Crates bonus starts right away.") },
+  { mode: "BONUS4", cost: 310, rtp: 95.6, maxWin: 25000, fs: 4, name: i18n("Große Geisterkisten", "Big Ghost Crates"),
+    text: i18n("Genau 4 FS: der Bonus startet mit 4 Kisten.", "Exactly 4 FS: the bonus starts with 4 crates.") },
+  { mode: "BONUS5", cost: 590, rtp: 95.6, maxWin: 25000, fs: 5, name: i18n("Mega-Geisterkisten", "Mega Ghost Crates"),
+    text: i18n("Genau 5 FS: 5 Kisten, öfter mit ×3.", "Exactly 5 FS: 5 crates, more often at ×3.") },
+  { mode: "VSSPIN", cost: 5, rtp: 95.6, maxWin: 25000, vs: true, name: i18n("VS-Spin", "VS Spin"),
+    text: i18n("Ein Spin mit mindestens einer VS-Walze: jede Gruppe, die sie erreicht, startet ein Duell.", "A spin with at least one VS reel: every group that reaches it starts a duel.") },
+];
+const BASE_INFO = { rtp: 95.67, maxWin: 6144 };
+const buyOf = mode => BUYS.find(b => b.mode === mode);
 // RTP of the published lookup table (math-sdk/games/ghost_duels, 1M spins)
 const RTP_TEXT = (95.67).toLocaleString(RGS.lang) + " %";
 
@@ -571,8 +583,10 @@ function floatText(x, y, text, rgb, big, small) {
 let shown = 0;
 function countTo(target, dur = 700) {
   const from = shown, t0 = performance.now(); dur /= pace();
+  let lastTick = 0;
   return new Promise(res => (function step(t) {
     const k = Math.min(1, (t - t0) / dur); shown = from + (target - from) * (1 - Math.pow(1 - k, 3));
+    if (dur > 300 && k < 1 && t - lastTick > 85) { lastTick = t; sound.tick(); }
     winVal.textContent = money(shown); if (k < 1) requestAnimationFrame(step); else res();
   })(t0));
 }
@@ -590,6 +604,7 @@ async function showWins(clusters, before) {
   let total = before;
   for (const cl of clusters) {
     lightUp(cl.cells, SYM[cl.id].rgb, i => i * 60, c => cl.vsCols.includes(c));
+    sound.win(cl.cells.length || 4, SYM[cl.id].tier);
     cl.vsCols.forEach(c => { const t = reels[c].tall; t.classList.add("win"); t.style.setProperty("--wc", SYM[cl.id].rgb); animWin(q(t, ".sym")); });
     cl.cells.forEach(([c, r], k) => later(() => {
       const cell = reels[c].cells[r], el = q(cell, ".sym");
@@ -608,6 +623,7 @@ async function showWins(clusters, before) {
 
 // tumbleBoard event: exploding cells, removed VS reels and the new symbols per reel (top first)
 async function tumble(ev) {
+  sound.tumble();
   const gone = new Set(ev.explodingSymbols.map(p => p.reel + "," + p.row));
   const usedVs = ev.removedVsReels;
   // burst the winning symbols and the used wild reels
@@ -652,8 +668,9 @@ async function tumble(ev) {
 const MULTS = [2, 2, 3, 3, 4, 5, 5, 10, 10, 15, 20, 25, 50, 100];
 async function rollBadge(b, final, dur, pool = MULTS) {
   const t0 = performance.now();
-  while (performance.now() - t0 < dur / pace()) { b.textContent = "×" + pick(pool); await sleep(70); }
+  while (performance.now() - t0 < dur / pace()) { b.textContent = "×" + pick(pool); sound.roll(); await sleep(70); }
   b.textContent = "×" + final;
+  sound.ding(b.classList.contains("t3") ? 3 : b.classList.contains("t2") ? 2 : 1);
   if (!RM) b.animate([{ transform: "scale(1.8)" }, { transform: "scale(.9)", offset: .6 }, { transform: "scale(1)" }], { duration: 380 });
 }
 // Escalating duel inside a VS reel:
@@ -678,7 +695,7 @@ async function reelDuel(d) {
   animWin(vsSym); shake(6, 350);
   const finalTier = tier;
   const finish = async () => {
-    showTallWinner(rl, winner, mult, finalTier);
+    showTallWinner(rl, winner, mult, finalTier); sound.sting(finalTier);
     const ns = q(tall, ".sym"), badge = q(tall, ".tall-badge");
     if (!RM) {
       tall.animate([{ filter: "brightness(2.5)" }, { filter: "brightness(1)" }], { duration: 450 });
@@ -706,7 +723,7 @@ async function reelDuel(d) {
   const [cx, cy, cw] = centerOf(tall);
   const enter = (f, fromTop, delay = 0) => f.el.animate([{ transform: `translateY(${fromTop ? -120 : 120}%) scale(.6)`, opacity: 0 }, { transform: `translateY(${fromTop ? 6 : -6}%) scale(1.05)`, opacity: 1, offset: .7 }, { transform: "none", opacity: 1 }], { duration: 520, delay, easing: "ease-out", fill: "backwards" }).finished;
   const slamVs = async () => {
-    mid.style.opacity = 1;
+    mid.style.opacity = 1; sound.slam();
     await mid.animate([{ transform: "translate(-50%,-50%) scale(3)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(.9)", opacity: 1, offset: .75 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], { duration: 360, easing: "ease-in", fill: "forwards" }).finished;
     shake(9, 400); fx.emit(cx, cy, { n: 30, kind: "spark", rgb: "120 220 255", scale: cw / 90 });
   };
@@ -716,6 +733,7 @@ async function reelDuel(d) {
       bot.el.animate([{ transform: "none" }, { transform: "translateY(-42%) scale(1.08)", offset: .45 }, { transform: "translateY(-38%)", offset: .55 }, { transform: "none" }], { duration: 480, easing: "ease-in-out" });
       mid.animate([{ opacity: 1 }, { opacity: .1, offset: .4 }, { opacity: .1, offset: .7 }, { opacity: 1 }], { duration: 480 });
       await sleep(215);
+      sound.clash(power);
       fl.animate([{ opacity: 0 }, { opacity: .9 }, { opacity: 0 }], { duration: 220 });
       shake(8 + i * 3 + power * 3, 300);
       fx.emit(cx, cy, { n: 26 + power * 14, kind: "spark", rgb: i % 2 ? SYM[top.id].rgb : SYM[bot.id].rgb, scale: cw / 90 });
@@ -725,7 +743,7 @@ async function reelDuel(d) {
   // loser drops out; returns the side that is now free
   const knockOut = async (loser) => {
     const dir = loser === bot ? 1 : -1;
-    animWin(loser.sy, "hurt");
+    animWin(loser.sy, "hurt"); sound.knockout();
     mid.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: "forwards" });
     await loser.el.animate([{ transform: "none", filter: "none" }, { transform: `translateY(${dir * 4}%)`, filter: "brightness(3) saturate(0)", offset: .12 }, { transform: `translateY(${dir * -3}%)`, offset: .22 },
       { transform: `translateY(${dir * 130}%) rotate(${dir * 35}deg) scale(.6)`, opacity: 0, filter: "grayscale(1)" }], { duration: 1000, easing: "ease-in", fill: "forwards" }).finished;
@@ -751,7 +769,7 @@ async function reelDuel(d) {
   // ---- round 2: the pirate challenges, x20 - x100
   const challenge = async (challengerId, pool, value, wins, call, rgb, power) => {
     const freeTop = loser === top;
-    say(call); hero.react("gasp", 2200); await roundBanner(call, rgb);
+    say(call); hero.react("gasp", 2200); sound.challenger(power + 1); await roundBanner(call, rgb);
     shake(10 + power * 4, 600);
     const ch = fighter(freeTop ? "top" : "bot", challengerId); arena.insertBefore(ch.el, mid);
     if (freeTop) top = ch; else bot = ch;
@@ -776,7 +794,7 @@ async function reelDuel(d) {
 
 // ---------- Banner ----------
 async function banner(title, sub, hold = 1700) {
-  hero.react("cheer", hold + 600);
+  hero.react("cheer", hold + 600); sound.banner();
   document.getElementById("bTitle").textContent = title; document.getElementById("bSub").textContent = sub;
   bannerEl.hidden = false;
   await bannerEl.animate([{ opacity: 0, transform: "scale(1.3)" }, { opacity: 1, transform: "scale(1)" }], { duration: 380, easing: "ease-out" }).finished;
@@ -817,13 +835,14 @@ function dropIn(el, heavy) {
     { transform: `translateY(6%) scale(${heavy ? "1.12, .86" : "1.06, .92"})`, offset: .75 }, { transform: "none", opacity: 1 }],
     { duration: heavy ? 720 : 520, easing: "cubic-bezier(.45,0,.7,1)" });
 }
+let runeStep = 0; // rune chimes climb through the scale during a bonus
 function placeRune(c, r, v, id) {
-  K[c][r] = { t: "r", v };
+  K[c][r] = { t: "r", v }; sound.rune(runeStep++);
   const el = makeRune(v, id); reels[c].cells[r].replaceChildren(el); dropIn(el, false);
   later(() => { const [x, y, w] = cellCenter([c, r]); fx.emit(x, y + w * .2, { n: 8, kind: "spark", rgb: el.style.getPropertyValue("--c"), scale: w / 140 }); }, RM ? 0 : 400);
 }
 function placeCrate(c, r, id, m, intro) {
-  K[c][r] = { t: "c", id, m };
+  K[c][r] = { t: "c", id, m }; if (!intro) sound.crate();
   if (!intro && N4.some(([dx, dy]) => at(c + dx, r + dy)?.t === "c")) later(() => {
     const CH = crateChains(), ch = CH.chains[CH.id.get(c + "," + r)];
     const [x, y] = cellCenter([c, r]); floatText(x, y - 20, `${i18n("Kette", "Chain")} ×${ch.mult}`, "246 196 79");
@@ -916,7 +935,7 @@ function setLives(n) {
   qa(livesEl, ".life").forEach((l, i) => l.classList.toggle("out", i >= n));
 }
 async function loseLife(n) {
-  hero.react("gasp", 1100);
+  hero.react("gasp", 1100); sound.lifeLost();
   const l = qa(livesEl, ".life")[n];
   stage.classList.remove("hurt"); void stage.offsetWidth; stage.classList.add("hurt");
   if (!RM) {
@@ -932,7 +951,7 @@ async function loseLife(n) {
   await sleep(RM ? 300 : 1050);
 }
 function refillLives(prev) {
-  setLives(3);
+  setLives(3); if (prev < 3) sound.refill();
   if (prev < 3 && !RM) qa(livesEl, ".life").forEach((l, i) => i >= prev && l.animate([{ transform: "scale(0)", filter: "brightness(3)" }, { transform: "scale(1.7)", offset: .5 }, { transform: "scale(1)", filter: "brightness(1)" }], { duration: 520, delay: (i - prev) * 90 }));
 }
 function bonusHud(extra) {
@@ -970,6 +989,7 @@ async function slowSpin(landed) {
 
 // Plays bonusStart, every bonusSpin and bonusEnd; returns the bonus win in currency
 async function harvest(start, spinEvents, end) {
+  runeStep = 0;
   const fsCells = start.crates.map(k => [k.reel, k.row]), n = Math.min(7, fsCells.length);
   say(`${n} FS · ${i18n("Freispiele!", "Free Spins!")}`);
   stage.classList.add("bonus");
@@ -991,7 +1011,7 @@ async function harvest(start, spinEvents, end) {
     const [x, y, w] = cellCenter([c, r]); fx.emit(x, y, { n: 30, kind: "spark", rgb: SYM[id].rgb, scale: w / 100 });
     if (!RM) el.animate([{ transform: "scale(0) rotate(-20deg)" }, { transform: "scale(1.25) rotate(4deg)", offset: .6 }, { transform: "none" }], { duration: 520, easing: "ease-out" });
     const plate = q(el, ".cr-plate"), t0 = performance.now();
-    while (!RM && performance.now() - t0 < 900 / pace()) { plate.textContent = "×" + pick(MULT_POOL); await sleep(65); }
+    while (!RM && performance.now() - t0 < 900 / pace()) { plate.textContent = "×" + pick(MULT_POOL); sound.roll(); await sleep(65); }
     plate.textContent = "×" + m;
     if (!RM) plate.animate([{ transform: "translateX(-50%) scale(1.8)" }, { transform: "translateX(-50%) scale(1)" }], { duration: 320 });
     animWin(q(el, ".sym")); await sleep(250);
@@ -1022,7 +1042,7 @@ async function harvest(start, spinEvents, end) {
   const groups = linkGroups();
   drawGroupLinks(groups);
   const winners = groups.filter(g => g.ok).sort((a, b) => a.sum * a.mult - b.sum * b.mult);
-  if (winners.length) say(i18n("Die Kisten öffnen sich", "The crates open"));
+  if (winners.length) { say(i18n("Die Kisten öffnen sich", "The crates open")); sound.toll(); }
   for (const g of winners) {
     g.crates.forEach(k => { const el = q(reels[k.cell[0]].cells[k.cell[1]], ".crate"); animWin(q(el, ".sym")); if (!RM) el.animate([{ transform: "scale(1)" }, { transform: "scale(1.25)" }, { transform: "scale(1)" }], { duration: 600 }); const [x, y, w] = cellCenter(k.cell); fx.emit(x, y, { n: 26, kind: "spark", rgb: SYM[K[k.cell[0]][k.cell[1]].id].rgb, scale: w / 100 }); });
     const pts = g.cells.map(cellCenter), cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
@@ -1106,6 +1126,7 @@ async function showCascade(duels, ev, rounds) {
 
 async function showFsTrigger(ev) {
   const fsCells = ev.positions.map(p => [p.reel, p.row]);
+  sound.fanfare();
   qa(reelsEl, ".cell, .tall").forEach(c => c.classList.remove("win", "dim")); clearLit();
   fsCells.forEach(([c, r], i) => later(() => {
     const el = q(reels[c].cells[r], ".sym"); reels[c].cells[r].classList.add("win"); animWin(el);
@@ -1120,6 +1141,7 @@ async function playRound(events, resumed) {
   say(resumed ? i18n("Runde wird fortgesetzt", "Resuming round") : i18n("Viel Glück!", "Good luck!"));
   vsMult = {}; vsWinner = {};
   let won = 0, rounds = 0, summarised = false;
+  let bigPlayed = false; // the big-win fanfare plays once per round
   const baseSummary = () => {
     if (summarised) return; summarised = true;
     if (won > 0) say(rounds > 1 ? `${rounds} ${i18n("Kaskaden", "cascades")} · ${i18n("Gewinn", "Win")} ${money(won)}` : `${i18n("Gewinn", "Win")} ${money(won)}`);
@@ -1150,6 +1172,7 @@ async function playRound(events, resumed) {
         break;
       case "wincap":
         won = amt(ev.amount); shown = won; winVal.textContent = money(won);
+        bigPlayed = true; sound.bigWin(true);
         await banner("MAX WIN", `${MAX_WIN_X.toLocaleString(RGS.lang)}× ${i18n("Einsatz", "bet")}`, 2600);
         break;
       case "bonusTrigger": {
@@ -1166,6 +1189,7 @@ async function playRound(events, resumed) {
       case "setTotalWin":
         baseSummary();
         won = amt(ev.amount); shown = won; winVal.textContent = money(won);
+        if (won >= 20 * bet && !bigPlayed) { bigPlayed = true; sound.bigWin(); }
         break;
       case "finalWin":
         break;
@@ -1195,7 +1219,7 @@ function skip() { if (!busy || slam || !canSkip()) return; slam = true; hurry();
 // Wallet flow: play debits the bet (x the mode's cost) and returns the book; end-round credits a win.
 async function play(mode = "BASE") {
   if (busy || RGS.replay) return;
-  const cost = bet * (mode === BUY.mode ? BUY.cost : 1);
+  const cost = bet * (buyOf(mode)?.cost || 1);
   if (balance < cost) { say(i18n("Guthaben reicht nicht für diesen Einsatz", "Balance too low for this bet")); if (autoOn) stopAuto(); return; }
   lock(true); spinBtn.classList.add("turning");
   later(() => spinBtn.classList.remove("turning"), 1600);
@@ -1272,26 +1296,50 @@ turboBtn.addEventListener("click", () => {
 });
 showTurbo();
 
-// ---------- Bonus buy: pay BUY.cost bets to start the Ghost Crates bonus right away ----------
-const buyBtn = document.getElementById("buyBtn"), buyDlg = document.getElementById("buyDlg"), buyGo = document.getElementById("buyGo");
+// ---------- Bonus menu: every buyable mode with its price at the current bet; an option's button plays it ----------
+const buyBtn = document.getElementById("buyBtn"), buyDlg = document.getElementById("buyDlg");
 q(buyBtn, ".bb-fs").appendChild(makeSym("fs", { lite: true }));
-["f1", "f3", "f2"].forEach(cls => { const s2 = makeSym("fs"); s2.classList.add(cls); document.getElementById("buyArt").appendChild(s2); });
+// card art: n FS symbols fanned out, or two ghosts facing off over a VS
+function buyArt(b) {
+  const art = div("ic-art"), place = (s2, left, top, width, rot, z) => { Object.assign(s2.style, { left: left + "%", top: top + "%", width: width + "%", rotate: rot + "deg", zIndex: z }); art.appendChild(s2); };
+  if (b.vs) { art.style.setProperty("--c", "120 220 255"); place(makeSym("blue"), 22, 46, 40, 0, 1); place(makeSym("witch"), 78, 46, 40, 0, 1); place(makeSym("vs"), 50, 44, 52, 0, 2); return art; }
+  art.style.setProperty("--c", "255 79 210");
+  for (let i = 0; i < b.fs; i++) {
+    const k = b.fs === 1 ? 0 : i / (b.fs - 1) - .5, mid = Math.abs(k) < .01; // -0.5 .. 0.5
+    place(makeSym("fs"), 50 + k * 62, 52 + Math.abs(k) * 8, mid ? 44 : 36, k * 30, 10 - Math.round(Math.abs(k) * 10));
+  }
+  return art;
+}
+const buyCards = BUYS.map(b => {
+  const card = div("icard buy-opt"), h = document.createElement("h2"), p = document.createElement("p"), price = div("buy-price"), go = document.createElement("button");
+  card.append(...["tl", "tr", "bl", "br"].map(k => { const c = document.createElement("i"); c.className = "am-corner " + k; return c; }));
+  h.textContent = b.name; p.textContent = b.text;
+  const amount = document.createElement("b"), times = document.createElement("small");
+  price.append(amount, times);
+  go.type = "button"; go.className = "am-start"; go.textContent = i18n("Kaufen", "Buy");
+  const foot = div("am-foot buy-foot"); foot.appendChild(go);
+  go.addEventListener("click", () => { openBuy(false); play(b.mode); });
+  card.append(buyArt(b), h, p, price, foot);
+  document.getElementById("buyOpts").appendChild(card);
+  return { b, amount, times, go };
+});
 function updateBuy() { buyBtn.disabled = busy || autoOn || loading || RGS.replay; }
 function openBuy(open) {
   buyDlg.hidden = !open;
   if (!open) return buyBtn.focus();
-  const price = bet * BUY.cost, short = balance < price, note = document.getElementById("buyNote");
-  document.getElementById("buyPrice").textContent = money(price);
-  document.getElementById("buyPriceX").textContent = `${BUY.cost.toLocaleString(RGS.lang)}× ${i18n("Einsatz", "bet")} · ${money(bet)}`;
-  note.hidden = !short; note.textContent = i18n("Guthaben reicht nicht · senke den Einsatz", "Balance too low · lower the bet");
-  buyGo.disabled = short; (short ? document.getElementById("buyCancel") : buyGo).focus();
-  if (!RM) q(buyDlg, ".buy-card").animate([{ opacity: 0, transform: "scale(.85)" }, { opacity: 1, transform: "none" }], { duration: 280, easing: "cubic-bezier(.2,.9,.3,1.2)" });
+  for (const { b, amount, times, go } of buyCards) {
+    const short = balance < bet * b.cost;
+    amount.textContent = money(bet * b.cost);
+    times.textContent = short ? i18n("Guthaben reicht nicht", "Balance too low") : `${num(b.cost)}× ${i18n("Einsatz", "bet")}`;
+    go.disabled = short;
+  }
+  (buyCards.find(c => !c.go.disabled)?.go || document.getElementById("buyClose")).focus();
+  if (!RM) q(buyDlg, ".buy-menu").animate([{ opacity: 0, transform: "scale(.9)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: "cubic-bezier(.2,.9,.3,1.2)" });
 }
 buyBtn.addEventListener("click", () => openBuy(true));
-document.getElementById("buyCancel").addEventListener("click", () => openBuy(false));
+document.getElementById("buyClose").addEventListener("click", () => openBuy(false));
 buyDlg.addEventListener("click", e => { if (e.target === buyDlg) openBuy(false); });
 addEventListener("keydown", e => { if (e.key === "Escape" && !buyDlg.hidden) openBuy(false); });
-buyGo.addEventListener("click", () => { openBuy(false); play(BUY.mode); });
 
 // ---------- Sound: one Web Audio graph with a music bus and an effects bus, each with its own volume ----------
 // Browsers only allow sound after a tap or key press, so everything starts on the first one. Volumes and mute are remembered.
@@ -1300,7 +1348,7 @@ const sound = (() => {
   const KEY = "ghostDuels.sound", MUSIC_SRC = "assets/spooky-carousel.mp3";
   const st = { music: 65, sfx: 80, muted: false }; // sliders 0–100
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
-  let ctx, master, musicBus, sfxBus, noise, started = false;
+  let ctx, master, musicBus, sfxBus, duckBus, verb, noise, started = false;
   const file = fetch(MUSIC_SRC).then(r => { if (!r.ok) throw new Error("music " + r.status); return r.arrayBuffer(); });
   file.catch(() => {}); // reported in loadMusic()
   const level = v => (v / 100) ** 2; // slider to gain, roughly even steps in loudness
@@ -1317,8 +1365,16 @@ const sound = (() => {
     if (!AC) return;
     ctx = new AC(); ctx.resume(); // created inside the gesture, so it may play
     master = ctx.createGain(); master.connect(ctx.destination);
-    musicBus = ctx.createGain(); musicBus.connect(master);
+    duckBus = ctx.createGain(); duckBus.connect(master); // lowers the music under big moments (duck)
+    musicBus = ctx.createGain(); musicBus.connect(duckBus);
     sfxBus = ctx.createGain(); sfxBus.connect(master);
+    // crypt reverb: a long, dark stereo tail made from decaying noise (effects send a share of their sound here)
+    verb = ctx.createConvolver();
+    const ir = ctx.createBuffer(2, ctx.sampleRate * 2.6, ctx.sampleRate);
+    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < d.length; i++) { const k = i / d.length; d[i] = (Math.random() * 2 - 1) * (1 - k) ** 3.2 * (k < .012 ? k / .012 : 1); } }
+    verb.buffer = ir;
+    const dark = ctx.createBiquadFilter(); dark.type = "lowpass"; dark.frequency.value = 3800;
+    verb.connect(dark).connect(sfxBus);
     apply(0);
     noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const nd = noise.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
@@ -1344,16 +1400,39 @@ const sound = (() => {
 
   // ---- synth helpers: an enveloped oscillator and an enveloped, filtered noise burst
   const env = (g, t, a, peak, d) => { g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d); };
-  function tone(t, { type = "sine", f, f2, a = .002, d = .1, vol = .3 }) {
-    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type;
+  // out(g, rev): a voice goes to the effects bus, and a share of it (rev 0..1) into the crypt reverb
+  const out = (g, rev) => { g.connect(sfxBus); if (rev) { const sg = ctx.createGain(); sg.gain.value = rev; g.connect(sg).connect(verb); } };
+  function tone(t, { type = "sine", f, f2, a = .002, d = .1, vol = .3, rev = 0, vib = 0, vibRate = 5.5, lp = 0, detune = 0 }) {
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.detune.value = detune;
     o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + a + d);
-    env(g, t, a, vol, d); o.connect(g).connect(sfxBus); o.start(t); o.stop(t + a + d + .05);
+    if (vib) { const l = ctx.createOscillator(), lg = ctx.createGain(); l.frequency.value = vibRate; lg.gain.value = f * vib; l.connect(lg).connect(o.frequency); l.start(t); l.stop(t + a + d + .05); }
+    let node = o;
+    if (lp) { const fl = ctx.createBiquadFilter(); fl.type = "lowpass"; fl.frequency.value = lp; node = node.connect(fl); }
+    env(g, t, a, vol, d); node.connect(g); out(g, rev); o.start(t); o.stop(t + a + d + .05);
   }
-  function hiss(t, { f, f2, q = 1, a = .002, d = .08, vol = .3 }) {
+  function hiss(t, { f, f2, q = 1, a = .002, d = .08, vol = .3, rev = 0, type = "bandpass" }) {
     const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
-    s.buffer = noise; s.loop = true; fl.type = "bandpass"; fl.Q.value = q;
+    s.buffer = noise; s.loop = true; fl.type = type; fl.Q.value = q;
     fl.frequency.setValueAtTime(f, t); if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + a + d);
-    env(g, t, a, vol, d); s.connect(fl).connect(g).connect(sfxBus); s.start(t, Math.random()); s.stop(t + a + d + .05);
+    env(g, t, a, vol, d); s.connect(fl).connect(g); out(g, rev); s.start(t, Math.random()); s.stop(t + a + d + .05);
+  }
+  // notes: semitones above A3 (220 Hz). The scale is A Phrygian: minor, with the uneasy lowered second.
+  const NOTE = n => 220 * 2 ** (n / 12), SCALE = [0, 1, 3, 5, 7, 8, 10, 12, 13, 15, 17, 19, 20, 22, 24];
+  // haunted bell: inharmonic partials, the high ones dying first
+  const bell = (t, f, vol = .1, d = 1.6, rev = .45) => [[1, 1, 1], [2.76, .45, .6], [5.4, .22, .38], [8.93, .1, .24]]
+    .forEach(([r, v, k]) => tone(t, { f: f * r, a: .003, d: d * k, vol: vol * v, rev }));
+  // organ / choir: each note twice, slightly detuned, through a soft lowpass
+  const pad = (t, notes, dur = 1.2, vol = .05, type = "sawtooth", lp = 1500, rev = .55) => notes.forEach(n => [-7, 7].forEach(dt =>
+    tone(t, { type, f: NOTE(n), a: Math.min(.18, dur * .3), d: dur, vol, rev, lp, detune: dt })));
+  // ghost wail: a sliding, wavering "oooh"
+  const wail = (t, f, dur = .9, vol = .09) => { tone(t, { f, f2: f * .5, a: .08, d: dur, vol, rev: .6, vib: .03, vibRate: 6 }); tone(t, { type: "triangle", f: f * 2, f2: f, a: .1, d: dur * .8, vol: vol * .25, rev: .6, vib: .03, vibRate: 6 }); };
+  // the devil's growl: low detuned saws with a fast tremble
+  const growl = (t, dur = 1.1, vol = .12) => [55, 58.3, 82.4].forEach((f, i) => tone(t, { type: "sawtooth", f, f2: f * .82, a: .05, d: dur, vol: vol * (i === 2 ? .5 : 1), lp: 700, vib: .05, vibRate: 17, rev: .3 }));
+  // music steps back under big moments and returns afterwards
+  function duck(hold = 2) {
+    if (!duckBus) return;
+    const t = ctx.currentTime, g = duckBus.gain;
+    g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(.28, t + .15); g.setValueAtTime(.28, t + .15 + hold); g.linearRampToValueAtTime(1, t + .15 + hold + .9);
   }
   // effects are skipped until the first gesture and in hidden tabs (they would pile up and play on return)
   const at = (delay = 0) => ctx && !document.hidden ? ctx.currentTime + Math.max(0, delay) : null;
@@ -1375,6 +1454,75 @@ const sound = (() => {
       const t = at(); if (t == null) return;
       tone(t, { f: 95, f2: 30, a: .004, d: .65, vol: .55 }); tone(t, { type: "sawtooth", f: 180, f2: 60, a: .004, d: .3, vol: .06 });
       hiss(t, { f: 3200, f2: 350, q: .7, a: .01, d: .7, vol: .3 }); tone(t + .05, { type: "triangle", f: 1320, d: .5, vol: .03 });
+    },
+    // a winning group: haunted bells climbing the scale; bigger groups and better symbols ring higher and longer
+    win(size = 4, tier = "obj") {
+      const t = at(); if (t == null) return;
+      const start = { rune: 0, obj: 2, char: 4, special: 5 }[tier] ?? 2, notes = Math.min(5, 2 + Math.floor((size - 4) / 2));
+      for (let i = 0; i < notes; i++) bell(t + i * .085, NOTE(SCALE[start + i * 2]) * 2, tier === "rune" ? .06 : .085, tier === "char" ? 2 : 1.4);
+      if (tier === "char") tone(t, { f: 110, f2: 55, a: .005, d: .35, vol: .2, rev: .3 });
+    },
+    // winning symbols vanish: a ghostly "poof" and a dry crumble
+    tumble() {
+      const t = at(); if (t == null) return;
+      hiss(t, { f: 2200, f2: 260, q: .9, a: .02, d: .4, vol: .17, rev: .35 });
+      for (let i = 0; i < 4; i++) hiss(t + .05 + i * .045, { f: 900 + Math.random() * 900, q: 3, d: .03, vol: .06, type: "lowpass" });
+    },
+    // the win counter climbing: quiet bone ticks
+    tick() { const t = at(); if (t == null) return; tone(t, { type: "triangle", f: 2300 + Math.random() * 600, d: .018, vol: .03 }); },
+    // a multiplier badge rolling, then a bell when it lands
+    roll() { const t = at(); if (t == null) return; tone(t, { type: "square", f: 1400 + Math.random() * 300, d: .012, vol: .018, lp: 3000 }); },
+    ding(tier = 1) { const t = at(); if (t == null) return; bell(t, NOTE(tier === 3 ? 6 : tier === 2 ? 15 : 24) * (tier === 3 ? 1 : 1), .12, tier === 3 ? 2.4 : 1.6); },
+    // the VS slams into the duel: a deep boom and a falling whoosh in the crypt
+    slam() { const t = at(); if (t == null) return; tone(t, { f: 90, f2: 32, a: .004, d: .5, vol: .45, rev: .35 }); hiss(t, { f: 3000, f2: 300, q: .7, a: .01, d: .35, vol: .2, rev: .3 }); bell(t + .02, NOTE(-12), .07, 2.2, .6); },
+    // two fighters collide: a metallic clash, harder the higher the stakes
+    clash(power = 0) {
+      const t = at(); if (t == null) return;
+      [523, 739, 987, 1318].forEach((f, i) => tone(t, { type: "square", f: f * (1 + power * .04), d: .22 - i * .03, vol: .035, lp: 5000, rev: .4 }));
+      hiss(t, { f: 5200, q: .6, d: .12, vol: .22, rev: .3 }); tone(t, { f: 120, f2: 45, a: .003, d: .22, vol: .35 + power * .08 });
+    },
+    // a fighter is knocked out: a descending ghostly wail
+    knockout() { const t = at(); if (t == null) return; wail(t, NOTE(12 + Math.floor(Math.random() * 3))); },
+    // a challenger enters: the pirate's low horn, or the devil's growl
+    challenger(tier = 2) {
+      const t = at(); if (t == null) return; duck(1.6);
+      if (tier >= 3) { growl(t, 1.3, .13); pad(t + .1, [-12, -6], 1.2, .05, "sawtooth", 600); hiss(t, { f: 300, f2: 120, q: .8, a: .2, d: 1, vol: .12, rev: .4 }); }
+      else { pad(t, [-12, -5], .9, .07, "sawtooth", 900); tone(t, { f: 110, a: .15, d: .8, vol: .12, rev: .5, vib: .01 }); }
+    },
+    // the duel is won: a bell sting; the pirate gets a dark organ chord, the devil the tritone with a growl
+    sting(tier = 1) {
+      const t = at(); if (t == null) return;
+      if (tier >= 3) { duck(2.4); growl(t, 1.4, .1); pad(t, [-12, -9, -6, 0], 2, .045, "sawtooth", 1100); bell(t + .1, NOTE(-6), .14, 3); }
+      else if (tier === 2) { duck(1.8); pad(t, [0, 3, 7, 12], 1.6, .04, "triangle", 2200); bell(t, NOTE(12), .11, 2.2); bell(t + .12, NOTE(15), .09, 2); }
+      else [0, 3, 7].forEach((n, i) => bell(t + i * .07, NOTE(n + 12), .09, 1.6));
+    },
+    // free spins triggered: a swelling organ, a church-bell toll and bells tumbling down
+    fanfare() {
+      const t = at(); if (t == null) return; duck(3.2);
+      pad(t, [-12, 0, 3, 7], 1.1, .05, "sawtooth", 1800); pad(t + 1, [-16, -4, 0, 5], 1.4, .05, "sawtooth", 1800);
+      bell(t, NOTE(-12), .16, 3.2, .7);
+      [24, 22, 20, 19, 17, 15, 12].forEach((n, i) => bell(t + .35 + i * .09, NOTE(n), .06, 1.2));
+    },
+    // a heavy toll, e.g. when the crates open
+    toll() { const t = at(); if (t == null) return; bell(t, NOTE(-12), .16, 3.4, .7); tone(t, { f: 55, a: .01, d: 1.4, vol: .16, rev: .5 }); },
+    // bonus: a rune lands (glass chime, rising through the scale), a crate lands (heavy hit plus a bell)
+    rune(step = 0) { const t = at(); if (t == null) return; bell(t, NOTE(SCALE[(step % 8) + 4]) * 2, .05, .7, .5); },
+    crate() { const t = at(); if (t == null) return; bell(t + .02, NOTE(0), .09, 1.6, .55); },
+    // a life is lost: a heartbeat and a crack; lives refilled: rising chimes
+    lifeLost() {
+      const t = at(); if (t == null) return;
+      tone(t, { f: 72, f2: 45, a: .005, d: .14, vol: .5 }); tone(t + .2, { f: 64, f2: 40, a: .005, d: .18, vol: .42 });
+      hiss(t + .05, { f: 3200, q: 1.2, d: .07, vol: .18, rev: .3 }); wail(t + .25, NOTE(7), .7, .05);
+    },
+    refill() { const t = at(); if (t == null) return; [7, 12, 15].forEach((n, i) => bell(t + i * .08, NOTE(n) * 2, .05, .9)); },
+    // banners: a rising whoosh and a bell
+    banner() { const t = at(); if (t == null) return; duck(2); hiss(t, { f: 300, f2: 3000, q: .8, a: .25, d: .2, vol: .13, rev: .4 }); bell(t + .25, NOTE(12), .1, 2.2); },
+    // a big win (20× bet or more): toll, organ and a cascade of bells; max win adds the devil
+    bigWin(max = false) {
+      const t = at(); if (t == null) return; duck(max ? 4 : 3);
+      bell(t, NOTE(-12), .16, 3.4, .7); pad(t, [0, 3, 7, 12], 2.2, .05, "sawtooth", 2400);
+      [12, 15, 19, 22, 24, 27, 31].forEach((n, i) => bell(t + .2 + i * .08, NOTE(n), .07, 1.6));
+      if (max) growl(t, 1.6, .09);
     },
     // one free-spin symbol away: a rising, pulsing riser over the tease
     tease(delay = 0, dur = 1.5) {
@@ -1423,7 +1571,7 @@ document.getElementById("errReload").addEventListener("click", () => location.re
 // Replay: a panel shows bet, mode and real cost and starts the round; afterwards it offers to watch it again.
 async function replayLoop(round) {
   const dlg = document.getElementById("replayDlg"), go = document.getElementById("replayGo"), info = document.getElementById("replayInfo");
-  const bonus = round.mode === BUY.mode, modeName = bonus ? i18n("Bonuskauf", "Bonus buy") : i18n("Basisspiel", "Base game");
+  const modeName = buyOf(round.mode)?.name || i18n("Basisspiel", "Base game");
   const line = `${modeName} · ${i18n("Einsatz", "Bet")} ${money(round.amount)}` + (round.cost > 1 ? ` · ×${num(round.cost)} · ${i18n("Echte Kosten", "Real cost")} ${money(round.amount * round.cost)}` : "");
   const bar = document.getElementById("replayBar"); bar.textContent = `${i18n("Wiederholung", "Replay")} · ${line}`; bar.hidden = false;
   say(i18n("Wiederholung", "Replay"));
@@ -1938,10 +2086,7 @@ q(document, "#paytable .hint").textContent = i18n("Gewinne für den aktuellen Ei
 // ---------- Game rules (Info button) ----------
 // RTP and max win per mode, from the published lookup tables (math-sdk library/stats_base.json and stats_bonus.json).
 // Update these after rerunning run.py.
-const MODE_INFO = [
-  { name: i18n("Basisspiel", "Base game"), cost: 1, rtp: 95.67, maxWin: 6144 },
-  { name: i18n("Bonuskauf", "Bonus buy"), cost: BUY.cost, rtp: 95.63, maxWin: 25000 },
-];
+const MODE_INFO = [{ name: i18n("Basisspiel", "Base game"), cost: 1, ...BASE_INFO }, ...BUYS];
 const rulesEl = document.getElementById("rules"), rulesBody = document.getElementById("rulesBody");
 const num = v => v.toLocaleString(RGS.lang === "de" ? "de" : "en");
 // a rules section: a heading, then paragraphs (strings) and bullet lists (arrays)
@@ -1974,8 +2119,9 @@ rulesSection(i18n("Geisterkisten-Bonus", "Ghost Crates bonus"), [[
   [i18n("Wiederauslösung:", "Re-triggers:"), i18n("Keine. Im Bonus landen keine FS-Symbole.", "None. No FS symbols land during the bonus.")],
 ]]);
 rulesSection(i18n("Bonuskauf", "Bonus buy"), [
-  i18n(`„Bonus kaufen“ startet den Geisterkisten-Bonus sofort, für ${num(BUY.cost)}× den aktuellen Einsatz. Die Runde beginnt auf einem normalen Spielfeld mit 3 bis 5 FS-Symbolen. Vor dem Kauf zeigt ein Fenster den Preis, gekauft wird erst nach deiner Bestätigung.`,
-    `Buy Bonus starts the Ghost Crates bonus right away, for ${num(BUY.cost)}× the current bet. The round begins on a normal board with 3 to 5 FS symbols. A window shows the price first; nothing is bought until you confirm.`),
+  i18n("„Bonus kaufen“ öffnet ein Menü mit diesen Optionen und ihrem Preis für den aktuellen Einsatz. Gekauft wird erst, wenn du bei einer Option auf Kaufen drückst. Jede Runde beginnt auf einem normalen Spielfeld.",
+    "Buy Bonus opens a menu with these options and their price at the current bet. Nothing is bought until you press Buy on an option. Every round starts on a normal board."),
+  BUYS.map(b => [`${b.name} (${num(b.cost)}× ${i18n("Einsatz", "bet")}):`, b.text]),
 ]);
 {
   const table = document.createElement("table"), head = table.createTHead().insertRow(), tb = table.createTBody();
@@ -2041,11 +2187,8 @@ if (RGS.lang === "de" && !RGS.social) {
   set("#muteAll", "Stumm");
   set("#buyBtn .bb-top", "Bonus");
   set("#buyBtn .bb-main", "Kaufen");
-  set("#buyTitle", "Geisterkisten");
-  set("#buyText", "Startet den Geisterkisten-Bonus sofort: 3 oder mehr FS werden zu Kisten mit Multiplikatoren.");
-  set("#buyPriceLbl", "Preis");
-  set("#buyGo", "Kaufen");
-  set("#buyCancel", "Abbrechen");
+  set("#buyTitle", "Bonusmenü");
+  set("#buyClose", "Schließen", "aria-label");
 }
 
 // ---------- Social mode: the static page texts too, and the "BET" label painted into the art ----------

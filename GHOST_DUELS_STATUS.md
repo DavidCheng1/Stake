@@ -18,6 +18,8 @@ Last updated: 2026-10-22. All work is on the `ghost-duels` branch, which is not 
 - [x] **English first:** the page is written in English; German is the translation for `lang=de`.
 - [x] **Bonus buy:** `bonus` bet mode (cost 183×, RTP 95.63% from 100k rounds) that starts Ghost Crates directly, plus the Buy Bonus plaque and confirmation dialog. Follows Stake's `disabledBuyFeature`.
   - The price must match in two places: `buy_cost` in `game_config.py` and `BUY.cost` in `game.js`. After changing the math, rerun `run.py` and set both to the bonus mean payout divided by the base RTP.
+- [x] **Spooky sounds** (synthesized, through the sound panel and mute): haunted bells for wins, a ghostly poof for tumbles, bone ticks while the win counts up, duel slam, metallic clashes and wails for knockouts, the pirate's horn and the devil's growl, organ and bell toll for the free-spin trigger, rune chimes, heartbeat for lost lives, big-win fanfare; a crypt reverb on all of it, and the music dips under big moments.
+- [ ] **Bonus menu (prices provisional):** Ghost Crates (3–5 FS, 183×), Big Ghost Crates (exactly 4 FS, ~310×), Mega Ghost Crates (exactly 5 FS, ~590×) and VS Spin (a spin with at least one VS reel, ~5×). The full simulation sets the final prices; until then rerun `run.py` before testing the new options locally.
 - [x] **Approval checklist fixes** (Engine's review prompt is `engine-review-prompt.md` in the repo root; guideline IDs in brackets):
   - The page is only the game, scaled to the window; nothing scrolls [227, 193, 195].
   - Phones held upright get their own layout: the reels on top, a touch panel with every control below [194].

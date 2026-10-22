@@ -536,9 +536,6 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .bb-top { font: 800 1.15cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: #e9e2c8; text-shadow: 0 .1cqw 0 #000; }
 .bb-main { font: 400 2.5cqw/1 var(--display); letter-spacing: .03em; color: #ffd877; -webkit-text-stroke: .08em #2a1700; paint-order: stroke fill; text-shadow: 0 0 .3em rgb(255 200 80 / .7), 0 .1em 0 #1c0f00; }
 .buy-dlg { position: absolute; inset: 0; z-index: 55; display: grid; place-items: center; background: rgb(3 10 9 / .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
-.buy-card { width: 27cqw; aspect-ratio: auto; grid-template-rows: 13cqw auto auto auto auto auto; cursor: default; }
-.buy-art { --c: 255 79 210; }
-.buy-art .f1 { left: 21%; width: 36%; top: 54%; rotate: -16deg; } .buy-art .f2 { left: 50%; width: 44%; z-index: 2; } .buy-art .f3 { left: 79%; width: 36%; top: 54%; rotate: 16deg; }
 .buy-price { display: grid; justify-items: center; gap: .2cqw; margin-top: .3cqw; }
 .buy-price span { font: 800 1.1cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
 .buy-price b { font: 400 3.6cqw/1 var(--display); letter-spacing: .03em; color: #dfffee; -webkit-text-stroke: .08em #04120d; paint-order: stroke fill; text-shadow: 0 0 .3em rgb(109 255 179 / .9); }
@@ -669,7 +666,6 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .portrait .ui .icard::before { inset: -1.2cqw; padding: 1.2cqw; border-radius: 3cqw; }
 .portrait .ui .icard h2 { font-size: 8cqw; }
 .portrait .ui .icard p { font-size: 3.9cqw; }
-.portrait .ui .buy-card { width: 86cqw; grid-template-rows: 40cqw auto auto auto auto auto; }
 .portrait .ui .buy-price span { font-size: 3.2cqw; }
 .portrait .ui .buy-price b { font-size: 10cqw; }
 .portrait .ui .buy-price small { font-size: 3.4cqw; }
@@ -692,3 +688,29 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .portrait .ui .intro .icard p { font-size: 3.4cqw; align-self: start; }
 .portrait .ui .ic-mult { font-size: 5cqw; }
 .portrait .ui .intro-go { font-size: 4.4cqw; }
+
+/* Bonus menu: the buyable modes side by side (stacked in portrait), each with its price and button */
+.buy-menu { position: relative; width: min(92%, 96cqw); max-height: 92%; box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 1cqw;
+  padding: 1.3cqw 1.6cqw 1.6cqw; border-radius: 1.2cqw; cursor: default;
+  background: url(assets/img0.webp) 40% 30% / 165% auto, #2e363a; border: .45cqw solid transparent; background-clip: padding-box;
+  box-shadow: 0 0 0 .2cqw #15131a, inset 0 0 0 .2cqw #15131a, inset 0 0 2.4cqw rgb(0 0 0 / .7), 0 1.4cqw 3cqw rgb(0 0 0 / .75); }
+.buy-menu::before { content: ""; position: absolute; inset: -.45cqw; border-radius: 1.2cqw; padding: .45cqw; pointer-events: none;
+  background: linear-gradient(160deg, #f6dd8f 0%, #c99a3e 22%, #8a6122 45%, #e2bb62 62%, #a77a2c 80%, #f0d184 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.buy-opts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.8cqw; overflow: hidden auto; overscroll-behavior: contain; padding: 1.3cqw; }
+.buy-opt { aspect-ratio: auto; grid-template-rows: 10cqw auto 1fr auto auto; padding: 1.1cqw 1cqw 1.2cqw; gap: .55cqw; }
+.buy-opt h2 { font-size: 2.2cqw; }
+.buy-opt p { font-size: 1.15cqw; }
+.buy-opt .am-corner { width: 3.2cqw; height: 3.2cqw; }
+.buy-opt .ic-art .sym { translate: -50% -50%; }
+.buy-price b { font-size: 2.6cqw; }
+.buy-foot { grid-template-columns: 1fr; }
+.portrait .ui .buy-menu { width: 94cqw; max-height: 94%; padding: 4cqw; gap: 3cqw; border-radius: 3cqw; border-width: 1.2cqw; }
+.portrait .ui .buy-menu::before { inset: -1.2cqw; padding: 1.2cqw; border-radius: 3cqw; }
+.portrait .ui .buy-opts { grid-template-columns: 1fr 1fr; gap: 4cqw; padding: 3cqw; }
+.portrait .ui .buy-opt { grid-template-rows: 22cqw auto 1fr auto auto; padding: 3cqw; gap: 1.6cqw; }
+.portrait .ui .buy-opt h2 { font-size: 5.4cqw; }
+.portrait .ui .buy-opt p { font-size: 3.1cqw; }
+.portrait .ui .buy-opt .am-corner { width: 7cqw; height: 7cqw; }
+.portrait .ui .buy-price b { font-size: 6.4cqw; }
+.portrait .ui .buy-price small { font-size: 3cqw; }
