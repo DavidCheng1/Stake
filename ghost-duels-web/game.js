@@ -368,12 +368,15 @@ setInterval(() => {
 }, 170);
 
 // showcase board until the first round: a VS reel with the Skull King, a duel winner with its multiplier,
-// three free-spin symbols and every pay symbol at least once
+// two free-spin symbols in different reels (three would look like a bonus trigger) and every pay symbol at least once
 (() => {
   const VS_COL = 2, WIN_COL = 5, open = [];
   G = reels.map((rl, c) => Array.from({ length: ROWS }, (_, r) => { if (c !== VS_COL && c !== WIN_COL) open.push([c, r]); let id; do { id = randSym(); } while (id === "fs"); return id; }));
   for (let i = open.length - 1; i > 0; i--) { const j = rnd(i + 1); [open[i], open[j]] = [open[j], open[i]]; }
-  SYM_IDS.filter(id => id !== "fs").concat("fs", "fs", "fs").forEach((id, i) => { const [c, r] = open[i]; G[c][r] = id; });
+  const fsCells = [];
+  for (const cell of open) if (fsCells.length < 2 && !fsCells.some(f => f[0] === cell[0])) fsCells.push(cell);
+  fsCells.forEach(([c, r]) => G[c][r] = "fs");
+  SYM_IDS.filter(id => id !== "fs").forEach((id, i) => { const [c, r] = open.filter(o => !fsCells.includes(o))[i]; G[c][r] = id; });
   reels.forEach((rl, c) => rl.cells.forEach((cell, r) => cell.appendChild(makeSym(G[c][r]))));
   showTallVS(reels[VS_COL], false);
   showTallWinner(reels[WIN_COL], "pirate", 25, 2);
