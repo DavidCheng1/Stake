@@ -1,2 +1,3 @@
 _UPLOAD_TO_STAKE/1_math/*.zst filter=lfs diff=lfs merge=lfs -text
 _UPLOAD_TO_STAKE/1_math/*.csv filter=lfs diff=lfs merge=lfs -text
+audio-src/*.wav filter=lfs diff=lfs merge=lfs -text
