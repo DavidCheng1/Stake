@@ -12,6 +12,10 @@ Modes:  Base game 1x (RTP 95.67%, max 6,144x) - Ghost Crates 182x (96.09%) - Big
 
 After uploading: play once with a real session - spin, win, bonus buy, reload mid-round, a replay link, social mode.
 
-This folder is not on GitHub (the math files are too big). To rebuild it elsewhere: run
-math-sdk\env\Scripts\python.exe games\ghost_duels\run.py in math-sdk, then copy
-math-sdk\games\ghost_duels\library\publish_files\ and ghost-duels-web\ (without README.md).
+This folder is on GitHub. The big math files are stored with Git LFS, so "git pull" downloads them on any
+computer with Git LFS (Git for Windows includes it).
+
+If the math or the frontend changes, rebuild it: run math-sdk\env\Scripts\python.exe games\ghost_duels\run.py
+in math-sdk, copy math-sdk\games\ghost_duels\library\publish_files\ into 1_math and ghost-duels-web\
+(without README.md) into 2_frontend, then commit. Every new math version adds about 315 MB to the
+repo's LFS storage, which counts against the repo owner's free GitHub quota.
