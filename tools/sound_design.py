@@ -434,11 +434,26 @@ def s_banner():
     return reverb(x, 0.45, 1.6)
 
 
+def s_fs_land():
+    """An FS symbol lands (A4 base; the game raises it for the 2nd, 3rd... FS): a deep impact, a bright haunted
+    bell, a choir stab and a ghostly shriek, loud enough to cut through everything else."""
+    sec = 1.9
+    x = pad_to(thump(95, 32, 0.6, 1.5), sec)
+    x += pad_to(biquad(noise(0.35, "brown"), "lp", 300, 0.8) * env_ad(0.35, 0.002, 0.15, 5) * 1.2, sec)
+    x += pad_to(bell(440, 1.8, 1.1, 1.3), sec) + pad_to(bell(880 * 1.5, 1.2, 0.35, 1.0), sec)
+    stab = choir([220, 220 * 2 ** (3 / 12), 330, 440], 0.7, "ah", 1.0) * env_ad(0.7, 0.01, 0.35, 3)
+    x += pad_to(stab * 1.3, sec)
+    shriek = voice(vibrato(sweep(620, 980, 0.6), 0.6, 0.04, 7, 0), 0.6, "oo", 0.5) * env_adsr(0.6, 0.03, 0.15, 0.7, 0.3)
+    x += place(np.zeros(n(sec)), shriek * 0.45, 0.04)
+    x += pad_to(biquad(noise(0.06), "hp", 4000, 0.7) * env_ad(0.06, 0.0005, 0.02, 6) * 0.8, sec)  # sharp attack
+    return reverb(x, 0.45, 1.8)
+
+
 SOUNDS = {
     "click": s_click, "spin": s_spin, "land": s_land, "land_heavy": s_land_heavy, "chime": s_chime, "crystal": s_crystal,
     "tumble": s_tumble, "charge": s_charge, "burst": s_burst, "clash": s_clash, "wail": s_wail, "toll": s_toll,
     "sting": s_sting, "sting_devil": s_sting_devil, "fanfare": s_fanfare, "bigwin": s_bigwin, "heartbeat": s_heartbeat,
-    "crumble": s_crumble, "challenger": s_challenger, "banner": s_banner,
+    "crumble": s_crumble, "challenger": s_challenger, "banner": s_banner, "fs_land": s_fs_land,
 }
 
 

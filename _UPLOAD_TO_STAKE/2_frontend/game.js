@@ -432,6 +432,7 @@ const DROP_EASE = "cubic-bezier(.45,0,.8,.5)";
 
 async function spinReels(res) {
   const P = pitchPx();
+  let fsLanded = 0; // FS symbols land left to right; each one sounds a step higher than the last
   stage.classList.add("dropping");
   sound.spin();
   // 1. old symbols fall out of the bottom
@@ -473,7 +474,7 @@ async function spinReels(res) {
   fills.forEach(([c, r, el]) => {
     const delay = stops[c] + (ROWS - 1 - r) * 50;
     const a1 = RM ? null : el.animate(DROP_KF(-(r + 1.3) * P), { duration: 340 + r * 24, delay, easing: DROP_EASE, fill: "backwards" });
-    if (res[c][r] === "fs") (a1 ? a1.finished : Promise.resolve()).then(() => { animWin(el); const [x, y, w] = centerOf(el); fx.emit(x, y, { n: 16, kind: "spark", rgb: SYM.fs.rgb, scale: w / 120 }); });
+    if (res[c][r] === "fs") (a1 ? a1.finished : Promise.resolve()).then(() => { animWin(el); const [x, y, w] = centerOf(el); fx.emit(x, y, { n: 16, kind: "spark", rgb: SYM.fs.rgb, scale: w / 120 }); sound.fsLand(++fsLanded); });
     if (a1) done.push(a1.finished);
   });
   vsReels.forEach(c => {
@@ -651,6 +652,7 @@ async function tumble(ev) {
   clearLit(); floatsEl.replaceChildren();
   qa(reelsEl, ".cell, .tall").forEach(c => c.classList.remove("win", "dim"));
   const P = pitchPx(), anims = [];
+  let fsOnBoard = G.flat().filter((id, i) => id === "fs" && !gone.has(Math.floor(i / ROWS) + "," + (i % ROWS))).length;
   stage.classList.add("dropping");
   for (let c = 0; c < COLS; c++) {
     if (!reels[c].tall.hidden) continue;
@@ -664,7 +666,12 @@ async function tumble(ev) {
       const dist = r - x.from; if (dist <= 0) return;
       const sEl = x.el && x.from >= 0 ? x.el : makeSym(x.id);
       reels[c].cells[r].replaceChildren(sEl);
-      if (!RM) anims.push(sEl.animate(DROP_KF(-dist * P), { duration: 260 + Math.min(dist, 6) * 60, delay: c * 35 + (ROWS - 1 - r) * 30, easing: DROP_EASE, fill: "backwards" }).finished);
+      const drop = RM ? Promise.resolve() : sEl.animate(DROP_KF(-dist * P), { duration: 260 + Math.min(dist, 6) * 60, delay: c * 35 + (ROWS - 1 - r) * 30, easing: DROP_EASE, fill: "backwards" }).finished;
+      if (!RM) anims.push(drop);
+      if (x.id === "fs" && x.from < 0) {
+        const nth = ++fsOnBoard;
+        drop.then(() => { animWin(sEl); const [px, py, w] = centerOf(sEl); fx.emit(px, py, { n: 16, kind: "spark", rgb: SYM.fs.rgb, scale: w / 120 }); sound.fsLand(nth); });
+      }
     });
   }
   await Promise.all(anims);
@@ -1537,6 +1544,8 @@ const sound = (() => {
       [12, 15, 19, 22, 24, 27, 31].forEach((n, i) => bell(t + .2 + i * .08, NOTE(n), .07, 1.6));
       if (max) growl(t, 1.6, .09);
     },
+    // an FS symbol lands: a heavy hit and a bright bell, a step higher for each FS already in this spin
+    fsLand(nth = 1) { const t = at(); if (t == null) return; const up = 2 ** ((Math.min(nth, 7) - 1) * 2 / 12); tone(t, { f: 95, f2: 32, a: .003, d: .5, vol: .55 }); bell(t, NOTE(0) * up, .2, 1.8, .6); bell(t + .03, NOTE(7) * up, .1, 1.4, .6); },
     // one free-spin symbol away: a rising, pulsing riser over the tease
     tease(delay = 0, dur = 1.5) {
       const t = at(delay); if (t == null) return;
@@ -1548,7 +1557,7 @@ const sound = (() => {
   // ---- designed sounds (tools/sound_design.py -> assets/sfx/*.mp3) replace the synth voices above once loaded;
   // until a file is decoded, or if it fails, the synthesized version plays. Pitched samples are recorded at A5 (880 Hz).
   const SFX = ["click", "spin", "land", "land_heavy", "chime", "crystal", "tumble", "charge", "burst", "clash", "wail", "toll",
-    "sting", "sting_devil", "fanfare", "bigwin", "heartbeat", "crumble", "challenger", "banner"];
+    "sting", "sting_devil", "fanfare", "bigwin", "heartbeat", "crumble", "challenger", "banner", "fs_land"];
   const raw = Object.fromEntries(SFX.map(k => [k, fetch(`assets/sfx/${k}.mp3`).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)]));
   const buf = {};
   loadSfx = async () => { for (const k of SFX) { try { const ab = await raw[k]; if (ab) buf[k] = await ctx.decodeAudioData(ab); } catch (err) { console.warn("sfx " + k, err); } } };
@@ -1595,6 +1604,8 @@ const sound = (() => {
   use("crumble", null, t => smp("crumble", t, .5));
   use("lifeLost", null, t => smp("heartbeat", t, .7));
   use("banner", null, t => { duck(2); return smp("banner", t, .4); });
+  // the FS hit is the loudest effect; the music dips under it and each further FS in a spin lands 2 semitones higher
+  use("fsLand", null, (t, nth = 1) => { duck(1.2); return smp("fs_land", t, 1, 2 ** ((Math.min(nth, 7) - 1) * 2 / 12)); });
   use("bigWin", null, (t, max = false) => { duck(max ? 4 : 3); if (!smp("bigwin", t, .8)) return false; if (max) smp("sting_devil", t + .3, .45); return true; });
 
   return {
