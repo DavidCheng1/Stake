@@ -2,41 +2,107 @@
 <!-- Source of cover-16x9.png (1920x1080), built from the game's own art. Re-render from the repo root with:
   & "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new --hide-scrollbars --allow-file-access-from-files --window-size=1920,1080 --virtual-time-budget=4000 --screenshot="$PWD\media\cover-16x9.png" "file:///$($PWD -replace '\\','/')/media/cover-16x9.html"
 -->
-<html><head><meta charset="utf-8"><style>
-  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #071a17; }
-  .c { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
-  /* zoomed to the top of the art so the game's control bar is cropped off */
-  .bg { position: absolute; left: -12%; top: -4%; width: 124%; height: 150%; object-fit: cover; object-position: 50% 0; filter: brightness(.66) saturate(1.1) blur(2.5px); }
-  .shade { position: absolute; inset: 0; background:
-    radial-gradient(60% 70% at 38% 55%, transparent 0 40%, rgba(2,12,10,.55) 100%),
-    linear-gradient(0deg, rgba(3,14,12,.92), rgba(3,14,12,.5) 22%, transparent 45%); }
-  .glow { position: absolute; border-radius: 50%; filter: blur(60px); mix-blend-mode: screen; }
-  .king { position: absolute; right: 40px; bottom: -40px; height: 1060px; filter: drop-shadow(0 0 40px rgba(89,255,156,.45)); }
-  .logo { position: absolute; left: 150px; top: 70px; width: 820px; filter: drop-shadow(0 10px 30px rgba(0,0,0,.6)); }
-  .duel { position: absolute; left: 190px; top: 640px; width: 760px; height: 330px; }
-  .duel img { position: absolute; filter: drop-shadow(0 8px 18px rgba(0,0,0,.6)); }
-  .vs { left: 255px; top: 20px; width: 250px; z-index: 2; filter: drop-shadow(0 0 30px rgba(120,220,255,.8)) !important; }
-  .blue { left: 0; top: 40px; width: 270px; transform: rotate(-8deg); }
-  .witch { right: 0; top: 40px; width: 270px; transform: rotate(8deg); }
-  .mult { position: absolute; left: 50%; top: 255px; transform: translateX(-50%); font: 90px Creepster, cursive; color: #ffd84a;
-    -webkit-text-stroke: 4px #4a1300; text-shadow: 0 0 24px rgba(255,140,40,.9), 0 6px 0 #4a1300; letter-spacing: 4px; z-index: 3; }
-  .side { position: absolute; width: 190px; filter: drop-shadow(0 8px 18px rgba(0,0,0,.6)); }
-</style>
+<html><head><meta charset="utf-8">
 <link rel="stylesheet" href="../ghost-duels-web/fonts/fonts.css">
-</head><body><div class="c">
-  <img class="bg" src="../ghost-duels-web/assets/bg.webp" alt="">
-  <div class="shade"></div>
-  <div class="glow" style="left:1180px;top:260px;width:620px;height:620px;background:rgba(89,255,156,.28)"></div>
-  <div class="glow" style="left:260px;top:620px;width:620px;height:380px;background:rgba(211,107,255,.3)"></div>
-  <img class="king" src="../ghost-duels-web/assets/img23.webp" alt="">
-  <img class="logo" src="../ghost-duels-web/assets/logo.webp" alt="Ghost Duels">
-  <img class="side" src="../ghost-duels-web/assets/devil.webp" style="left:30px;top:560px;transform:rotate(-12deg)" alt="">
-  <img class="side" src="../ghost-duels-web/assets/pirate.webp" style="left:960px;top:600px;transform:rotate(10deg)" alt="">
-  <img class="side" src="../ghost-duels-web/assets/fs.webp" style="left:1000px;top:860px;width:150px;transform:rotate(-8deg)" alt="">
-  <div class="duel">
-    <img class="blue" src="../ghost-duels-web/assets/blue.webp" alt="">
-    <img class="vs" src="../ghost-duels-web/assets/vs.webp" alt="">
-    <img class="witch" src="../ghost-duels-web/assets/witch.webp" alt="">
-    <div class="mult">×1000</div>
+<style>
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #04120f; }
+  .c { position: relative; width: 1920px; height: 1080px; overflow: hidden; isolation: isolate; }
+  .abs { position: absolute; }
+
+  /* cave: zoomed to the top of the art (the game's control bar is cropped off), softened so the heroes stand out */
+  .bg { left: -10%; top: -6%; width: 120%; height: 150%; object-fit: cover; object-position: 50% 0;
+        filter: brightness(.5) saturate(1.15) blur(4px); }
+  /* light: a green glow behind the duel, a cold beam falling on the Skull King */
+  .light { inset: 0; background:
+      radial-gradient(38% 46% at 36% 64%, rgba(120, 255, 190, .30), transparent 70%),
+      radial-gradient(30% 55% at 78% 40%, rgba(110, 255, 170, .26), transparent 72%),
+      radial-gradient(22% 30% at 30% 30%, rgba(190, 110, 255, .22), transparent 75%);
+    mix-blend-mode: screen; }
+  .beam { left: 1180px; top: -120px; width: 640px; height: 1300px; transform: rotate(14deg);
+    background: linear-gradient(90deg, transparent, rgba(170, 255, 210, .16) 35%, rgba(200, 255, 225, .22) 50%, rgba(170, 255, 210, .16) 65%, transparent);
+    filter: blur(28px); mix-blend-mode: screen; }
+  /* fog banks along the floor */
+  .fog { left: -10%; width: 120%; height: 420px; bottom: -120px; filter: blur(30px); border-radius: 50%;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(150, 255, 210, .30), transparent 70%); mix-blend-mode: screen; }
+  .vignette { inset: 0; background:
+      radial-gradient(75% 85% at 50% 48%, transparent 55%, rgba(0, 8, 6, .85) 100%),
+      linear-gradient(0deg, rgba(2, 12, 10, .85), transparent 30%); }
+
+  /* heroes */
+  .king { right: 20px; bottom: -70px; height: 1120px; filter: drop-shadow(0 0 50px rgba(89, 255, 156, .45)) drop-shadow(0 30px 40px rgba(0, 0, 0, .6)); }
+  .logo { left: 150px; top: 34px; width: 800px; filter: drop-shadow(0 0 40px rgba(89, 255, 200, .35)) drop-shadow(0 14px 30px rgba(0, 0, 0, .7)); }
+
+  /* the duel: two ghosts face off across the VS, the multiplier below */
+  .duel { left: 200px; top: 540px; width: 860px; height: 470px; transform: scale(1.14); transform-origin: 0 0; }
+  .arena { left: 90px; top: 250px; width: 680px; height: 170px; border-radius: 50%;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(120, 255, 200, .45), rgba(120, 255, 200, .08) 60%, transparent 72%); filter: blur(10px); }
+  .ghost { width: 330px; filter: drop-shadow(0 18px 24px rgba(0, 0, 0, .55)); }
+  .blue { left: 20px; top: 70px; transform: rotate(-10deg) scaleX(-1); filter: drop-shadow(0 0 30px rgba(79, 227, 255, .75)) drop-shadow(0 18px 24px rgba(0, 0, 0, .55)); }
+  .witch { right: 20px; top: 70px; transform: rotate(10deg); filter: drop-shadow(0 0 30px rgba(211, 107, 255, .75)) drop-shadow(0 18px 24px rgba(0, 0, 0, .55)); }
+  .vs { left: 285px; top: 30px; width: 290px; z-index: 2; filter: drop-shadow(0 0 40px rgba(120, 220, 255, .95)) drop-shadow(0 0 80px rgba(120, 220, 255, .5)); }
+  .spark { left: 330px; top: 70px; width: 200px; height: 200px; z-index: 1; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, .9), rgba(140, 230, 255, .5) 25%, transparent 60%); filter: blur(6px); mix-blend-mode: screen; }
+  .mult { left: 0; right: 0; top: 296px; text-align: center; z-index: 3; font: 128px/1 Creepster, cursive; letter-spacing: 6px; color: #ffd84a;
+    -webkit-text-stroke: 6px #3d1000; paint-order: stroke fill;
+    text-shadow: 0 0 30px rgba(255, 150, 40, .95), 0 0 70px rgba(255, 110, 20, .6), 0 8px 0 #3d1000; }
+  .mult small { font-size: .62em; vertical-align: .2em; margin-right: 6px; }
+
+  /* light bursts: rays behind the VS and behind the Skull King */
+  .burst { border-radius: 50%; mix-blend-mode: screen;
+    -webkit-mask: radial-gradient(circle, #000 0 18%, transparent 68%); mask: radial-gradient(circle, #000 0 18%, transparent 68%); }
+  .burst.duelb { left: 240px; top: 290px; width: 900px; height: 900px; opacity: 1;
+    background: repeating-conic-gradient(from 0deg, rgba(170, 240, 255, .8) 0 3deg, transparent 3deg 12deg, rgba(230, 150, 255, .7) 12deg 15deg, transparent 15deg 24deg); }
+  .burst.kingb { left: 1150px; top: -80px; width: 900px; height: 900px; opacity: .45;
+    background: repeating-conic-gradient(from 6deg, rgba(150, 255, 200, .5) 0 3deg, transparent 3deg 15deg); }
+  .core { border-radius: 50%; mix-blend-mode: screen; filter: blur(30px); }
+  /* covers stray cape fragments at the edge of the Skull King artwork */
+  .mist { left: 1180px; top: 330px; width: 260px; height: 330px; border-radius: 50%; filter: blur(34px);
+    background: radial-gradient(circle, rgba(60, 140, 110, .85), rgba(30, 90, 70, .5) 55%, transparent 75%); }
+
+  /* depth: blurred runes drifting in the air, small sparks */
+  .rune { width: 120px; opacity: .55; filter: blur(3px) drop-shadow(0 0 20px currentColor); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(190, 255, 220, .9); box-shadow: 0 0 14px 4px rgba(120, 255, 190, .6); }
+</style></head>
+<body><div class="c">
+  <img class="abs bg" src="../ghost-duels-web/assets/bg.webp" alt="">
+  <div class="abs light"></div>
+  <div class="abs beam"></div>
+
+  <img class="abs rune" src="../ghost-duels-web/assets/rune_purple.webp" style="left:960px;top:110px;transform:rotate(-14deg)" alt="">
+  <img class="abs rune" src="../ghost-duels-web/assets/rune_green.webp" style="left:1130px;top:860px;width:90px;transform:rotate(18deg)" alt="">
+  <img class="abs rune" src="../ghost-duels-web/assets/rune_fire.webp" style="left:40px;top:470px;width:100px;transform:rotate(-20deg)" alt="">
+  <img class="abs rune" src="../ghost-duels-web/assets/rune_blue.webp" style="left:990px;top:420px;width:80px;opacity:.4;transform:rotate(12deg)" alt="">
+
+  <div class="abs burst kingb"></div>
+  <div class="abs core" style="left:1330px;top:150px;width:480px;height:480px;background:rgba(110,255,180,.22)"></div>
+  <div class="abs burst duelb"></div>
+  <div class="abs core" style="left:520px;top:600px;width:340px;height:280px;background:rgba(170,230,255,.35)"></div>
+  <img class="abs king" src="../ghost-duels-web/assets/img23.webp" alt="">
+  <div class="abs mist"></div>
+  <div class="abs fog"></div>
+  <div class="abs vignette"></div>
+
+  <img class="abs logo" src="../ghost-duels-web/assets/logo.webp" alt="Ghost Duels">
+
+  <div class="abs duel">
+    <div class="abs arena"></div>
+    <img class="abs ghost blue" src="../ghost-duels-web/assets/blue.webp" alt="">
+    <img class="abs ghost witch" src="../ghost-duels-web/assets/witch.webp" alt="">
+    <div class="abs spark"></div>
+    <img class="abs vs" src="../ghost-duels-web/assets/vs.webp" alt="">
+    <div class="abs mult"><small>×</small>1000</div>
   </div>
-</div></body></html>
+  <div id="dots"></div>
+</div>
+<script>
+  // fixed sparks (seeded, so every render is identical)
+  let s = 7; const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  const box = document.getElementById("dots");
+  for (let i = 0; i < 46; i++) {
+    const d = document.createElement("div"), z = .4 + r() * 1.1;
+    d.className = "abs dot";
+    Object.assign(d.style, { left: (r() * 1900) + "px", top: (r() * 1060) + "px", transform: `scale(${z})`, opacity: (.35 + r() * .6).toFixed(2) });
+    box.appendChild(d);
+  }
+</script>
+</body></html>

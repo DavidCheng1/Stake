@@ -186,7 +186,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .motes { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 11; }
 
 /* Painted HUD */
-.val { display: grid; place-items: center; font-weight: 800; color: #f3ead2; font-size: 2.05cqw; line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 .15cqw 0 #000; white-space: nowrap; overflow: hidden; }
+.val { display: grid; place-items: center; font-weight: 800; color: #f3ead2; font-size: calc(2.05cqw * var(--fit, 1)); line-height: 1; font-variant-numeric: tabular-nums; text-shadow: 0 .15cqw 0 #000; white-space: nowrap; overflow: hidden; }
 #balVal { left: 20.9%; top: 92.66%; width: 10.55%; height: 4.55%; }
 #betVal { left: 39.94%; top: 92.66%; width: 5.27%; height: 4.55%; }
 #winVal { left: 51.66%; top: 92.66%; width: 11.62%; height: 4.55%; color: var(--gold); }
@@ -617,7 +617,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   background: linear-gradient(#25222f, #14111a); border: .6vw solid #d0a54c; box-shadow: 0 0 0 .3vw #15131a, inset 0 .8vw 1.6vw rgb(0 0 0 / .7); }
 .h-lbl { font: 800 2.9vw/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; color: #e9e2c8; }
 .h-slot { display: grid; grid-auto-flow: column; align-items: center; justify-content: center; gap: 1.6vw; min-width: 0; position: relative; }
-.portrait .hud .val { position: static; width: auto; height: auto; font-size: 4.6vw; text-shadow: 0 .3vw 0 #000; overflow: visible; }
+.portrait .hud .val { position: static; width: auto; height: auto; font-size: calc(4.6vw * var(--fit, 1)); text-shadow: 0 .3vw 0 #000; overflow: visible; }
 .portrait .hud .mult { position: absolute; left: auto; right: -2vw; top: -9vw; font-size: 5.4vw; }
 .portrait .hud :is(#betMinus, #betPlus) { position: relative; left: auto; top: auto; width: 8vw; height: 8vw; border-radius: 50%; display: grid; place-items: center;
   background: radial-gradient(circle at 50% 35%, #2e4a43, #12221e 75%); box-shadow: inset 0 0 0 .5vw #c99a3e; color: #f3ead2; font: 800 5.4vw/1 var(--ui); }

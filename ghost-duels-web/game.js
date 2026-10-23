@@ -1596,6 +1596,7 @@ async function replayLoop(round) {
     dlg.hidden = true;
     lock(true); slam = false; // a skip in the last viewing must not carry over
     await playRound(round.state, false);
+    spinBtn.disabled = true; // [171] Spin only skips while the replay plays; afterwards no betting control is usable
     say(i18n("Wiederholung beendet", "Replay finished"));
   }
 }
@@ -1619,7 +1620,8 @@ async function boot() {
     await introDone; // an interrupted round resumes only once the player has seen the intro
     if (RGS.replay) return await replayLoop(s.round);
     if (s.round) {
-      if (s.round.amount) { const i = BETS.indexOf(s.round.amount); if (i >= 0) betIdx = i; bet = s.round.amount; }
+      // [187] the open round's stake stays selected afterwards, even if it is not one of today's bet levels
+      if (s.round.amount) { if (!BETS.includes(s.round.amount)) BETS = [...BETS, s.round.amount].sort((a, b) => a - b); betIdx = BETS.indexOf(s.round.amount); bet = s.round.amount; }
       lock(true);
       await runRound(s.round, true);
     } else say(i18n("Drück auf Spin", "Press Spin"));
@@ -2214,6 +2216,19 @@ if (RGS.social) {
   game.insertBefore(patch, document.getElementById("betMinus"));
 }
 
+// ---------- Value fields: long amounts (CA$, MX$, big balances) shrink to fit their painted box instead of being cut off ----------
+const FIT = ["balVal", "betVal", "winVal"].map(id => document.getElementById(id));
+// Only the landscape layout's painted boxes have a fixed width; the phone panel sizes the fields to their text.
+function fitVal(el) {
+  el.style.setProperty("--fit", 1);
+  if (document.documentElement.classList.contains("portrait")) return;
+  const room = el.clientWidth, need = el.scrollWidth;
+  if (room > 20 && need > room) el.style.setProperty("--fit", Math.max(.5, room / need * .96).toFixed(3));
+}
+const fitObs = new MutationObserver(ms => new Set(ms.map(m => m.target.nodeType === 3 ? m.target.parentElement : m.target)).forEach(el => FIT.includes(el) && fitVal(el)));
+FIT.forEach(el => fitObs.observe(el, { childList: true, characterData: true, subtree: true }));
+addEventListener("resize", () => FIT.forEach(fitVal));
+
 // ---------- Portrait (phones held upright): reels on top, cropped from the art; a touch panel below ----------
 // The real controls and values move into the panel (listeners and ids stay), and menus and dialogs into a layer
 // sized for the phone; turning the phone back puts everything where it was.
@@ -2233,6 +2248,7 @@ function layout() {
   PANEL.forEach(([id, slot]) => put(id, p && document.getElementById(slot)));
   LAYER.forEach(id => put(id, p && document.getElementById("ui")));
   fx.size();
+  FIT.forEach(fitVal);
 }
 layout();
 addEventListener("resize", layout);

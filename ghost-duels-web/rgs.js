@@ -92,8 +92,15 @@ const RGS = (() => {
       // unit is not documented: small values are taken as seconds, large ones as milliseconds
       const mrd = Number(api.jurisdiction.minimumRoundDuration) || 0;
       api.minimumRoundDuration = mrd < 100 ? mrd * 1000 : mrd;
-      const betLevels = (cfg.betLevels || [API]).map(v => v / API);
-      const def = (cfg.defaultBetLevel || API) / API;
+      // [242] every bet parameter applies: levels outside minBet..maxBet or off the stepBet grid are dropped;
+      // without betLevels the levels are built from minBet, maxBet and stepBet
+      const min = Number(cfg.minBet) || 0, max = Number(cfg.maxBet) || Infinity, step = Number(cfg.stepBet) || 0;
+      let levels = (cfg.betLevels || []).filter(v => v >= min && v <= max && (!step || v % step === 0));
+      if (!levels.length && min && step && max < Infinity) for (let v = min; v <= max && levels.length < 200; v += step) levels.push(v);
+      if (!levels.length) levels = [Math.max(min, API)];
+      const betLevels = levels.map(v => v / API);
+      let def = (cfg.defaultBetLevel || API) / API;
+      if (!betLevels.includes(def)) def = betLevels.reduce((a, b) => Math.abs(b - def) < Math.abs(a - def) ? b : a);
       const r = data.round;
       return {
         balance: data.balance.amount / API,
