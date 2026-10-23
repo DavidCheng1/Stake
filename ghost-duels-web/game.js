@@ -1357,7 +1357,7 @@ const sound = (() => {
   const KEY = "ghostDuels.sound", MUSIC_SRC = "assets/spooky-carousel.mp3";
   const st = { music: 65, sfx: 80, muted: false }; // sliders 0–100
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
-  let ctx, master, musicBus, sfxBus, duckBus, verb, noise, started = false;
+  let ctx, master, musicBus, sfxBus, duckBus, verb, noise, started = false, loadSfx = () => {};
   const file = fetch(MUSIC_SRC).then(r => { if (!r.ok) throw new Error("music " + r.status); return r.arrayBuffer(); });
   file.catch(() => {}); // reported in loadMusic()
   const level = v => (v / 100) ** 2; // slider to gain, roughly even steps in loudness
@@ -1387,7 +1387,7 @@ const sound = (() => {
     apply(0);
     noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const nd = noise.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
-    loadMusic();
+    loadMusic(); loadSfx();
   }
   async function loadMusic() {
     try {
@@ -1544,6 +1544,59 @@ const sound = (() => {
       for (let i = 0; i < 4; i++) tone(t + i * dur / 4, { f: 85, f2: 50, a: .004, d: .16, vol: .28 });
     },
   };
+
+  // ---- designed sounds (tools/sound_design.py -> assets/sfx/*.mp3) replace the synth voices above once loaded;
+  // until a file is decoded, or if it fails, the synthesized version plays. Pitched samples are recorded at A5 (880 Hz).
+  const SFX = ["click", "spin", "land", "land_heavy", "chime", "crystal", "tumble", "charge", "burst", "clash", "wail", "toll",
+    "sting", "sting_devil", "fanfare", "bigwin", "heartbeat", "crumble", "challenger", "banner"];
+  const raw = Object.fromEntries(SFX.map(k => [k, fetch(`assets/sfx/${k}.mp3`).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)]));
+  const buf = {};
+  loadSfx = async () => { for (const k of SFX) { try { const ab = await raw[k]; if (ab) buf[k] = await ctx.decodeAudioData(ab); } catch (err) { console.warn("sfx " + k, err); } } };
+  function smp(name, t, vol = 1, rate = 1) {
+    const b = buf[name]; if (!b) return false;
+    const s = ctx.createBufferSource(), g = ctx.createGain();
+    s.buffer = b; s.playbackRate.value = rate; g.gain.value = vol; s.connect(g).connect(sfxBus); s.start(t);
+    return true;
+  }
+  const pitch = semi => NOTE(semi) * 2 / 880; // rate that turns the A5 recording into the synth's note
+  const use = (name, delayArg, play) => {
+    const synth = fx[name];
+    fx[name] = (...a) => { const t = at(delayArg == null ? 0 : a[delayArg] || 0); if (t == null) return; if (!play(t, ...a)) synth(...a); };
+  };
+  use("click", null, t => smp("click", t, .45));
+  use("spin", null, t => smp("spin", t, .5));
+  use("land", 1, (t, c, d, heavy) => heavy ? smp("land_heavy", t, .65) : smp("land", t, .5, 1 + c * .04));
+  use("charge", null, t => smp("charge", t, .45));
+  use("burst", null, t => smp("burst", t, .8));
+  use("win", null, (t, size = 4, tier = "obj") => {
+    if (!buf.chime) return false;
+    const start = { rune: 0, obj: 2, char: 4, special: 5 }[tier] ?? 2, notes = Math.min(5, 2 + Math.floor((size - 4) / 2));
+    for (let i = 0; i < notes; i++) smp("chime", t + i * .085, tier === "rune" ? .22 : .32, pitch(SCALE[start + i * 2]));
+    if (tier === "char") smp("toll", t, .22, 2);
+    return true;
+  });
+  use("tumble", null, t => smp("tumble", t, .4));
+  use("slam", null, t => smp("burst", t, .55, 1.15));
+  use("clash", null, (t, power = 0) => smp("clash", t, .45 + power * .1, 1 - power * .05));
+  use("knockout", null, t => smp("wail", t, .55, .94 + Math.random() * .12));
+  use("challenger", null, (t, tier = 2) => { duck(1.6); return tier >= 3 ? smp("sting_devil", t, .6, .92) : smp("challenger", t, .6); });
+  use("sting", null, (t, tier = 1) => {
+    if (tier >= 3) { duck(2.4); return smp("sting_devil", t, .7); }
+    if (tier === 2) { duck(1.8); return smp("sting", t, .6); }
+    if (!buf.chime) return false;
+    [0, 3, 7].forEach((n, i) => smp("chime", t + i * .07, .3, pitch(n)));
+    return true;
+  });
+  use("fanfare", null, t => { duck(3.2); return smp("fanfare", t, .75); });
+  use("toll", null, t => smp("toll", t, .7));
+  use("rune", null, (t, step = 0) => smp("crystal", t, .32, pitch(SCALE[(step % 8) + 4])));
+  use("collect", null, (t, step = 0) => smp("crystal", t, .2, pitch(SCALE[(step % 8) + 4])));
+  use("crate", null, t => smp("land_heavy", t, .45) && smp("toll", t + .02, .3, 2));
+  use("crumble", null, t => smp("crumble", t, .5));
+  use("lifeLost", null, t => smp("heartbeat", t, .7));
+  use("banner", null, t => { duck(2); return smp("banner", t, .4); });
+  use("bigWin", null, (t, max = false) => { duck(max ? 4 : 3); if (!smp("bigwin", t, .8)) return false; if (max) smp("sting_devil", t + .3, .45); return true; });
+
   return {
     ...fx, st,
     set(part) { Object.assign(st, part); try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} apply(); },

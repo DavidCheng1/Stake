@@ -77,6 +77,7 @@ Last updated: 2026-10-23. All work is on the `ghost-duels` branch, which is not 
 - [x] Background music: "Spooky Carousel" loops gaplessly. The speaker in the top-right corner opens Music and Effects volume sliders and a mute.
 - [x] First sound effects, synthesized placeholders: button clicks, spin whoosh, one knock per landing reel (heavy for VS reels and crates), free-spin tease riser.
 - [x] Remaining sound effects: wins, tumbles, duels, bonus trigger and lives, rune crumble and collect, and lowering the music during big wins (all synthesized).
+- [x] **Designed sound effects:** 20 layered sounds (haunted bells, ghost wails, choir, organ, coffin knocks, thunder, chains, heartbeat) built by `tools/sound_design.py` into `ghost-duels-web/assets/sfx/` (708 KB). The game plays them once loaded and falls back to the synthesized versions. Edit a recipe and rerun the script to change a sound.
 
 ### Whenever the math changes
 
