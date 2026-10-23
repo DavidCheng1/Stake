@@ -45,8 +45,7 @@ Last updated: 2026-10-23. All work is on the `ghost-duels` branch, which is not 
   - Option A: install Rust and run the SDK optimiser so a few base rounds reach 25,000×.
   - Option B: keep it as it is, or lower the cap (`wincap` in `game_config.py`, `MAX_WIN_X` in `game.js`).
   - Whatever changes, update `MODE_INFO` in `game.js` (RTP and max win per mode) after rerunning `run.py`.
-- [x] **16:9 cover art:** `media/cover-16x9.png` (1920×1080), rendered from `media/cover-16x9.html`.
-- [ ] **3:4 game tile** for the submit form (it checks both images).
+- [x] **16:9 cover art:** `media/cover-16x9.png` (1920×1080), rendered from `media/cover-16x9.html`. The 3:4 game tile exists (kept outside the repo).
 - [ ] **Ask Stake Engine (or check their docs):**
   - Do they accept a frontend that isn't built on their Svelte web-sdk?
   - What unit is `minimumRoundDuration`? The code assumes values under 100 are seconds and larger ones are milliseconds (`ghost-duels-web/rgs.js`).
@@ -60,6 +59,11 @@ Last updated: 2026-10-23. All work is on the `ghost-duels` branch, which is not 
   - 11 files: `index.json` plus a books file and a lookup table for each of the five modes (base, bonus, bonus4, bonus5, vsspin).
   - Front: the `ghost-duels-web/` folder without its `README.md`.
 - [ ] Test on Stake with a real session: spin, win, bonus, bonus buy, reload mid-round, a replay link, and social mode.
+- [x] **Engine review run (2026-10-23)** against the mock RGS with request interception, all four viewports and every test currency.
+  Everything automatable passes: 181, 183, 274, 242, 187, 221, 222, 104, 31, 228, 227, 193, 194, 195, 219 (USD, EUR, CAD, MXN, JPY), 273,
+  77, 78, 188, 225, 239, 240, 24–29, 235, 185, 171–174, 243, 107 (code), 213, 275. Fixed during the run: 242 (min/max/step), 187 (resumed stake),
+  171 (Spin after a replay), 219 (long CA$/MX$ amounts clipped).
+- [ ] Still for a person: 217 (content) and 253 (distinct from existing titles), listening to sound and mute, and a final look on a real phone.
 - [ ] Before submitting, have a coding agent run `engine-review-prompt.md` again and fix what it reports.
 
 - [ ] **Decide on bonus buys that pay nothing:** about 1 in 5 bought bonuses pays 0× (19–22%, even with 4 or 5 crates), because Ghost Crates only pays when 4+ runes touch a crate. That feels harsh at these prices. Options: more lives or a guaranteed minimum in bought bonuses, then reprice.
