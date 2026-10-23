@@ -29,7 +29,13 @@
       linear-gradient(0deg, rgba(2, 12, 10, .85), transparent 30%); }
 
   /* heroes */
-  .king { right: 20px; bottom: -70px; height: 1120px; filter: drop-shadow(0 0 50px rgba(89, 255, 156, .45)) drop-shadow(0 30px 40px rgba(0, 0, 0, .6)); }
+  /* the Skull King and his lantern: the lantern is a separate image, placed where the game puts it
+     (LICH_MESH.lamp in game.js: x 32, y 270, 288x292 on the 730x930 artwork) */
+  .kingbox { right: 20px; bottom: -70px; height: 1120px; aspect-ratio: 730 / 930; }
+  .lantern { left: 4.38%; top: 29.03%; width: 39.45%; filter: drop-shadow(0 0 40px rgba(110, 255, 160, .9)) drop-shadow(0 10px 20px rgba(0, 0, 0, .5)); }
+  .lanternglow { left: -14%; top: 22%; width: 70%; aspect-ratio: 1; border-radius: 50%; filter: blur(30px); mix-blend-mode: screen;
+    background: radial-gradient(circle, rgba(140, 255, 180, .75), rgba(90, 255, 150, .25) 45%, transparent 70%); }
+  .king { left: 0; top: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 50px rgba(89, 255, 156, .45)) drop-shadow(0 30px 40px rgba(0, 0, 0, .6)); }
   .logo { left: 150px; top: 34px; width: 800px; filter: drop-shadow(0 0 40px rgba(89, 255, 200, .35)) drop-shadow(0 14px 30px rgba(0, 0, 0, .7)); }
 
   /* the duel: two ghosts face off across the VS, the multiplier below */
@@ -55,9 +61,6 @@
   .burst.kingb { left: 1150px; top: -80px; width: 900px; height: 900px; opacity: .45;
     background: repeating-conic-gradient(from 6deg, rgba(150, 255, 200, .5) 0 3deg, transparent 3deg 15deg); }
   .core { border-radius: 50%; mix-blend-mode: screen; filter: blur(30px); }
-  /* covers stray cape fragments at the edge of the Skull King artwork */
-  .mist { left: 1180px; top: 330px; width: 260px; height: 330px; border-radius: 50%; filter: blur(34px);
-    background: radial-gradient(circle, rgba(60, 140, 110, .85), rgba(30, 90, 70, .5) 55%, transparent 75%); }
 
   /* depth: blurred runes drifting in the air, small sparks */
   .rune { width: 120px; opacity: .55; filter: blur(3px) drop-shadow(0 0 20px currentColor); }
@@ -77,8 +80,11 @@
   <div class="abs core" style="left:1330px;top:150px;width:480px;height:480px;background:rgba(110,255,180,.22)"></div>
   <div class="abs burst duelb"></div>
   <div class="abs core" style="left:520px;top:600px;width:340px;height:280px;background:rgba(170,230,255,.35)"></div>
-  <img class="abs king" src="../ghost-duels-web/assets/img23.webp" alt="">
-  <div class="abs mist"></div>
+  <div class="abs kingbox">
+    <div class="abs lanternglow"></div>
+    <img class="abs king" src="../ghost-duels-web/assets/img23.webp" alt="">
+    <img class="abs lantern" src="../ghost-duels-web/assets/img25.webp" alt="">
+  </div>
   <div class="abs fog"></div>
   <div class="abs vignette"></div>
 
