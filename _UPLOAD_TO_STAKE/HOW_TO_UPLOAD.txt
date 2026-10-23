@@ -1,0 +1,17 @@
+Ghost Duels - files for the Stake Engine dashboard (built 2026-10-23 from branch ghost-duels)
+
+1_math       Upload all 11 files as the math version: index.json plus a books file (.jsonl.zst)
+             and a lookup table (.csv) for each mode: base, bonus, bonus4, bonus5, vsspin.
+
+2_frontend   Upload the contents of this folder as the frontend version (index.html at the top).
+
+3_cover-art  cover-16x9.png (1920x1080) for the 16:9 cover. Add your own 3:4 game tile next to it.
+
+Modes:  Base game 1x (RTP 95.67%, max 6,144x) - Ghost Crates 182x (96.09%) - Big Ghost Crates 324x (96.08%)
+        Mega Ghost Crates 650x (95.93%) - VS Spin 5x (96.30%, max 4,064x). Max win cap 25,000x.
+
+After uploading: play once with a real session - spin, win, bonus buy, reload mid-round, a replay link, social mode.
+
+This folder is not on GitHub (the math files are too big). To rebuild it elsewhere: run
+math-sdk\env\Scripts\python.exe games\ghost_duels\run.py in math-sdk, then copy
+math-sdk\games\ghost_duels\library\publish_files\ and ghost-duels-web\ (without README.md).

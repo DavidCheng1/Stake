@@ -1,0 +1,34 @@
+{
+    "modes": [
+        {
+            "name": "base",
+            "cost": 1.0,
+            "events": "books_base.jsonl.zst",
+            "weights": "lookUpTable_base_0.csv"
+        },
+        {
+            "name": "bonus",
+            "cost": 182.0,
+            "events": "books_bonus.jsonl.zst",
+            "weights": "lookUpTable_bonus_0.csv"
+        },
+        {
+            "name": "bonus4",
+            "cost": 324.0,
+            "events": "books_bonus4.jsonl.zst",
+            "weights": "lookUpTable_bonus4_0.csv"
+        },
+        {
+            "name": "bonus5",
+            "cost": 650.0,
+            "events": "books_bonus5.jsonl.zst",
+            "weights": "lookUpTable_bonus5_0.csv"
+        },
+        {
+            "name": "vsspin",
+            "cost": 5.0,
+            "events": "books_vsspin.jsonl.zst",
+            "weights": "lookUpTable_vsspin_0.csv"
+        }
+    ]
+}

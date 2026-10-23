@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Ghost Duels</title>
+<link rel="icon" href="assets/vs.webp">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<section class="game" id="game" aria-label="Slot">
+    <img class="bg" src="assets/bg.webp" alt="" draggable="false">
+    <div class="ambient" id="ambient" aria-hidden="true"><canvas id="amb"></canvas></div>
+    <div class="hero" id="hero" aria-hidden="true"></div>
+    <img class="console-over" src="assets/bg.webp" alt="" draggable="false">
+    <img class="console-front" src="assets/console-front.webp" alt="" draggable="false">
+    <div class="logo"><img src="assets/logo.webp" alt="Ghost Duels" draggable="false"></div>
+    <div class="stage" id="stage">
+      <div class="gridlines" aria-hidden="true"></div>
+      <div class="reels" id="reels"></div>
+      <div class="floats" id="floats"></div>
+    </div>
+    <div class="at msg" id="msg" aria-live="polite"><span class="lives" id="lives" hidden><i class="life"></i><i class="life"></i><i class="life"></i></span><span id="msgText">Press Spin</span></div>
+    <button type="button" class="hot turbo" id="turboBtn" aria-label="Turbo" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 5 13.5h6L9.5 22 19 9.5h-6.2z"/></svg><span class="tb-lbl">Turbo</span></button>
+    <button type="button" class="buy-btn" id="buyBtn"><span class="bb-fs" aria-hidden="true"></span><span class="bb-txt"><span class="bb-top">Buy</span><span class="bb-main">Bonus</span></span></button>
+    <div class="at val" id="balVal">1.000,00 €</div>
+    <button type="button" class="hot" id="betMinus" aria-label="Decrease bet"></button>
+    <div class="at val" id="betVal">1,00</div>
+    <button type="button" class="hot" id="betPlus" aria-label="Increase bet"></button>
+    <div class="at val" id="winVal">0,00 €</div>
+    <span class="at mult" id="multChip" hidden></span>
+    <button type="button" class="hot round" id="autoBtn" aria-label="Autoplay" aria-pressed="false" aria-haspopup="true" aria-expanded="false"><img class="disc" src="assets/disc-auto.webp" alt=""><span class="auto-left" id="autoLeft" hidden></span></button>
+    <div class="auto-menu" id="autoMenu" role="dialog" aria-label="Choose autoplay" hidden>
+      <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
+      <div class="am-title">Autoplay</div><div class="am-rule" aria-hidden="true"></div>
+      <div class="am-grid" role="group" aria-label="Number of spins">
+        <button type="button" data-n="10">10</button><button type="button" data-n="25">25</button><button type="button" data-n="50">50</button><button type="button" data-n="100">100</button>
+        <button type="button" data-n="250">250</button><button type="button" data-n="1000">1000</button><button type="button" class="inf" data-n="Infinity">∞</button>
+      </div>
+      <div class="am-foot"><button type="button" id="amStart" class="am-start">Start</button><button type="button" id="amClose" class="am-close" aria-label="Close">✕</button></div>
+    </div>
+    <button type="button" class="hot round" id="spin" aria-label="Spin"><img class="disc" src="assets/disc-spin.webp" alt=""></button>
+    <button type="button" class="hot round" id="infoBtn" aria-label="Game rules"></button>
+    <button type="button" class="hot round" id="musicBtn" aria-label="Sound" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M3 9.5h4l5-4.5v14l-5-4.5H3z"/><path class="on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="off" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
+    <div class="auto-menu snd-menu" id="sndMenu" role="dialog" aria-label="Volume" hidden>
+      <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
+      <div class="am-title">Sound</div><div class="am-rule" aria-hidden="true"></div>
+      <label class="snd-row"><span id="lblMusic">Music</span><input type="range" id="volMusic" min="0" max="100" step="1"><output id="outMusic"></output></label>
+      <label class="snd-row"><span id="lblSfx">Effects</span><input type="range" id="volSfx" min="0" max="100" step="1"><output id="outSfx"></output></label>
+      <div class="am-foot snd-foot"><button type="button" id="muteAll" aria-pressed="false">Mute</button></div>
+    </div>
+    <div class="duel" id="duel" hidden></div>
+    <div class="banner" id="banner" hidden><h3 id="bTitle"></h3><p id="bSub"></p></div>
+    <canvas class="fx" id="fx"></canvas>
+    <canvas class="motes" id="motes" aria-hidden="true"></canvas>
+    <div class="buy-dlg" id="buyDlg" role="dialog" aria-modal="true" aria-labelledby="buyTitle" hidden>
+      <div class="buy-menu">
+        <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
+        <div class="rules-head"><h2 id="buyTitle">Bonus Menu</h2><button type="button" class="rules-close" id="buyClose" aria-label="Close">✕</button></div>
+        <div class="buy-opts" id="buyOpts"></div>
+      </div>
+    </div>
+    <div class="rules" id="rules" role="dialog" aria-modal="true" aria-labelledby="rulesTitle" hidden>
+      <div class="rules-card">
+        <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
+        <div class="rules-head"><h2 id="rulesTitle">Game Rules</h2><button type="button" class="rules-close" id="rulesClose" aria-label="Close">✕</button></div>
+        <div class="rules-body" id="rulesBody" tabindex="0">
+          <section class="paytable" id="paytable"><h3 class="r-h" id="ptTitle">Paytable</h3><p class="hint"></p></section>
+        </div>
+      </div>
+    </div>
+    <div class="replay-bar" id="replayBar" hidden></div>
+    <div class="msg-dlg" id="replayDlg" role="dialog" aria-modal="true" aria-labelledby="replayTitle" hidden>
+      <div class="icard msg-card">
+        <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
+        <h2 id="replayTitle">Replay</h2>
+        <p id="replayInfo"></p>
+        <div class="am-foot msg-foot"><button type="button" id="replayGo" class="am-start">Play</button></div>
+      </div>
+    </div>
+    <div class="msg-dlg err-dlg" id="errDlg" role="alertdialog" aria-modal="true" aria-labelledby="errTitle" aria-describedby="errText" hidden>
+      <div class="icard msg-card">
+        <i class="am-corner tl"></i><i class="am-corner tr"></i><i class="am-corner bl"></i><i class="am-corner br"></i>
+        <h2 id="errTitle">Connection problem</h2>
+        <p id="errText"></p>
+        <div class="am-foot msg-foot"><button type="button" id="errReload" class="am-start">Reload</button></div>
+      </div>
+    </div>
+    <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="introGo" tabindex="-1"></div>
+  </section>
+
+<!-- Portrait (phones held upright): the game's own controls and values move into this panel below the reels,
+     and its menus and dialogs into the layer after it, sized for the phone. Empty in landscape. -->
+<div class="hud" id="hud" aria-label="Controls">
+  <div class="h-msg" id="hMsg"></div>
+  <div class="h-vals">
+    <div class="h-box"><span class="h-lbl" id="hBalLbl">Balance</span><div class="h-slot" id="hBal"></div></div>
+    <div class="h-box"><span class="h-lbl" id="hBetLbl">Bet</span><div class="h-slot h-bet" id="hBetM"></div></div>
+    <div class="h-box"><span class="h-lbl" id="hWinLbl">Win</span><div class="h-slot" id="hWin"></div></div>
+  </div>
+  <div class="h-ctrls">
+    <div class="h-c" id="hTurbo"></div>
+    <div class="h-c" id="hAuto"><span class="h-cap">Autoplay</span></div>
+    <div class="h-c h-spin" id="hSpin"></div>
+    <div class="h-c" id="hInfo"><span class="h-cap">Info</span></div>
+    <div class="h-c" id="hSound"><span class="h-cap" id="hSoundCap">Sound</span></div>
+  </div>
+  <div class="h-buy" id="hBuy"></div>
+</div>
+<div class="ui" id="ui"></div>
+<script src="rgs.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
