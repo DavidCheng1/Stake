@@ -222,7 +222,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   background: linear-gradient(#2b2735, #17141f); border: .15cqw solid #c9a35a; box-shadow: 0 0 .6cqw rgb(109 255 179 / .6); text-align: center; font-variant-numeric: tabular-nums; }
 /* Autoplay menu in the style of the stone console: slate panel, gold rim, dark inset boxes, cream lettering */
 .auto-menu { position: absolute; z-index: 40; right: 26.5%; bottom: 14.5%; width: 23%; padding: 1.6cqw 1.5cqw 1.3cqw; border-radius: 1cqw;
-  background: url(assets/img0.webp) 40% 30% / 165% auto, #2e363a;
+  background: url(assets/img0.webp) 40% 30% / cover, #2e363a;
   border: .45cqw solid transparent;
   background-clip: padding-box;
   box-shadow: 0 0 0 .2cqw #15131a, inset 0 0 0 .2cqw #15131a, inset 0 0 1.6cqw rgb(0 0 0 / .55), 0 1.2cqw 2.6cqw rgb(0 0 0 / .75);
@@ -378,7 +378,9 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   filter: drop-shadow(0 0 .6cqw rgb(var(--c) / .55)) drop-shadow(0 .3cqw .3cqw rgb(0 0 0 / .6)); }
 .vk { position: absolute; inset: 0; transform-origin: 50% 92%; animation: vkBreathe 3.4s ease-in-out infinite; }
 .vk img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none; }
-.vk img.vk-lamp { left: 4.38%; top: 29.03%; width: 39.45%; height: 31.4%; inset: auto; animation: vkLamp 1.8s ease-in-out infinite; }
+/* inset first: it is a shorthand and would reset left/top if it came after them */
+.vk img.vk-lamp { inset: auto; left: 4.38%; top: 21.51%; width: 39.45%; height: 38.92%; animation: vkLamp 1.8s ease-in-out infinite; }
+.vk img.vk-fist { inset: auto; left: 12.6%; top: 18.49%; width: 15.07%; height: 10.54%; }
 @keyframes vkBreathe { 50% { transform: scale(1.025, 1.04) translateY(-1.5%); } }
 @keyframes vkLamp { 50% { filter: brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3); } }
 .vx-crest { position: absolute; left: 50%; top: .5%; width: 112%; translate: -50% 0; z-index: 4; filter: drop-shadow(0 .3cqw .4cqw rgb(0 0 0 / .6)); }
@@ -493,7 +495,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .intro-logo { width: 19%; max-width: none; filter: drop-shadow(0 .6cqw .8cqw rgb(0 0 0 / .6)); animation: logoFloat 4.5s ease-in-out infinite; }
 .intro-cards { display: grid; grid-template-columns: repeat(3, 23cqw); gap: 3cqw; align-items: center; }
 .icard { position: relative; aspect-ratio: .82; padding: 1.3cqw 1.4cqw 1.6cqw; border-radius: 1.2cqw; display: grid; grid-template-rows: 50% auto 1fr; justify-items: center; align-items: start; gap: .7cqw; text-align: center;
-  background: url(assets/img0.webp) 40% 30% / 165% auto, #2e363a; border: .45cqw solid transparent; background-clip: padding-box;
+  background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border: .45cqw solid transparent; background-clip: padding-box;
   box-shadow: 0 0 0 .2cqw #15131a, inset 0 0 0 .2cqw #15131a, inset 0 0 2.4cqw rgb(0 0 0 / .7), 0 1.4cqw 3cqw rgb(0 0 0 / .75); }
 .icard::before { content: ""; position: absolute; inset: -.45cqw; border-radius: 1.2cqw; padding: .45cqw; pointer-events: none;
   background: linear-gradient(160deg, #f6dd8f 0%, #c99a3e 22%, #8a6122 45%, #e2bb62 62%, #a77a2c 80%, #f0d184 100%);
@@ -522,7 +524,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 /* Bonus buy: a gold plaque docked on the dashboard's left wing, and its confirmation dialog */
 .buy-btn { all: unset; box-sizing: border-box; position: absolute; left: 8.6%; top: 71%; width: 15%; height: 10.2%; z-index: 12; cursor: pointer;
   display: grid; grid-template-columns: auto 1fr; align-items: center; gap: .5cqw; padding: 0 .9cqw 0 .5cqw; border-radius: 1cqw;
-  background: url(assets/img0.webp) 40% 30% / 260% auto, #2e363a; border: .3cqw solid #c99a3e;
+  background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border: .3cqw solid #c99a3e;
   box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .7), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 1.4cqw rgb(255 79 210 / .45);
   animation: buyGlow 2.2s ease-in-out infinite; transition: transform .1s, filter .2s; }
 @keyframes buyGlow { 50% { box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .7), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 2.4cqw rgb(255 79 210 / .8); } }
@@ -549,7 +551,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 /* Game rules: opened by Info, scrolls inside its own frame (same stone and gold as the menus) */
 .rules { position: absolute; inset: 0; z-index: 58; display: flex; align-items: center; justify-content: center; background: rgb(3 10 9 / .74); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .rules-card { position: relative; width: 88%; height: 88%; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: .8cqw; padding: 1.3cqw 1.2cqw 1.2cqw 1.8cqw; box-sizing: border-box; border-radius: 1.2cqw;
-  background: url(assets/img0.webp) 40% 30% / 165% auto, #2e363a; border: .45cqw solid transparent; background-clip: padding-box;
+  background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border: .45cqw solid transparent; background-clip: padding-box;
   box-shadow: 0 0 0 .2cqw #15131a, inset 0 0 0 .2cqw #15131a, inset 0 0 2.4cqw rgb(0 0 0 / .7), 0 1.4cqw 3cqw rgb(0 0 0 / .75); }
 .rules-card::before { content: ""; position: absolute; inset: -.45cqw; border-radius: 1.2cqw; padding: .45cqw; pointer-events: none;
   background: linear-gradient(160deg, #f6dd8f 0%, #c99a3e 22%, #8a6122 45%, #e2bb62 62%, #a77a2c 80%, #f0d184 100%);
@@ -604,7 +606,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .portrait .ui > * { pointer-events: auto; }
 .portrait .hud { display: grid; position: absolute; left: 0; right: 0; top: calc(100vw / .56 * 572 / 1024 * .8); bottom: 0; z-index: 20;
   grid-template-rows: auto auto 1fr auto; align-content: start; gap: 3.2vw; padding: 3vw 4vw calc(4vw + env(safe-area-inset-bottom, 0px));
-  background: url(assets/img0.webp) 40% 30% / 200% auto, #2e363a; border-top: .9vw solid #c99a3e;
+  background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border-top: .9vw solid #c99a3e;
   box-shadow: 0 -.4vw 0 #15131a, inset 0 2vw 5vw rgb(0 0 0 / .55), 0 -3vw 6vw rgb(0 0 0 / .6); font-family: var(--ui); }
 /* message bar and lives */
 .portrait .hud .msg { position: static; width: auto; height: auto; min-height: 9vw; padding: 1.5vw 3vw; box-sizing: border-box; border-radius: 2.4vw;
@@ -692,7 +694,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 /* Bonus menu: the buyable modes side by side (stacked in portrait), each with its price and button */
 .buy-menu { position: relative; width: min(92%, 96cqw); max-height: 92%; box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 1cqw;
   padding: 1.3cqw 1.6cqw 1.6cqw; border-radius: 1.2cqw; cursor: default;
-  background: url(assets/img0.webp) 40% 30% / 165% auto, #2e363a; border: .45cqw solid transparent; background-clip: padding-box;
+  background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border: .45cqw solid transparent; background-clip: padding-box;
   box-shadow: 0 0 0 .2cqw #15131a, inset 0 0 0 .2cqw #15131a, inset 0 0 2.4cqw rgb(0 0 0 / .7), 0 1.4cqw 3cqw rgb(0 0 0 / .75); }
 .buy-menu::before { content: ""; position: absolute; inset: -.45cqw; border-radius: 1.2cqw; padding: .45cqw; pointer-events: none;
   background: linear-gradient(160deg, #f6dd8f 0%, #c99a3e 22%, #8a6122 45%, #e2bb62 62%, #a77a2c 80%, #f0d184 100%);
