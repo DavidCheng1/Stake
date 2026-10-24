@@ -29,12 +29,13 @@
       linear-gradient(0deg, rgba(2, 12, 10, .85), transparent 30%); }
 
   /* heroes */
-  /* the Skull King and his lantern: the lantern is a separate image, placed where the game puts it
-     (LICH_MESH.lamp in game.js: x 32, y 270, 288x292 on the 730x930 artwork) */
+  /* the Skull King, his lantern and the fist over its ring: separate images, placed where the game puts them
+     (LICH_MESH in game.js: lamp x 32, y 200, 288x362; fist x 92, y 172, 110x98 on the 730x930 artwork) */
   .kingbox { right: 20px; bottom: -70px; height: 1120px; aspect-ratio: 730 / 930; }
-  .lantern { left: 4.38%; top: 29.03%; width: 39.45%; filter: drop-shadow(0 0 40px rgba(110, 255, 160, .9)) drop-shadow(0 10px 20px rgba(0, 0, 0, .5)); }
-  .lanternglow { left: -14%; top: 22%; width: 70%; aspect-ratio: 1; border-radius: 50%; filter: blur(30px); mix-blend-mode: screen;
+  .lantern { left: 4.38%; top: 21.51%; width: 39.45%; filter: drop-shadow(0 0 40px rgba(110, 255, 160, .9)) drop-shadow(0 10px 20px rgba(0, 0, 0, .5)); }
+  .lanternglow { left: -14%; top: 20%; width: 70%; aspect-ratio: 1; border-radius: 50%; filter: blur(30px); mix-blend-mode: screen;
     background: radial-gradient(circle, rgba(140, 255, 180, .75), rgba(90, 255, 150, .25) 45%, transparent 70%); }
+  .fist { left: 12.6%; top: 18.49%; width: 15.07%; }
   .king { left: 0; top: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 50px rgba(89, 255, 156, .45)) drop-shadow(0 30px 40px rgba(0, 0, 0, .6)); }
   .logo { left: 150px; top: 34px; width: 800px; filter: drop-shadow(0 0 40px rgba(89, 255, 200, .35)) drop-shadow(0 14px 30px rgba(0, 0, 0, .7)); }
 
@@ -82,8 +83,9 @@
   <div class="abs core" style="left:520px;top:600px;width:340px;height:280px;background:rgba(170,230,255,.35)"></div>
   <div class="abs kingbox">
     <div class="abs lanternglow"></div>
-    <img class="abs king" src="../ghost-duels-web/assets/img23.webp" alt="">
+    <img class="abs king" src="../ghost-duels-web/assets/img24.webp" alt="">
     <img class="abs lantern" src="../ghost-duels-web/assets/img25.webp" alt="">
+    <img class="abs fist" src="../ghost-duels-web/assets/img26.webp" alt="">
   </div>
   <div class="abs fog"></div>
   <div class="abs vignette"></div>
