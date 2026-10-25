@@ -128,6 +128,8 @@ class GameConfig(Config):
             "bonus5": {"cost": 650.0, "rtp": 0.9593, "buy_fs": [(5, 1)]},
             # VS Spin uses fewer 2-reel spins than the base game (86.1/9.5 instead of 80/15.5), so it pays ~96% at a whole 5x:
             # buy prices with fractions of a cent (5.27 x 0.10 = 0.527) are not valid bet amounts
+            # FS Boost (ante bet): every spin costs 3x and FS symbols land more often, so the bonus comes ~7x as often
+            "boost": {"cost": 3.0, "rtp": 0.9563, "fs_weight": 1.03},
             "vsspin": {"cost": 5.0, "rtp": 0.963, "force_vs": True,
                        "vs_count": [(1, 86.1), (2, 9.5), (3, 3.2), (4, 0.9), (5, 0.3), (6, 0.1)]},
         }
@@ -141,8 +143,8 @@ class GameConfig(Config):
                 rtp=rtp,
                 max_win=self.wincap,
                 auto_close_disabled=False,
-                is_feature=name == "base",
-                is_buybonus=name != "base",
+                is_feature=name in ("base", "boost"),
+                is_buybonus=name not in ("base", "boost"),  # the FS boost is a bet variant, not a bonus buy
                 distributions=[
                     Distribution(
                         criteria="natural" if name == "base" else name,
@@ -153,7 +155,7 @@ class GameConfig(Config):
             )
 
         self.bet_modes = [mode("base", 1.0, self.rtp, {"force_freegame": False})] + [
-            mode(name, m["cost"], m["rtp"], {"force_freegame": "buy_fs" in m, "buy_fs": m.get("buy_fs"), "force_vs": m.get("force_vs", False), "vs_count": m.get("vs_count")})
+            mode(name, m["cost"], m["rtp"], {"force_freegame": "buy_fs" in m, "buy_fs": m.get("buy_fs"), "force_vs": m.get("force_vs", False), "vs_count": m.get("vs_count"), "fs_weight": m.get("fs_weight")})
             for name, m in self.buy_modes.items()
         ]
 

@@ -27,6 +27,8 @@ Last updated: 2026-10-23. All work is on the `ghost-duels` branch, which is not 
   | Big Ghost Crates (exactly 4 FS) | 324× | 96.08% | 25,000× | 19.9% |
   | Mega Ghost Crates (exactly 5 FS) | 650× | 95.93% | 25,000× | 18.9% |
   | VS Spin (at least one VS reel) | 5× | 96.30% | 4,064× | 49.7% |
+- [x] **FS Boost** (bet mode `boost`, 1M rounds): a switch above Buy Bonus. While it is on, every spin costs 3× the bet and FS symbols land more often (`fs_weight` 1.03 instead of 0.516), so the bonus comes every 109 spins instead of every 725 (about 6.7×). RTP 95.63%, max win 7,060×. It is a bet variant, not a bonus buy (`is_buybonus` false), off on every visit, and the switch shows the real price per spin [31].
+- [x] **Spookier bonus:** rune values use the Creepster lettering with a glow in the rune's colour; crates are haunted coffin chests (dark planks with glowing seams, iron bands and brackets, the multiplier on a glowing iron tag, ghost smoke).
   - The price must match in `game_config.py` (`buy_modes`) and `game.js` (`BUYS`): price = mean payout of the mode / 0.96 in whole bets, so every buy costs whole cents at any bet level; each mode also declares `rtp` = mean payout / price. VS Spin reaches ~96% at 5× with its own VS reel counts (fewer 2-reel spins than the base game). Stake allows at most 96.7% per mode.
 - [x] **Approval checklist fixes** (Engine's review prompt is `engine-review-prompt.md` in the repo root; guideline IDs in brackets):
   - The page is only the game, scaled to the window; nothing scrolls [227, 193, 195].
@@ -67,7 +69,7 @@ Last updated: 2026-10-23. All work is on the `ghost-duels` branch, which is not 
 - [ ] Before submitting, have a coding agent run `engine-review-prompt.md` again and fix what it reports.
 
 - [ ] **Decide on bonus buys that pay nothing:** about 1 in 5 bought bonuses pays 0× (19–22%, even with 4 or 5 crates), because Ghost Crates only pays when 4+ runes touch a crate. That feels harsh at these prices. Options: more lives or a guaranteed minimum in bought bonuses, then reprice.
-- [ ] The SDK's 3-star volatility check flags the buy modes (`etl40b` 1.1–2.0 against 0.9, `etl10k` up to 23.8 against 0.8 for Mega). It adds up big wins in base-bet units, so it is not comparable for modes costing 182–650×; ask Stake whether it applies to buy modes.
+- [ ] **3-star rating (ask Stake).** The SDK's 3-star limits per mode are prob5k ≤ 1%, prob10k ≤ 0.5%, etl40b ≤ 0.9, etl10k ≤ 0.8, CVaR ≤ 800 and RTP ≤ 96.7% (`utils/rgs_verification.py`). The base game passes all of them. etl40b and etl10k add up big wins in base-bet units without dividing by the mode's price: as written, every other mode fails them (boost etl40b 2.11, VS Spin 1.18, Ghost Crates 1.11, Big 2.00 / 3.53, Mega etl10k 23.8); divided by the price, all six modes pass (largest: boost 0.70). Community write-ups disagree on which reading Stake uses, and one says new games are judged against 2-star limits (etl 0.8, CVaR 700), which the price-divided values also meet. Stake's own math requirements page could not be read; confirm with Stake before submitting.
 
 ### Nice to have
 

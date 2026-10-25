@@ -25,6 +25,12 @@
             "weights": "lookUpTable_bonus5_0.csv"
         },
         {
+            "name": "boost",
+            "cost": 3.0,
+            "events": "books_boost.jsonl.zst",
+            "weights": "lookUpTable_boost_0.csv"
+        },
+        {
             "name": "vsspin",
             "cost": 5.0,
             "events": "books_vsspin.jsonl.zst",

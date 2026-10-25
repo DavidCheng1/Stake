@@ -23,9 +23,19 @@ class GameCalculations(Executables):
     """Game-specific board and feature calculations."""
 
     # ---------- Board ----------
+    def mode_weights(self):
+        """Symbol weights of the current bet mode: the FS boost mode ("boost") raises the FS weight."""
+        if getattr(self, "_weights_key", None) != (self.betmode, self.criteria):
+            w = dict(self.config.symbol_weights)
+            fs_weight = self.get_current_distribution_conditions().get("fs_weight")
+            if fs_weight:
+                w["fs"] = fs_weight
+            self._weights_key, self._weights = (self.betmode, self.criteria), w
+        return self._weights
+
     def draw_symbol(self, exclude=()):
         """Draw one cell by symbol weight, redrawing excluded symbols."""
-        weights = self.config.symbol_weights
+        weights = self.mode_weights()
         while True:
             x = random.random() * sum(weights.values())
             for sym, w in weights.items():

@@ -45,7 +45,7 @@ math-sdk\env\Scripts\python.exe tools\mock_rgs.py
 For Stake Engine, upload `math-sdk/games/ghost_duels/library/publish_files/` as the math and the `ghost-duels-web/` folder as the frontend.
 
 Current math, from 1M spins: RTP 95.67%, a win every 3.6 spins, a bonus every 725 spins, max win 25,000×.
-Buy modes (100k rounds each): Ghost Crates 182× (RTP 96.09%), Big Ghost Crates 324× (96.08%), Mega Ghost Crates 650× (95.93%), VS Spin 5× (96.30%).
+FS Boost (1M rounds): 3× the bet per spin, bonus about 6.7× as often, RTP 95.63%. Buy modes (100k rounds each): Ghost Crates 182× (RTP 96.09%), Big Ghost Crates 324× (96.08%), Mega Ghost Crates 650× (95.93%), VS Spin 5× (96.30%).
 
 ## Loan Shark
 

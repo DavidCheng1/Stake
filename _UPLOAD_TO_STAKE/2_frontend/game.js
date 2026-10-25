@@ -75,6 +75,13 @@ const BUYS = [
     text: i18n("Ein Spin mit mindestens einer VS-Walze: jede Gruppe, die sie erreicht, startet ein Duell.", "A spin with at least one VS reel: every group that reaches it starts a duel.") },
 ];
 const BASE_INFO = { rtp: 95.67, maxWin: 6144 };
+// FS Boost: a bet variant switched on for every spin (math mode "boost", fs_weight in game_config.py); rtp and maxWin from
+// the published lookup table like BUYS.
+const BOOST = { mode: "BOOST", cost: 3, rtp: 95.63, maxWin: 7060, name: i18n("FS-Boost", "FS Boost"),
+  text: i18n("Jeder Spin kostet 3× den Einsatz, dafür landen FS-Symbole öfter: der Geisterkisten-Bonus kommt etwa 7× so oft. Bleibt an, bis du ihn ausschaltest.",
+    "Every spin costs 3× the bet, and FS symbols land more often: the Ghost Crates bonus comes about 7× as often. Stays on until you switch it off.") };
+const modeInfo = mode => mode === "BOOST" ? BOOST : buyOf(mode);
+const modeCost = mode => modeInfo(mode)?.cost || 1;
 const buyOf = mode => BUYS.find(b => b.mode === mode);
 // RTP of the published lookup table (math-sdk/games/ghost_duels, 1M spins)
 const RTP_TEXT = (95.67).toLocaleString(RGS.lang) + " %";
@@ -834,8 +841,8 @@ const kCells = t => { const o = []; K.forEach((col, c) => col.forEach((h, r) => 
 function makeCrate(id, mult) {
   const el = div("crate"); el.style.setProperty("--c", SYM[id].rgb);
   const front = div("cr-front"), plate = div("cr-plate");
-  plate.textContent = "×" + mult; front.append(div("cr-corner l"), div("cr-corner r"), plate);
-  el.append(div("cr-glow"), div("cr-back"), makeSym(id), front); return el;
+  plate.textContent = "×" + mult; // brackets and tag sit over the coffin front, so its shape does not clip them
+  el.append(div("cr-glow"), div("cr-back"), makeSym(id), front, div("cr-corner l"), div("cr-corner r"), plate); return el;
 }
 function makeRune(v, id) {
   const el = div("rtok"); el.style.setProperty("--c", SYM[id].rgb);
@@ -1219,7 +1226,7 @@ async function playRound(events, resumed) {
 function updateBal() { balVal.textContent = RGS.replay ? "–" : money(balance); } // replays have no wallet
 function updateBet() {
   bet = BETS[betIdx]; betVal.textContent = fmtV(bet);
-  refreshPays();
+  refreshPays(); showBoost();
   document.getElementById("betMinus").disabled = busy || RGS.replay || betIdx === 0;
   document.getElementById("betPlus").disabled = busy || RGS.replay || betIdx === BETS.length - 1;
 }
@@ -1233,9 +1240,9 @@ const lock = on => { busy = on; buttons.forEach(b => b.disabled = on); spinBtn.d
 function skip() { if (!busy || slam || !canSkip()) return; slam = true; hurry(); }
 
 // Wallet flow: play debits the bet (x the mode's cost) and returns the book; end-round credits a win.
-async function play(mode = "BASE") {
+async function play(mode = boostOn ? "BOOST" : "BASE") {
   if (busy || RGS.replay) return;
-  const cost = bet * (buyOf(mode)?.cost || 1);
+  const cost = bet * modeCost(mode);
   if (balance < cost) { say(i18n("Guthaben reicht nicht für diesen Einsatz", "Balance too low for this bet")); if (autoOn) stopAuto(); return; }
   lock(true); spinBtn.classList.add("turning");
   later(() => spinBtn.classList.remove("turning"), 1600);
@@ -1265,7 +1272,7 @@ function showAutoLeft() { autoLeftEl.hidden = !autoOn; autoLeftEl.textContent = 
 function stopAuto(msg) { autoOn = false; autoLeft = 0; autoBtn.setAttribute("aria-pressed", "false"); showAutoLeft(); updateBuy(); if (msg) say(msg); }
 async function autoLoop() {
   while (autoOn && autoLeft > 0) {
-    if (balance < bet) { stopAuto(i18n("Guthaben reicht nicht · Autoplay beendet", "Balance too low · Autoplay ended")); break; }
+    if (balance < bet * modeCost(boostOn ? "BOOST" : "BASE")) { stopAuto(i18n("Guthaben reicht nicht · Autoplay beendet", "Balance too low · Autoplay ended")); break; }
     if (autoLeft !== Infinity) autoLeft--; showAutoLeft();
     await play();
     if (!autoOn) break;
@@ -1339,7 +1346,24 @@ const buyCards = BUYS.map(b => {
   document.getElementById("buyOpts").appendChild(card);
   return { b, amount, times, go };
 });
-function updateBuy() { buyBtn.disabled = busy || autoOn || loading || RGS.replay; }
+function updateBuy() { buyBtn.disabled = busy || autoOn || loading || RGS.replay; boostBtn.disabled = busy || autoOn || loading || RGS.replay; }
+
+// ---------- FS Boost switch: [31] a mode over 2× the bet is never one press away from a bet; switching it on only
+// changes the next spins, and the switch shows their real price ----------
+let boostOn = false; // off on every visit, so nobody plays at 3× by accident
+const boostBtn = document.getElementById("boostBtn");
+function showBoost() {
+  boostBtn.classList.toggle("on", boostOn); boostBtn.setAttribute("aria-pressed", String(boostOn));
+  q(boostBtn, ".bo-top").textContent = BOOST.name;
+  q(boostBtn, ".bo-main").textContent = boostOn ? i18n("An", "On") : i18n("Aus", "Off");
+  q(boostBtn, ".bo-cost").textContent = `${money(bet * BOOST.cost)} ${i18n("pro Spin", "per spin")}`;
+  boostBtn.setAttribute("aria-label", `${BOOST.name}: ${boostOn ? i18n("an", "on") : i18n("aus", "off")}, ${money(bet * BOOST.cost)} ${i18n("pro Spin", "per spin")}`);
+}
+boostBtn.addEventListener("click", () => {
+  if (boostBtn.disabled) return;
+  boostOn = !boostOn; showBoost(); sound.click();
+  say(boostOn ? i18n(`FS-Boost an · ${money(bet * BOOST.cost)} pro Spin`, `FS Boost on · ${money(bet * BOOST.cost)} per spin`) : i18n("FS-Boost aus", "FS Boost off"));
+});
 function openBuy(open) {
   buyDlg.hidden = !open;
   if (!open) return buyBtn.focus();
@@ -1648,7 +1672,7 @@ document.getElementById("errReload").addEventListener("click", () => location.re
 // Replay: a panel shows bet, mode and real cost and starts the round; afterwards it offers to watch it again.
 async function replayLoop(round) {
   const dlg = document.getElementById("replayDlg"), go = document.getElementById("replayGo"), info = document.getElementById("replayInfo");
-  const modeName = buyOf(round.mode)?.name || i18n("Basisspiel", "Base game");
+  const modeName = modeInfo(round.mode)?.name || i18n("Basisspiel", "Base game");
   const line = `${modeName} · ${i18n("Einsatz", "Bet")} ${money(round.amount)}` + (round.cost > 1 ? ` · ×${num(round.cost)} · ${i18n("Echte Kosten", "Real cost")} ${money(round.amount * round.cost)}` : "");
   const bar = document.getElementById("replayBar"); bar.textContent = `${i18n("Wiederholung", "Replay")} · ${line}`; bar.hidden = false;
   say(i18n("Wiederholung", "Replay"));
@@ -2171,7 +2195,7 @@ q(document, "#paytable .hint").textContent = i18n("Gewinne für den aktuellen Ei
 // ---------- Game rules (Info button) ----------
 // RTP and max win per mode, from the published lookup tables (math-sdk library/stats_base.json and stats_bonus.json).
 // Update these after rerunning run.py.
-const MODE_INFO = [{ name: i18n("Basisspiel", "Base game"), cost: 1, ...BASE_INFO }, ...BUYS];
+const MODE_INFO = [{ name: i18n("Basisspiel", "Base game"), cost: 1, ...BASE_INFO }, BOOST, ...BUYS];
 const rulesEl = document.getElementById("rules"), rulesBody = document.getElementById("rulesBody");
 const num = v => v.toLocaleString(RGS.lang === "de" ? "de" : "en");
 // a rules section: a heading, then paragraphs (strings) and bullet lists (arrays)
@@ -2203,6 +2227,9 @@ rulesSection(i18n("Geisterkisten-Bonus", "Ghost Crates bonus"), [[
   [i18n("Gewinn:", "Win:"), i18n("Gruppen aus mindestens 4 Runen, die eine Kiste berühren, zahlen die Summe ihrer Runen mal jeden Kisten-Multiplikator der Gruppe.", "Groups of at least 4 runes touching a crate pay the sum of their runes times every crate multiplier in the group.")],
   [i18n("Wiederauslösung:", "Re-triggers:"), i18n("Keine. Im Bonus landen keine FS-Symbole.", "None. No FS symbols land during the bonus.")],
 ]]);
+rulesSection(BOOST.name, [BOOST.text,
+  i18n("Der Schalter über „Bonus kaufen“ zeigt den Preis pro Spin für den aktuellen Einsatz. Autoplay spielt mit, solange er an ist.",
+    "The switch above Buy Bonus shows the price per spin at the current bet. Autoplay uses it while it is on.")]);
 rulesSection(i18n("Bonuskauf", "Bonus buy"), [
   i18n("„Bonus kaufen“ öffnet ein Menü mit diesen Optionen und ihrem Preis für den aktuellen Einsatz. Gekauft wird erst, wenn du bei einer Option auf Kaufen drückst. Jede Runde beginnt auf einem normalen Spielfeld.",
     "Buy Bonus opens a menu with these options and their price at the current bet. Nothing is bought until you press Buy on an option. Every round starts on a normal board."),
@@ -2226,6 +2253,7 @@ rulesSection(i18n("Bedienung", "Controls"), [[
   [i18n("Einsatz − / +:", "Bet − / +:"), i18n("Senkt oder erhöht den Einsatz innerhalb der angebotenen Stufen.", "Lowers or raises the bet within the levels offered.")],
   [i18n("Autoplay:", "Autoplay:"), i18n("Wähle die Anzahl Spins und drücke Start. Erneut drücken stoppt. Reicht das Guthaben nicht, endet Autoplay.", "Choose the number of spins, then press Start. Press again to stop. Autoplay ends when the balance is too low.")],
   [i18n("Turbo:", "Turbo:"), i18n("Spielt Runden etwa doppelt so schnell. Erneut drücken schaltet ihn aus.", "Plays rounds about twice as fast. Press again to turn it off.")],
+  [`${BOOST.name}:`, i18n("Schaltet den FS-Boost für die nächsten Spins an oder aus (siehe oben).", "Switches the FS Boost on or off for the next spins (see above).")],
   [i18n("Bonus kaufen:", "Buy Bonus:"), i18n("Öffnet den Bonuskauf mit seinem Preis (siehe oben).", "Opens the bonus buy with its price (see above).")],
   [i18n("Ton (oben rechts):", "Sound (top right):"), i18n("Lautstärke für Musik und Effekte und Stummschalten aller Töne.", "Music and effects volume, and mute for all sound.")],
   [i18n("Info:", "Info:"), i18n("Öffnet diese Regeln.", "Opens these rules.")],
@@ -2303,7 +2331,7 @@ addEventListener("resize", () => FIT.forEach(fitVal));
 // The real controls and values move into the panel (listeners and ids stay), and menus and dialogs into a layer
 // sized for the phone; turning the phone back puts everything where it was.
 const PANEL = [["msg", "hMsg"], ["balVal", "hBal"], ["betMinus", "hBetM"], ["betVal", "hBetM"], ["betPlus", "hBetM"], ["winVal", "hWin"], ["multChip", "hWin"],
-  ["turboBtn", "hTurbo"], ["autoBtn", "hAuto"], ["spin", "hSpin"], ["infoBtn", "hInfo"], ["musicBtn", "hSound"], ["buyBtn", "hBuy"]];
+  ["turboBtn", "hTurbo"], ["autoBtn", "hAuto"], ["spin", "hSpin"], ["infoBtn", "hInfo"], ["musicBtn", "hSound"], ["buyBtn", "hBuy"], ["boostBtn", "hBoost"]];
 const LAYER = ["autoMenu", "sndMenu", "buyDlg", "rules", "replayBar", "replayDlg", "errDlg", "intro"];
 const homes = new Map(); // a comment marks each element's place in the landscape layout
 for (const id of [...PANEL.map(p => p[0]), ...LAYER]) { const el = document.getElementById(id), mark = document.createComment(id); el.before(mark); homes.set(id, mark); }

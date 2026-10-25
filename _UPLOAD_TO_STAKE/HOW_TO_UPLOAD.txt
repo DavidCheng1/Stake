@@ -1,16 +1,17 @@
-Ghost Duels - files for the Stake Engine dashboard (built 2026-10-23 from branch ghost-duels)
+Ghost Duels - files for the Stake Engine dashboard (built 2026-10-25 from branch ghost-duels)
 
-1_math       Upload all 11 files as the math version: index.json plus a books file (.jsonl.zst)
-             and a lookup table (.csv) for each mode: base, bonus, bonus4, bonus5, vsspin.
+1_math       Upload all 13 files as the math version: index.json plus a books file (.jsonl.zst)
+             and a lookup table (.csv) for each mode: base, boost, bonus, bonus4, bonus5, vsspin.
 
 2_frontend   Upload the contents of this folder as the frontend version (index.html at the top).
 
 3_cover-art  cover-16x9.png (1920x1080) for the 16:9 cover. Add your own 3:4 game tile next to it.
 
-Modes:  Base game 1x (RTP 95.67%, max 6,144x) - Ghost Crates 182x (96.09%) - Big Ghost Crates 324x (96.08%)
-        Mega Ghost Crates 650x (95.93%) - VS Spin 5x (96.30%, max 4,064x). Max win cap 25,000x.
+Modes:  Base game 1x (RTP 95.67%, max 6,144x) - FS Boost 3x per spin (95.63%, max 7,060x)
+        Ghost Crates 182x (96.09%) - Big Ghost Crates 324x (96.08%) - Mega Ghost Crates 650x (95.93%)
+        VS Spin 5x (96.30%, max 4,064x). Max win cap 25,000x.
 
-After uploading: play once with a real session - spin, win, bonus buy, reload mid-round, a replay link, social mode.
+After uploading: play once with a real session - spin, win, FS Boost, bonus buy, reload mid-round, a replay link, social mode.
 
 This folder is on GitHub. The big math files are stored with Git LFS, so "git pull" downloads them on any
 computer with Git LFS (Git for Windows includes it).
