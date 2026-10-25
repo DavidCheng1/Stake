@@ -1,3 +1,4 @@
 release/
+!tools/release/
 __pycache__/
 .review-out/

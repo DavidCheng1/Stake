@@ -1,0 +1,67 @@
+{
+  "_help": "Profile for tools/review/run_review.py. Copied from Ghost Duels: change the selectors to the frontend's element ids, the JS expressions for ready/busy, the controls (button id -> the word the rules use for it) and the words the rules must contain.",
+  "game": "GAME_ID",
+  "title": "GAME_TITLE",
+  "web": "GAME_ID-web",
+  "publish": "math-sdk/games/GAME_ID/library/publish_files",
+  "ready": "typeof busy !== 'undefined' && !busy && !document.getElementById('intro')",
+  "busy": "typeof busy !== 'undefined' && busy",
+  "dismissIntro": "#intro",
+  "sel": {
+    "spin": "#spin",
+    "betPlus": "#betPlus",
+    "betMinus": "#betMinus",
+    "bet": "#betVal",
+    "balance": "#balVal",
+    "win": "#winVal",
+    "message": "#msgText",
+    "autoplay": "#autoBtn",
+    "autoMenu": "#autoMenu",
+    "autoClose": "#amClose",
+    "autoPick": "#autoMenu [data-n='10']",
+    "autoStart": "#amStart",
+    "buy": "#buyBtn",
+    "buyDialog": "#buyDlg",
+    "buyOptions": "#buyOpts button",
+    "buyCards": "#buyOpts > *",
+    "buyClose": "#buyClose",
+    "toggles": [
+      "#boostBtn"
+    ],
+    "info": "#infoBtn",
+    "rules": "#rulesBody",
+    "rulesClose": "#rulesClose",
+    "error": "#errDlg",
+    "errorText": "#errText",
+    "replayGo": "#replayGo",
+    "replayInfo": "#replayInfo",
+    "sound": "#musicBtn",
+    "soundClose": "#musicBtn"
+  },
+  "betLevelsVar": "BETS",
+  "replayMode": "bonus",
+  "controls": {
+    "spin": "Spin",
+    "betMinus": "Bet",
+    "betPlus": "Bet",
+    "autoBtn": "Autoplay",
+    "turboBtn": "Turbo",
+    "buyBtn": "Buy Bonus",
+    "boostBtn": "FS Boost",
+    "infoBtn": "Info",
+    "musicBtn": "Sound"
+  },
+  "rulesMustContain": {
+    "24": [
+      "TODO: every symbol name"
+    ],
+    "26": [
+      "4 or more",
+      "maximum win"
+    ],
+    "29": [
+      "Trigger",
+      "Re-triggers"
+    ]
+  }
+}

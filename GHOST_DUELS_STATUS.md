@@ -1,6 +1,6 @@
 # Ghost Duels: status and to-do
 
-Last updated: 2026-10-23. All work is on the `ghost-duels` branch, which is not merged into `main` yet.
+Last updated: 2026-10-25. All work is on the `ghost-duels` branch, which is not merged into `main` yet.
 
 ## Done
 
@@ -20,14 +20,17 @@ Last updated: 2026-10-23. All work is on the `ghost-duels` branch, which is not 
 - [x] **Bonus buy:** `bonus` bet mode (cost 182×, RTP 96.09% from 100k rounds) that starts Ghost Crates directly, plus the Buy Bonus plaque and confirmation dialog. Follows Stake's `disabledBuyFeature`.
   - The price must match in two places: `buy_modes` in `game_config.py` and `BUYS` in `game.js`. After changing the math, rerun `run.py`, set the price to the mode's mean payout divided by 0.96 and its `rtp` to mean payout / price, then run `run.py --configs-only`.
 - [x] **Spooky sounds** (synthesized, through the sound panel and mute): haunted bells for wins, a ghostly poof for tumbles, bone ticks while the win counts up, duel slam, metallic clashes and wails for knockouts, the pirate's horn and the devil's growl, organ and bell toll for the free-spin trigger, rune chimes, heartbeat for lost lives, big-win fanfare; a crypt reverb on all of it, and the music dips under big moments.
-- [x] **Bonus menu:** four buyable modes, priced from 100k simulated rounds each so every RTP is within 0.1% of 96%:
-  | Mode | Price | RTP | Max win | Pays 0× |
-  | --- | --- | --- | --- | --- |
-  | Ghost Crates (3–5 FS) | 182× | 96.09% | 25,000× | 21.6% |
-  | Big Ghost Crates (exactly 4 FS) | 324× | 96.08% | 25,000× | 19.9% |
-  | Mega Ghost Crates (exactly 5 FS) | 650× | 95.93% | 25,000× | 18.9% |
-  | VS Spin (at least one VS reel) | 5× | 96.30% | 4,064× | 49.7% |
-- [x] **FS Boost** (bet mode `boost`, 1M rounds): a switch above Buy Bonus. While it is on, every spin costs 3× the bet and FS symbols land more often (`fs_weight` 1.03 instead of 0.516), so the bonus comes every 109 spins instead of every 725 (about 6.7×). RTP 95.63%, max win 7,060×. It is a bet variant, not a bonus buy (`is_buybonus` false), off on every visit, and the switch shows the real price per spin [31].
+- [x] **Every mode optimized to exactly 96.00%** with the SDK optimizer (Rust; targets in `game_optimization.py`, 2026-10-25). Every mode can reach the 25,000× cap. Bought bonuses pay 0× in 10% of buys (was about 20%):
+  | Mode | Price | RTP | Max win (odds) | Bonus | Pays 0× |
+  | --- | --- | --- | --- | --- | --- |
+  | Base game | 1× | 96.00% | 25,000× (1 in 50M) | 1 in 539 | 72% of spins |
+  | FS Boost 3× | 3× | 96.00% | 25,000× (1 in 16.7M) | 1 in 79 | 72% of spins |
+  | FS Boost 6× | 6× | 96.00% | 25,000× (1 in 8.3M) | 1 in 36.5 | 70% of spins |
+  | Ghost Crates (3–5 FS) | 182× | 96.00% | 25,000× (1 in 275k) | every buy | 10% |
+  | Big Ghost Crates (exactly 4 FS) | 324× | 96.00% | 25,000× (1 in 154k) | every buy | 10% |
+  | Mega Ghost Crates (exactly 5 FS) | 650× | 96.00% | 25,000× (1 in 77k) | every buy | 10% |
+  | VS Spin (at least one VS reel) | 5× | 96.00% | 25,000× (1 in 10M) | 1 in 665 | 50% of spins |
+- [x] **FS Boost 3× and 6×** (bet modes `boost`, `boost6`): one switch above Buy Bonus cycles Off → 3× → 6×. Every spin then costs 3× or 6× the bet, FS land more often and the bonus comes about 7× or 15× as often. Bet variants, not bonus buys (`is_buybonus` false), off on every visit; the switch shows the real price per spin [31].
 - [x] **Spookier bonus:** rune values use the Creepster lettering with a glow in the rune's colour; crates are haunted coffin chests (dark planks with glowing seams, iron bands and brackets, the multiplier on a glowing iron tag, ghost smoke).
   - The price must match in `game_config.py` (`buy_modes`) and `game.js` (`BUYS`): price = mean payout of the mode / 0.96 in whole bets, so every buy costs whole cents at any bet level; each mode also declares `rtp` = mean payout / price. VS Spin reaches ~96% at 5× with its own VS reel counts (fewer 2-reel spins than the base game). Stake allows at most 96.7% per mode.
 - [x] **Approval checklist fixes** (Engine's review prompt is `engine-review-prompt.md` in the repo root; guideline IDs in brackets):
@@ -43,10 +46,8 @@ Last updated: 2026-10-23. All work is on the `ghost-duels` branch, which is not 
 
 ### Before uploading
 
-- [ ] **Decide on the 25,000× max win.** The rules now state the real maximum per mode from the lookup tables (base game 6,144×, bonus buy 25,000×), which is what reviewers compare [25]. The cap stays 25,000×.
-  - Option A: install Rust and run the SDK optimiser so a few base rounds reach 25,000×.
-  - Option B: keep it as it is, or lower the cap (`wincap` in `game_config.py`, `MAX_WIN_X` in `game.js`).
-  - Whatever changes, update `MODE_INFO` in `game.js` (RTP and max win per mode) after rerunning `run.py`.
+- [x] **25,000× max win in every mode** (SDK optimizer, see the table above).
+- [ ] **Refresh `_UPLOAD_TO_STAKE`** with the 96.00% math (it still holds the 2026-10-23 version without the 6× boost): `tools/release/package.py ghost_duels ghost-duels-web "Ghost Duels"`. Costs about 0.5 GB of LFS quota.
 - [x] **16:9 cover art:** `media/cover-16x9.png` (1920×1080), rendered from `media/cover-16x9.html`. The 3:4 game tile exists (kept outside the repo).
 - [ ] **Ask Stake Engine (or check their docs):**
   - Do they accept a frontend that isn't built on their Svelte web-sdk?
@@ -68,8 +69,8 @@ Last updated: 2026-10-23. All work is on the `ghost-duels` branch, which is not 
 - [ ] Still for a person: 217 (content) and 253 (distinct from existing titles), listening to sound and mute, and a final look on a real phone.
 - [ ] Before submitting, have a coding agent run `engine-review-prompt.md` again and fix what it reports.
 
-- [ ] **Decide on bonus buys that pay nothing:** about 1 in 5 bought bonuses pays 0× (19–22%, even with 4 or 5 crates), because Ghost Crates only pays when 4+ runes touch a crate. That feels harsh at these prices. Options: more lives or a guaranteed minimum in bought bonuses, then reprice.
-- [ ] **3-star rating (ask Stake).** The SDK's 3-star limits per mode are prob5k ≤ 1%, prob10k ≤ 0.5%, etl40b ≤ 0.9, etl10k ≤ 0.8, CVaR ≤ 800 and RTP ≤ 96.7% (`utils/rgs_verification.py`). The base game passes all of them. etl40b and etl10k add up big wins in base-bet units without dividing by the mode's price: as written, every other mode fails them (boost etl40b 2.11, VS Spin 1.18, Ghost Crates 1.11, Big 2.00 / 3.53, Mega etl10k 23.8); divided by the price, all six modes pass (largest: boost 0.70). Community write-ups disagree on which reading Stake uses, and one says new games are judged against 2-star limits (etl 0.8, CVaR 700), which the price-divided values also meet. Stake's own math requirements page could not be read; confirm with Stake before submitting.
+- [x] **Bonus buys that pay nothing:** down from about 20% to 10% of buys (optimizer weights).
+- [ ] **3-star rating (ask Stake).** The SDK's 3-star limits per mode are prob5k ≤ 1%, prob10k ≤ 0.5%, etl40b ≤ 0.9, etl10k ≤ 0.8, CVaR ≤ 800 and RTP ≤ 96.7% (`utils/rgs_verification.py`). Divided by each mode's price, all seven modes pass every limit (largest: 3× boost etl40b 0.75). In the SDK's own reading (base-bet units, not divided by the price) four fail: 3× boost etl40b 2.25, 6× boost etl40b 2.23, Big Ghost Crates etl40b 3.74 / etl10k 10.1, Mega etl10k 47.5. Any mode costing several bets that gets most of its RTP from the bonus fails that reading by construction. Mega's prob5k was 1.06% and is now 0.63% (its 4,000×+ wins are scaled down in the optimizer). `math-sdk/games/ghost_duels/library/stats_<mode>.json` has both readings. Confirm with Stake which one the star rating uses.
 
 ### Nice to have
 
@@ -83,8 +84,11 @@ Last updated: 2026-10-23. All work is on the `ghost-duels` branch, which is not 
 
 ### Whenever the math changes
 
-- [ ] Rerun `run.py` and update `self.rtp` in `game_config.py` to the RTP it prints.
-- [ ] Update the display values in `ghost-duels-web/game.js`: the pays in `SYM`, `RTP_TEXT`, `MODE_INFO` (RTP and max win per mode) and `BUY.cost`.
+Follow the release routine: the `stake-release` Claude Code skill (`.claude/skills/stake-release/`), or by hand:
+1. `env\Scripts\python.exe games\ghost_duels\run.py` in `math-sdk` (about an hour; `--optimize-only` after changing only targets).
+2. `tools/release/sync_frontend.py ghost_duels ghost-duels-web/game.js` copies RTP and max win per mode into `game.js` and checks the prices. The paytable pays in `SYM` are still by hand.
+3. `tools/review/run_review.py` (all Stake review checks, PASS/FAIL per guideline ID).
+4. `tools/release/package.py ghost_duels ghost-duels-web "Ghost Duels"` refreshes `_UPLOAD_TO_STAKE`.
 
 ## Working from another computer
 
@@ -106,9 +110,14 @@ Everything is in the repo **except** the generated math files, which are too big
    env\Scripts\python.exe -m pip install -e .
    Remove-Item req-local.txt
    ```
-4. Run it:
+4. Install Rust for the optimizer (once; user-level, no admin). Download `rustup-init.exe` from https://rustup.rs, then:
    ```powershell
-   env\Scripts\python.exe games\ghost_duels\run.py   # about 20 minutes (base + 4 buy modes), writes library/publish_files
+   .\rustup-init.exe -y --default-host x86_64-pc-windows-gnu --profile minimal --no-modify-path
+   ```
+   `math-sdk/optimization_program/run_script.py` finds cargo in `%USERPROFILE%\.cargo\bin` by itself.
+5. Run it:
+   ```powershell
+   env\Scripts\python.exe games\ghost_duels\run.py   # about an hour (7 modes, simulate + optimize), writes library/publish_files
    cd ..
    math-sdk\env\Scripts\python.exe tools\mock_rgs.py   # then open the printed URL
    ```
