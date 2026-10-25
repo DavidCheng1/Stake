@@ -27,3 +27,4 @@ __pycache__
 
 **/site/*
 
+!optimization_program/Cargo.toml

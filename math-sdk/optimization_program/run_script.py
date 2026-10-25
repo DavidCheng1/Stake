@@ -1,6 +1,7 @@
 import json
 import toml
 import subprocess
+import shutil
 import os
 from src.config.paths import PATH_TO_GAMES, SETUP_PATH, OPTIMIZATION_PATH, PROJECT_PATH
 
@@ -52,8 +53,10 @@ class OptimizationExecution:
         """Run compiled binary and pip results to terminal."""
         cargo_bin_path = os.path.join(os.path.expanduser("~"), ".cargo", "bin")
         updated_path = cargo_bin_path + os.pathsep + os.environ.get("PATH", "")
+        # resolve cargo's full path: on Windows the program is looked up in this process's PATH, not the one passed in env
+        cargo = shutil.which("cargo", path=updated_path) or "cargo"
         result = subprocess.run(
-            ["cargo", "run", "--release"],
+            [cargo, "run", "--release"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
