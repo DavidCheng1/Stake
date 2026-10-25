@@ -502,14 +502,15 @@ async function spinReels(res) {
     later(() => {
       const rl = reels[c], ov = div("teasefx"), strip = div("tease-strip");
       // the strip's first 7 rows are the reel's real result: the roll stops on exactly what the reel shows afterwards
-      for (let r = 0; r < ROWS * 3; r++) { const im = new Image(); im.src = IMG[r < ROWS ? res[c][r] : randSym()]; im.alt = ""; strip.appendChild(im); }
+      for (let r = 0; r < ROWS * 3; r++) { const id = r < ROWS ? res[c][r] : randSym(), im = new Image(); im.src = IMG[id]; im.alt = ""; im.dataset.id = id; strip.appendChild(im); }
       const fire = div("tease-fire");
       for (let i = 0; i < 55; i++) { // green ghost-fire flames rising at random spots and speeds, most of them along the edges
         const w = div("tw"), edge = Math.random() < .7, x = edge ? (Math.random() < .5 ? 4 + Math.random() * 14 : 82 + Math.random() * 14) : 25 + Math.random() * 50;
         w.style.setProperty("--x", x.toFixed(1) + "%"); w.style.setProperty("--d", (-Math.random() * 1.6).toFixed(2) + "s");
         w.style.setProperty("--t", (1.1 + Math.random() * .8).toFixed(2) + "s"); w.style.setProperty("--s", (.6 + Math.random() * .7).toFixed(2)); fire.appendChild(w);
       }
-      ov.append(strip, fire, div("tease-beam l"), div("tease-beam r"), div("tease-streak a"), div("tease-streak b"));
+      // dense fog behind the rolling symbols (dark ones read as shadows in it), a lighter veil in front
+      ov.append(div("tease-mist back"), strip, div("tease-mist front"), fire, div("tease-beam l"), div("tease-beam r"), div("tease-streak a"), div("tease-streak b"));
       rl.el.classList.add("tease"); rl.el.appendChild(ov);
       stage.classList.add("teasing"); // the rest of the board goes dark; only the green reel and the FS symbols stay lit
       sound.duck(TEASE / 1000 / pace()); // the background music steps back while the reel teases

@@ -46,7 +46,19 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .teasefx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; border-radius: 6px;
   background: linear-gradient(rgb(9 42 44 / .9), rgb(7 32 35 / .92)); }
 .tease-strip { position: absolute; left: 0; right: 0; top: 0; height: 300%; display: grid; grid-template-rows: repeat(21, minmax(0, 1fr)); z-index: 1; }
-.tease-strip img { height: 94%; margin: auto; display: block; filter: drop-shadow(0 0 .5cqw rgb(110 255 140 / .6)); }
+.tease-strip img { height: 94%; margin: auto; display: block; filter: brightness(.22) saturate(.4); }
+.tease-strip img[data-id="fs"] { filter: brightness(1.25) drop-shadow(0 0 1cqw rgb(255 79 210)) drop-shadow(0 0 .4cqw #fff); }
+/* dense green fog: a thick layer behind the symbols and a lighter, faster veil in front */
+.tease-mist { position: absolute; inset: -25% -80%; pointer-events: none; filter: blur(.9cqw); }
+.tease-mist.back { z-index: 0; animation: mistA 2.6s ease-in-out infinite alternate;
+  background: radial-gradient(55% 13% at 30% 8%, rgb(150 255 200 / .85), transparent 72%), radial-gradient(60% 14% at 72% 26%, rgb(110 230 180 / .8), transparent 72%),
+    radial-gradient(55% 13% at 28% 46%, rgb(150 255 200 / .85), transparent 72%), radial-gradient(60% 14% at 70% 66%, rgb(110 230 180 / .8), transparent 72%),
+    radial-gradient(55% 13% at 32% 88%, rgb(150 255 200 / .85), transparent 72%), linear-gradient(rgb(70 190 150 / .45), rgb(60 170 140 / .55)); }
+.tease-mist.front { z-index: 2; opacity: .5; animation: mistB 1.9s ease-in-out infinite alternate;
+  background: radial-gradient(60% 12% at 68% 16%, rgb(200 255 225 / .6), transparent 72%), radial-gradient(60% 12% at 30% 40%, rgb(200 255 225 / .55), transparent 72%),
+    radial-gradient(60% 12% at 66% 64%, rgb(200 255 225 / .6), transparent 72%), radial-gradient(60% 12% at 34% 88%, rgb(200 255 225 / .55), transparent 72%); }
+@keyframes mistA { from { transform: translate(-10%, 6%); } to { transform: translate(10%, -6%); } }
+@keyframes mistB { from { transform: translate(12%, -8%); } to { transform: translate(-12%, 8%); } }
 /* crisp neon lines: a bright core on each edge, a thin second line inside it, and two faint streaks in the middle */
 .tease-beam { position: absolute; top: 0; bottom: 0; width: 5.5%; z-index: 3; border-radius: 3px; animation: beamFlicker .16s steps(2) infinite alternate;
   background: linear-gradient(90deg, rgb(70 255 110), #d9ffd9 50%, rgb(70 255 110)); box-shadow: 0 0 1cqw .25cqw rgb(70 255 110), 0 0 2.6cqw .4cqw rgb(50 230 90 / .7); }
@@ -207,7 +219,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .life-big { position: absolute; left: 50%; top: 46%; width: 10%; aspect-ratio: .7; transform: translate(-50%, -50%); z-index: 9; pointer-events: none; }
 .life-big .life { width: 100%; height: 100%; }
 .life-big .lbl2 { position: absolute; left: 50%; top: 108%; transform: translateX(-50%); white-space: nowrap; font: 800 2.4cqw/1 var(--ui); letter-spacing: .06em; color: #ffd6dc; text-shadow: 0 0 1cqw rgb(255 60 90 / .8), 0 .2cqw 0 #000; }
-@media (prefers-reduced-motion: reduce) { .cr-glow, .crate::after, .tease-fire .tw, .tease-beam, .tease-streak, .rtok img, .cell.falling::before, .life::before, .life::after { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .cr-glow, .crate::after, .tease-mist, .tease-fire .tw, .tease-beam, .tease-streak, .rtok img, .cell.falling::before, .life::before, .life::after { animation: none !important; } }
 
 /* Ghost King hero (right) and logo (top left) */
 .hero { position: absolute; left: 66%; top: 28.5%; width: 35.5%; aspect-ratio: 870 / 1010; pointer-events: none; }
