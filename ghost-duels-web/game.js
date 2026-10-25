@@ -63,28 +63,35 @@ for (const id of SYM_IDS) { SYM_TOT += SYM[id].w; SYM_CUM.push(SYM_TOT); }
 const randSym = () => { const x = Math.random() * SYM_TOT; for (let i = 0; i < SYM_CUM.length; i++) if (x < SYM_CUM[i]) return SYM_IDS[i]; return SYM_IDS[0]; };
 const MAX_WIN_X = 25000;
 // Buyable modes. cost must match buy_modes in math-sdk/games/ghost_duels/game_config.py; rtp and maxWin come from the
-// published lookup tables (math-sdk library/stats_<mode>.json). Update all three after rerunning run.py.
+// published lookup tables (math-sdk library/stats_<mode>.json; every mode is optimized to 96.00 %). Update them after
+// rerunning run.py.
 const BUYS = [
-  { mode: "BONUS", cost: 182, rtp: 96.09, maxWin: 25000, fs: 3, name: i18n("Geisterkisten", "Ghost Crates"),
+  { mode: "BONUS", cost: 182, rtp: 96.00, maxWin: 25000, fs: 3, name: i18n("Geisterkisten", "Ghost Crates"),
     text: i18n("3 bis 5 FS: der Geisterkisten-Bonus startet sofort.", "3 to 5 FS: the Ghost Crates bonus starts right away.") },
-  { mode: "BONUS4", cost: 324, rtp: 96.08, maxWin: 25000, fs: 4, name: i18n("Große Geisterkisten", "Big Ghost Crates"),
+  { mode: "BONUS4", cost: 324, rtp: 96.00, maxWin: 25000, fs: 4, name: i18n("Große Geisterkisten", "Big Ghost Crates"),
     text: i18n("Genau 4 FS: der Bonus startet mit 4 Kisten.", "Exactly 4 FS: the bonus starts with 4 crates.") },
-  { mode: "BONUS5", cost: 650, rtp: 95.93, maxWin: 25000, fs: 5, name: i18n("Mega-Geisterkisten", "Mega Ghost Crates"),
+  { mode: "BONUS5", cost: 650, rtp: 96.00, maxWin: 25000, fs: 5, name: i18n("Mega-Geisterkisten", "Mega Ghost Crates"),
     text: i18n("Genau 5 FS: 5 Kisten, öfter mit ×3.", "Exactly 5 FS: 5 crates, more often at ×3.") },
-  { mode: "VSSPIN", cost: 5, rtp: 96.3, maxWin: 4064, vs: true, name: i18n("VS-Spin", "VS Spin"),
+  { mode: "VSSPIN", cost: 5, rtp: 96.00, maxWin: 25000, vs: true, name: i18n("VS-Spin", "VS Spin"),
     text: i18n("Ein Spin mit mindestens einer VS-Walze: jede Gruppe, die sie erreicht, startet ein Duell.", "A spin with at least one VS reel: every group that reaches it starts a duel.") },
 ];
-const BASE_INFO = { rtp: 95.67, maxWin: 6144 };
-// FS Boost: a bet variant switched on for every spin (math mode "boost", fs_weight in game_config.py); rtp and maxWin from
-// the published lookup table like BUYS.
-const BOOST = { mode: "BOOST", cost: 3, rtp: 95.63, maxWin: 7060, name: i18n("FS-Boost", "FS Boost"),
-  text: i18n("Jeder Spin kostet 3× den Einsatz, dafür landen FS-Symbole öfter: der Geisterkisten-Bonus kommt etwa 7× so oft. Bleibt an, bis du ihn ausschaltest.",
-    "Every spin costs 3× the bet, and FS symbols land more often: the Ghost Crates bonus comes about 7× as often. Stays on until you switch it off.") };
-const modeInfo = mode => mode === "BOOST" ? BOOST : buyOf(mode);
+const BASE_INFO = { mode: "BASE", cost: 1, rtp: 96.00, maxWin: 25000 };
+// FS Boost: bet variants switched on for every spin (math modes "boost" and "boost6", fs_weight in game_config.py); rtp
+// and maxWin from the published lookup tables like BUYS.
+const BOOSTS = [
+  { mode: "BOOST", cost: 3, rtp: 96.00, maxWin: 25000, level: "3×", name: i18n("FS-Boost 3×", "FS Boost 3×"),
+    text: i18n("Jeder Spin kostet 3× den Einsatz, dafür landen FS-Symbole öfter: der Geisterkisten-Bonus kommt etwa 7× so oft.",
+      "Every spin costs 3× the bet, and FS symbols land more often: the Ghost Crates bonus comes about 7× as often.") },
+  { mode: "BOOST6", cost: 6, rtp: 96.00, maxWin: 25000, level: "6×", name: i18n("FS-Boost 6×", "FS Boost 6×"),
+    text: i18n("Jeder Spin kostet 6× den Einsatz, dafür landen FS-Symbole noch öfter: der Geisterkisten-Bonus kommt etwa 15× so oft.",
+      "Every spin costs 6× the bet, and FS symbols land even more often: the Ghost Crates bonus comes about 15× as often.") },
+];
+const BOOST_NAME = i18n("FS-Boost", "FS Boost");
+const modeInfo = mode => BOOSTS.find(b => b.mode === mode) || buyOf(mode);
 const modeCost = mode => modeInfo(mode)?.cost || 1;
 const buyOf = mode => BUYS.find(b => b.mode === mode);
-// RTP of the published lookup table (math-sdk/games/ghost_duels, 1M spins)
-const RTP_TEXT = (95.67).toLocaleString(RGS.lang) + " %";
+// RTP of the published lookup table (math-sdk/games/ghost_duels, optimized to 96.00 %)
+const RTP_TEXT = BASE_INFO.rtp.toLocaleString(RGS.lang, { minimumFractionDigits: 2 }) + " %";
 
 // Face rigs, coordinates in % of the square symbol
 const RIG = {
@@ -1232,7 +1239,7 @@ const lock = on => { busy = on; buttons.forEach(b => b.disabled = on); spinBtn.d
 function skip() { if (!busy || slam || !canSkip()) return; slam = true; hurry(); }
 
 // Wallet flow: play debits the bet (x the mode's cost) and returns the book; end-round credits a win.
-async function play(mode = boostOn ? "BOOST" : "BASE") {
+async function play(mode = boost ? boost.mode : "BASE") {
   if (busy || RGS.replay) return;
   const cost = bet * modeCost(mode);
   if (balance < cost) { say(i18n("Guthaben reicht nicht für diesen Einsatz", "Balance too low for this bet")); if (autoOn) stopAuto(); return; }
@@ -1264,7 +1271,7 @@ function showAutoLeft() { autoLeftEl.hidden = !autoOn; autoLeftEl.textContent = 
 function stopAuto(msg) { autoOn = false; autoLeft = 0; autoBtn.setAttribute("aria-pressed", "false"); showAutoLeft(); updateBuy(); if (msg) say(msg); }
 async function autoLoop() {
   while (autoOn && autoLeft > 0) {
-    if (balance < bet * modeCost(boostOn ? "BOOST" : "BASE")) { stopAuto(i18n("Guthaben reicht nicht · Autoplay beendet", "Balance too low · Autoplay ended")); break; }
+    if (balance < bet * modeCost(boost ? boost.mode : "BASE")) { stopAuto(i18n("Guthaben reicht nicht · Autoplay beendet", "Balance too low · Autoplay ended")); break; }
     if (autoLeft !== Infinity) autoLeft--; showAutoLeft();
     await play();
     if (!autoOn) break;
@@ -1340,21 +1347,22 @@ const buyCards = BUYS.map(b => {
 });
 function updateBuy() { buyBtn.disabled = busy || autoOn || loading || RGS.replay; boostBtn.disabled = busy || autoOn || loading || RGS.replay; }
 
-// ---------- FS Boost switch: [31] a mode over 2× the bet is never one press away from a bet; switching it on only
-// changes the next spins, and the switch shows their real price ----------
-let boostOn = false; // off on every visit, so nobody plays at 3× by accident
+// ---------- FS Boost switch: Off → 3× → 6× → Off. [31] a mode over 2× the bet is never one press away from a bet;
+// switching only changes the next spins, and the switch shows their real price ----------
+let boost = null; // off on every visit, so nobody plays at 3× or 6× by accident
 const boostBtn = document.getElementById("boostBtn");
 function showBoost() {
-  boostBtn.classList.toggle("on", boostOn); boostBtn.setAttribute("aria-pressed", String(boostOn));
-  q(boostBtn, ".bo-top").textContent = BOOST.name;
-  q(boostBtn, ".bo-main").textContent = boostOn ? i18n("An", "On") : i18n("Aus", "Off");
-  q(boostBtn, ".bo-cost").textContent = `${money(bet * BOOST.cost)} ${i18n("pro Spin", "per spin")}`;
-  boostBtn.setAttribute("aria-label", `${BOOST.name}: ${boostOn ? i18n("an", "on") : i18n("aus", "off")}, ${money(bet * BOOST.cost)} ${i18n("pro Spin", "per spin")}`);
+  const price = money(bet * (boost ? boost.cost : 1)), state = boost ? boost.level : i18n("Aus", "Off");
+  boostBtn.classList.toggle("on", !!boost); boostBtn.classList.toggle("six", boost === BOOSTS[1]); boostBtn.setAttribute("aria-pressed", String(!!boost));
+  q(boostBtn, ".bo-top").textContent = BOOST_NAME;
+  q(boostBtn, ".bo-main").textContent = state;
+  q(boostBtn, ".bo-cost").textContent = `${price} ${i18n("pro Spin", "per spin")}`;
+  boostBtn.setAttribute("aria-label", `${BOOST_NAME}: ${state}, ${price} ${i18n("pro Spin", "per spin")}. ${i18n("Drücken wechselt Aus, 3×, 6×", "Press to switch Off, 3×, 6×")}`);
 }
 boostBtn.addEventListener("click", () => {
   if (boostBtn.disabled) return;
-  boostOn = !boostOn; showBoost(); sound.click();
-  say(boostOn ? i18n(`FS-Boost an · ${money(bet * BOOST.cost)} pro Spin`, `FS Boost on · ${money(bet * BOOST.cost)} per spin`) : i18n("FS-Boost aus", "FS Boost off"));
+  boost = boost === null ? BOOSTS[0] : boost === BOOSTS[0] ? BOOSTS[1] : null; showBoost(); sound.click();
+  say(boost ? i18n(`${boost.name} an · ${money(bet * boost.cost)} pro Spin`, `${boost.name} on · ${money(bet * boost.cost)} per spin`) : i18n("FS-Boost aus", "FS Boost off"));
 });
 function openBuy(open) {
   buyDlg.hidden = !open;
@@ -2195,7 +2203,7 @@ q(document, "#paytable .hint").textContent = i18n("Gewinne für den aktuellen Ei
 // ---------- Game rules (Info button) ----------
 // RTP and max win per mode, from the published lookup tables (math-sdk library/stats_base.json and stats_bonus.json).
 // Update these after rerunning run.py.
-const MODE_INFO = [{ name: i18n("Basisspiel", "Base game"), cost: 1, ...BASE_INFO }, BOOST, ...BUYS];
+const MODE_INFO = [{ ...BASE_INFO, name: i18n("Basisspiel", "Base game") }, ...BOOSTS, ...BUYS];
 const rulesEl = document.getElementById("rules"), rulesBody = document.getElementById("rulesBody");
 const num = v => v.toLocaleString(RGS.lang === "de" ? "de" : "en");
 // a rules section: a heading, then paragraphs (strings) and bullet lists (arrays)
@@ -2227,9 +2235,10 @@ rulesSection(i18n("Geisterkisten-Bonus", "Ghost Crates bonus"), [[
   [i18n("Gewinn:", "Win:"), i18n("Gruppen aus mindestens 4 Runen, die eine Kiste berühren, zahlen die Summe ihrer Runen mal jeden Kisten-Multiplikator der Gruppe.", "Groups of at least 4 runes touching a crate pay the sum of their runes times every crate multiplier in the group.")],
   [i18n("Wiederauslösung:", "Re-triggers:"), i18n("Keine. Im Bonus landen keine FS-Symbole.", "None. No FS symbols land during the bonus.")],
 ]]);
-rulesSection(BOOST.name, [BOOST.text,
-  i18n("Der Schalter über „Bonus kaufen“ zeigt den Preis pro Spin für den aktuellen Einsatz. Autoplay spielt mit, solange er an ist.",
-    "The switch above Buy Bonus shows the price per spin at the current bet. Autoplay uses it while it is on.")]);
+rulesSection(BOOST_NAME, [
+  BOOSTS.map(b => [`${b.name} (${num(b.cost)}× ${i18n("Einsatz", "bet")}):`, b.text]),
+  i18n("Der Schalter über „Bonus kaufen“ wechselt zwischen Aus, 3× und 6× und zeigt den Preis pro Spin für den aktuellen Einsatz. Der Boost bleibt an, bis du ihn ausschaltest; Autoplay spielt mit ihm.",
+    "The switch above Buy Bonus cycles Off, 3× and 6× and shows the price per spin at the current bet. The boost stays on until you switch it off; Autoplay uses it.")]);
 rulesSection(i18n("Bonuskauf", "Bonus buy"), [
   i18n("„Bonus kaufen“ öffnet ein Menü mit diesen Optionen und ihrem Preis für den aktuellen Einsatz. Gekauft wird erst, wenn du bei einer Option auf Kaufen drückst. Jede Runde beginnt auf einem normalen Spielfeld.",
     "Buy Bonus opens a menu with these options and their price at the current bet. Nothing is bought until you press Buy on an option. Every round starts on a normal board."),
@@ -2253,7 +2262,7 @@ rulesSection(i18n("Bedienung", "Controls"), [[
   [i18n("Einsatz − / +:", "Bet − / +:"), i18n("Senkt oder erhöht den Einsatz innerhalb der angebotenen Stufen.", "Lowers or raises the bet within the levels offered.")],
   [i18n("Autoplay:", "Autoplay:"), i18n("Wähle die Anzahl Spins und drücke Start. Erneut drücken stoppt. Reicht das Guthaben nicht, endet Autoplay.", "Choose the number of spins, then press Start. Press again to stop. Autoplay ends when the balance is too low.")],
   [i18n("Turbo:", "Turbo:"), i18n("Spielt Runden etwa doppelt so schnell. Erneut drücken schaltet ihn aus.", "Plays rounds about twice as fast. Press again to turn it off.")],
-  [`${BOOST.name}:`, i18n("Schaltet den FS-Boost für die nächsten Spins an oder aus (siehe oben).", "Switches the FS Boost on or off for the next spins (see above).")],
+  [`${BOOST_NAME}:`, i18n("Wechselt den FS-Boost für die nächsten Spins zwischen Aus, 3× und 6× (siehe oben).", "Switches the FS Boost for the next spins between Off, 3× and 6× (see above).")],
   [i18n("Bonus kaufen:", "Buy Bonus:"), i18n("Öffnet den Bonuskauf mit seinem Preis (siehe oben).", "Opens the bonus buy with its price (see above).")],
   [i18n("Ton (oben rechts):", "Sound (top right):"), i18n("Lautstärke für Musik und Effekte und Stummschalten aller Töne.", "Music and effects volume, and mute for all sound.")],
   [i18n("Info:", "Info:"), i18n("Öffnet diese Regeln.", "Opens these rules.")],

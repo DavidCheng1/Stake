@@ -24,7 +24,6 @@ class GameConfig(Config):
         self.working_name = "Ghost Duels"
         self.wincap = 25000.0
         self.win_type = "cluster"
-        self.rtp = 0.9567
         self.construct_paths()
 
         # Game Dimensions
@@ -114,51 +113,74 @@ class GameConfig(Config):
         }
         self.anticipation_triggers = {self.basegame_type: self.bonus_min_fs - 1, self.freegame_type: 0}
 
-        # Buyable modes. Each round starts on a normal board.
-        #   bonus   Ghost Crates: 3-5 FS planted on distinct reels, by the natural odds of 3, 4 or 5 FS given a trigger
-        #   bonus4  Big Ghost Crates: exactly 4 FS        bonus5  Mega Ghost Crates: exactly 5 FS
-        #   vsspin  VS Spin: a normal spin with at least one VS reel (1-6, weighted towards a single reel)
-        # Costs (in bets) are set from the simulated books so every buy mode's RTP is close to 96%:
-        # cost = mean payout of the mode / 0.96, rounded to a whole bet, and rtp = mean payout / cost,
-        # from the 100k-round books. Stake allows at most 96.7% per mode. Rerun run.py after any math change,
-        # then set cost and rtp here and in BUYS in ghost-duels-web/game.js.
+        # ---------------- bet modes ----------------
+        # Every mode is optimized to exactly 96.00% (math-sdk optimization_program, targets in game_optimization.py).
+        # Each mode's simulations are split into criteria; the optimizer reweights them per criteria:
+        #   wincap    rounds generated with a bias (see WINCAP_*) until they reach the 25,000x cap; tiny weight
+        #   0         rounds that pay nothing
+        #   freegame  rounds with the Ghost Crates bonus (FS planted on distinct reels, by the natural FS counts)
+        #   basegame  every other round, drawn naturally
+        # Buy modes start the bonus directly (freegame) or force a VS reel (vsspin). The boosts are bet variants:
+        # same game, FS land more often (fs_weight) and the optimizer sets the bonus frequency.
+        # Prices are whole bets so every buy costs whole cents at any bet level (5.27 x 0.10 = 0.527 is not a bet).
+        self.rtp = 0.96
+        natural_fs = [(3, 961), (4, 38.7), (5, 0.9)]  # FS counts of a natural trigger
+        self.bonus_wincap_bias = {  # big bonuses: every crate x3, crates and runes land often, high rune values
+            "start_mults": {n: [(3, 1)] for n in range(3, 8)}, "crate_mults": [(3, 1)], "p_crate": 0.02, "crate_near": 1.0,
+            "p_rune_base": 0.12, "rune_values": [(6, 1), (8, 1), (10, 1)]}
+        self.duel_wincap_bias = {  # devil duels on two or three VS reels, many devils on the board
+            "duel_p2": 0.0, "duel_p3": 1.0, "vs_count": [(2, 1), (3, 1)],
+            "symbol_weights": {**self.symbol_weights, "devil": 40}}
         self.buy_modes = {
-            "bonus": {"cost": 182.0, "rtp": 0.9609, "buy_fs": [(3, 961), (4, 38.7), (5, 0.9)]},
-            "bonus4": {"cost": 324.0, "rtp": 0.9608, "buy_fs": [(4, 1)]},
-            "bonus5": {"cost": 650.0, "rtp": 0.9593, "buy_fs": [(5, 1)]},
-            # VS Spin uses fewer 2-reel spins than the base game (86.1/9.5 instead of 80/15.5), so it pays ~96% at a whole 5x:
-            # buy prices with fractions of a cent (5.27 x 0.10 = 0.527) are not valid bet amounts
-            # FS Boost (ante bet): every spin costs 3x and FS symbols land more often, so the bonus comes ~7x as often
-            "boost": {"cost": 3.0, "rtp": 0.9563, "fs_weight": 1.03},
-            "vsspin": {"cost": 5.0, "rtp": 0.963, "force_vs": True,
-                       "vs_count": [(1, 86.1), (2, 9.5), (3, 3.2), (4, 0.9), (5, 0.3), (6, 0.1)]},
+            # bet variants: a spin costs 3x / 6x, FS land more often, the bonus comes about 7x / 15x as often
+            "boost": {"cost": 3.0, "fs_weight": 1.03, "kind": "boost"},
+            "boost6": {"cost": 6.0, "fs_weight": 1.25, "kind": "boost"},
+            # bonus buys: Ghost Crates (3-5 FS by the natural odds), Big (exactly 4 FS), Mega (exactly 5 FS)
+            "bonus": {"cost": 182.0, "buy_fs": natural_fs, "kind": "buy"},
+            "bonus4": {"cost": 324.0, "buy_fs": [(4, 1)], "kind": "buy"},
+            "bonus5": {"cost": 650.0, "buy_fs": [(5, 1)], "kind": "buy"},
+            # VS Spin: a spin with at least one VS reel, weighted towards a single reel
+            "vsspin": {"cost": 5.0, "force_vs": True, "vs_count": [(1, 86.1), (2, 9.5), (3, 3.2), (4, 0.9), (5, 0.3), (6, 0.1)], "kind": "vsspin"},
         }
 
-        # No reelstrips: every cell is drawn independently by symbol weight.
-        # A single unforced distribution per mode keeps lookup weights at 1, so the simulated RTP is the real RTP.
-        def mode(name, cost, rtp, conditions):
+        def dist(criteria, quota, win=None, **cond):
+            return Distribution(criteria=criteria, quota=quota, win_criteria=win,
+                                conditions={"reel_weights": {self.basegame_type: {}, self.freegame_type: {}},
+                                            "force_wincap": win == self.wincap, "force_freegame": False, **cond})
+
+        def distributions(kind, m):
+            common = {k: m[k] for k in ("fs_weight", "force_vs", "vs_count") if k in m}
+            if kind == "buy":
+                buy = {"buy_fs": m["buy_fs"], "force_freegame": True, **common}
+                return [dist("wincap", 0.001, self.wincap, bias=self.bonus_wincap_bias, **buy),
+                        dist("0", 0.1, 0.0, **buy),
+                        dist("freegame", 0.899, **buy)]
+            if kind == "vsspin":
+                return [dist("wincap", 0.001, self.wincap, bias=self.duel_wincap_bias, **common),
+                        dist("0", 0.3, 0.0, **common),
+                        dist("freegame", 0.02, buy_fs=natural_fs, force_freegame=True, **common),
+                        dist("basegame", 0.679, **common)]
+            return [dist("wincap", 0.001, self.wincap, bias=self.bonus_wincap_bias, buy_fs=natural_fs, force_freegame=True, **common),
+                    dist("0", 0.25, 0.0, **common),
+                    dist("freegame", 0.1, buy_fs=natural_fs, force_freegame=True, **common),
+                    dist("basegame", 0.649, **common)]
+
+        def mode(name, m):
             return BetMode(
                 name=name,
-                cost=cost,
-                rtp=rtp,
+                cost=m["cost"],
+                rtp=self.rtp,
                 max_win=self.wincap,
                 auto_close_disabled=False,
-                is_feature=name in ("base", "boost"),
-                is_buybonus=name not in ("base", "boost"),  # the FS boost is a bet variant, not a bonus buy
-                distributions=[
-                    Distribution(
-                        criteria="natural" if name == "base" else name,
-                        quota=1.0,
-                        conditions={"reel_weights": {self.basegame_type: {}, self.freegame_type: {}}, "force_wincap": False, **conditions},
-                    ),
-                ],
+                is_feature=m["kind"] in ("base", "boost"),
+                is_buybonus=m["kind"] in ("buy", "vsspin"),  # the boosts are bet variants, not bonus buys
+                distributions=distributions(m["kind"], m),
             )
 
-        self.bet_modes = [mode("base", 1.0, self.rtp, {"force_freegame": False})] + [
-            mode(name, m["cost"], m["rtp"], {"force_freegame": "buy_fs" in m, "buy_fs": m.get("buy_fs"), "force_vs": m.get("force_vs", False), "vs_count": m.get("vs_count"), "fs_weight": m.get("fs_weight")})
-            for name, m in self.buy_modes.items()
-        ]
+        self.bet_modes = [mode("base", {"cost": 1.0, "kind": "base"})] + [mode(name, m) for name, m in self.buy_modes.items()]
+
+    p_rune_base = 0.028
 
     def p_rune(self, num_fs: int) -> float:
         """Chance per empty cell and bonus spin that a rune lands."""
-        return 0.028 + 0.0005 * (num_fs - 3)
+        return self.p_rune_base + 0.0005 * (num_fs - 3)

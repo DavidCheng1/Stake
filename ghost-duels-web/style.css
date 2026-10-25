@@ -607,6 +607,9 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .boost-btn.on { border-color: #6dffb3; animation: boostGlow 1.6s ease-in-out infinite; }
 .boost-btn.on .bo-main { color: #b6ffd8; text-shadow: 0 0 .4em rgb(109 255 179 / .9); }
 .boost-btn.on .bo-cost { color: #fff; }
+.boost-btn.six { border-color: #ffb347; animation-name: boostGlow6; }
+.boost-btn.six .bo-main { color: #ffe0a8; text-shadow: 0 0 .4em rgb(255 150 50 / .95); }
+@keyframes boostGlow6 { 50% { box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .75), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 2.6cqw rgb(255 150 50 / .9); } }
 @keyframes boostGlow { 50% { box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .75), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 2.2cqw rgb(109 255 179 / .85); } }
 .bb-fs { width: 3.6cqw; aspect-ratio: 1; display: block; }
 .bb-fs .sym { width: 100%; }

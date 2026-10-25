@@ -23,7 +23,19 @@ class GameState(GameStateOverride):
     """Handle all game-logic and event updates for a given simulation number."""
 
     def run_spin(self, sim, simulation_seed=None):
+        """One round. A criteria's `bias` (config overrides, e.g. for wincap rounds) applies only while it runs."""
         self.reset_seed(sim)
+        bias = self.get_current_distribution_conditions().get("bias") or {}
+        saved = {k: getattr(self.config, k) for k in bias}
+        for k, v in bias.items():
+            setattr(self.config, k, v)
+        try:
+            self.run_round()
+        finally:
+            for k, v in saved.items():
+                setattr(self.config, k, v)
+
+    def run_round(self):
         self.repeat = True
         while self.repeat:
             self.reset_book()
