@@ -463,7 +463,7 @@ async function spinReels(res) {
   for (let c = 0; c < COLS; c++) {
     if (c > 0) t += RM ? 30 : 110;
     if (vsReels.includes(c - 1)) t += RM ? 0 : 480;
-    tease[c] = fsSeen >= 2 && !RM;
+    tease[c] = fsSeen >= 2 && !RM && !vsReels.includes(c);
     if (tease[c]) t += TEASE;
     stops[c] = t;
     if (!vsReels.includes(c) && res[c].includes("fs")) fsSeen++;
@@ -476,11 +476,13 @@ async function spinReels(res) {
   });
   void reelsEl.offsetHeight;
   // one knock per reel when its bottom symbol hits (that drop peaks at 64% of 340 + 6 × 24 ms); VS reels land at 82% of 460 ms
-  for (let c = 0; c < COLS; c++) sound.land(c, (stops[c] + (RM ? 0 : vsReels.includes(c) ? 377 : 310)) / 1000 / pace(), vsReels.includes(c));
+  for (let c = 0; c < COLS; c++) sound.land(c, (stops[c] + (RM ? 0 : vsReels.includes(c) ? 377 : tease[c] ? 40 : 310)) / 1000 / pace(), vsReels.includes(c));
   const done = [];
   fills.forEach(([c, r, el]) => {
     const delay = stops[c] + (ROWS - 1 - r) * 50;
-    const a1 = RM ? null : el.animate(DROP_KF(-(r + 1.3) * P), { duration: 340 + r * 24, delay, easing: DROP_EASE, fill: "backwards" });
+    const a1 = RM ? null : tease[c]
+      ? el.animate([{ opacity: 0, transform: "translateY(-5%)" }, { opacity: 1, transform: "translateY(-5%)", offset: .01 }, { opacity: 1, transform: "none" }], { duration: 200, delay: stops[c], easing: "ease-out", fill: "backwards" })
+      : el.animate(DROP_KF(-(r + 1.3) * P), { duration: 340 + r * 24, delay, easing: DROP_EASE, fill: "backwards" });
     if (res[c][r] === "fs") (a1 ? a1.finished : Promise.resolve()).then(() => { animWin(el); const [x, y, w] = centerOf(el); fx.emit(x, y, { n: 16, kind: "spark", rgb: SYM.fs.rgb, scale: w / 120 }); sound.fsLand(++fsLanded); });
     if (a1) done.push(a1.finished);
   });
@@ -498,8 +500,9 @@ async function spinReels(res) {
     sound.edge(Math.max(0, stops[c] - TEASE) / 1000 / pace(), ++nthTease);
     later(() => {
       const rl = reels[c], ov = div("teasefx"), strip = div("tease-strip");
-      for (let r = 0; r < ROWS * 3; r++) { const im = new Image(); im.src = IMG[randSym()]; im.alt = ""; strip.appendChild(im); }
-      ov.append(strip, div("tease-fog"));
+      // the strip's first 7 rows are the reel's real result: the roll stops on exactly what the reel shows afterwards
+      for (let r = 0; r < ROWS * 3; r++) { const im = new Image(); im.src = IMG[r < ROWS ? res[c][r] : randSym()]; im.alt = ""; strip.appendChild(im); }
+      ov.append(strip, div("tease-fog"), div("tease-fog b"));
       rl.el.classList.add("tease"); rl.el.appendChild(ov);
       sound.duck(TEASE / 1000 / pace()); // the background music steps back while the reel teases
       say(i18n("Noch ein FS…", "One more FS…")); shake(4, 300);
@@ -869,11 +872,7 @@ function placeRune(c, r, v, id) {
 }
 function placeCrate(c, r, id, m, intro) {
   K[c][r] = { t: "c", id, m }; if (!intro) sound.crate();
-  if (!intro && N4.some(([dx, dy]) => at(c + dx, r + dy)?.t === "c")) later(() => {
-    const CH = crateChains(), ch = CH.chains[CH.id.get(c + "," + r)];
-    const [x, y] = cellCenter([c, r]); floatText(x, y - 20, `${i18n("Kette", "Chain")} ×${ch.mult}`, "246 196 79");
-    drawGroupLinks(linkGroups());
-  }, RM ? 0 : 800);
+
   const el = makeCrate(id, m); reels[c].cells[r].replaceChildren(el);
   if (!intro) {
     dropIn(el, true);
@@ -882,25 +881,8 @@ function placeCrate(c, r, id, m, intro) {
   return el;
 }
 
-// Rune groups (orthogonal). A group of >= 4 runes touching crates gets the sum of those crate multipliers.
-// Crates that touch each other form a chain; their multipliers add up for every group linked to the chain
-function crateChains() {
-  const id = new Map(), chains = [];
-  kCells("c").forEach(([c, r]) => {
-    if (id.has(c + "," + r)) return;
-    const cells = [], links = [], st = [[c, r]], n = chains.length; id.set(c + "," + r, n);
-    while (st.length) {
-      const [x, y] = st.pop(); cells.push([x, y]);
-      for (const [dx, dy] of N4) {
-        const nx = x + dx, ny = y + dy; if (at(nx, ny)?.t !== "c") continue;
-        if (dx > 0 || dy > 0) links.push([[x, y], [nx, ny]]);
-        if (!id.has(nx + "," + ny)) { id.set(nx + "," + ny, n); st.push([nx, ny]); }
-      }
-    }
-    chains.push({ cells, links, mult: cells.reduce((p2, [x, y]) => p2 * K[x][y].m, 1) });
-  });
-  return { id, chains };
-}
+// Rune groups (orthogonal): touching runes and crates form one group. A group with 4+ runes and at least one crate pays
+// the sum of its runes times every crate multiplier in it; crates touching only each other pay nothing.
 function linkGroups() {
   // Runes and crates that touch form one group. 4+ runes and at least one crate: (sum of runes) x crate1 x crate2 x ...
   // The flow starts at every crate and spreads outward, so each link has a direction and a depth.
@@ -939,9 +921,7 @@ function drawGroupLinks(groups) {
   qa(reelsEl, ".rtok.linked").forEach(e => e.classList.remove("linked"));
   qa(reelsEl, ".crate.active").forEach(e => e.classList.remove("active"));
   qa(reelsEl, ".lit").forEach(e => e.classList.add("stale"));
-  // crates touching each other glow gold together, unless their group already lights up in its own colour
-  const inGroup = new Set(groups.filter(g => g.ok).flatMap(g => g.chains[0].cells.map(([c, r]) => c + "," + r)));
-  crateChains().chains.forEach(ch => { if (ch.cells.length > 1 && !ch.cells.some(([c, r]) => inGroup.has(c + "," + r))) lightUp(ch.cells, "246 196 79", i => i * 50); });
+  // only groups that pay (4+ runes touching a crate) light up; crates touching each other alone are not a connection
   for (const g of groups) {
     if (!g.ok) continue;
     g.chains.forEach(ch => ch.cells.forEach(([c, r]) => q(reels[c].cells[r], ".crate").classList.add("active")));
