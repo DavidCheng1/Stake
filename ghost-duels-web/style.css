@@ -67,6 +67,12 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   55% { transform: translate(-25%, -700%) scale(calc(var(--s) * .8), calc(var(--s) * 1.3)); opacity: .8; }
   100% { transform: translate(-70%, -1400%) scale(calc(var(--s) * .4), calc(var(--s) * .9)); opacity: 0; } }
 .reel.tease { z-index: 2; }
+/* while a reel teases the board goes dark, so only the green reel and the FS symbols stand out */
+.stage .cell > .sym, .stage .tall, .stage .gridlines { transition: filter .35s, opacity .35s; }
+.stage.teasing .cell > .sym:not([data-id="fs"]), .stage.teasing .tall { filter: brightness(.22) saturate(.4); }
+.stage.teasing .gridlines { opacity: .25; }
+.stage.teasing .cell > .sym[data-id="fs"] { position: relative; z-index: 2; animation: fsLit .7s ease-in-out infinite alternate; }
+@keyframes fsLit { from { filter: brightness(1.1) drop-shadow(0 0 .6cqw rgb(255 79 210 / .8)); } to { filter: brightness(1.35) drop-shadow(0 0 1.6cqw rgb(255 79 210)) drop-shadow(0 0 .5cqw #fff); } }
 .reel.tease::after { content: ""; position: absolute; inset: 0; border-radius: 6px; pointer-events: none; z-index: 3;
   box-shadow: 0 0 2cqw rgb(90 255 120 / .65); animation: tease .5s ease-in-out infinite alternate; }
 @keyframes tease { from { opacity: .55; } to { opacity: 1; } }
