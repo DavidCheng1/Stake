@@ -1,4 +1,4 @@
-"""Local stand-in for the Stake Engine RGS, for testing ghost-duels-web against the real math books.
+"""Local stand-in for the Stake Engine RGS, for testing a static game frontend against its real math books.
 
 Serves the frontend and the wallet endpoints (authenticate, play, end-round, bet/event, replay).
 Rounds are drawn from the published books by lookup-table weight, like the RGS does. Every bet mode in
@@ -6,9 +6,10 @@ index.json is served: play with mode "BONUS" draws from the bonus buy books and 
 
     python tools/mock_rgs.py            then open the printed URL
     python tools/mock_rgs.py --port 8080 --books 20000 --currency EUR
+    python tools/mock_rgs.py --web other-game-web --publish math-sdk/games/other_game/library/publish_files --game other_game
 
 Force a feature by putting it in rgs_url, e.g. rgs_url=http://127.0.0.1:8080/force/bonus
-(kinds: bonus, duel, tier2, tier3, wildonly, big, win, lose). Not part of the game upload.
+(kinds: win, lose, big, bonus, plus Ghost Duels' duel, tier2, tier3, wildonly). Not part of the game upload.
 """
 
 import argparse
@@ -32,12 +33,13 @@ BET_LEVELS = [0.1, 0.2, 0.4, 0.6, 0.8, 1, 2, 4, 5, 10, 20, 50, 100]
 
 
 def categories(book):
-    types = {e["type"] for e in book["events"]}
-    tiers = {e["tier"] for e in book["events"] if e["type"] == "vsDuel"}
-    wild_only = any(w["wildOnly"] for e in book["events"] if e["type"] == "winInfo" for w in e["wins"])
+    """Feature kinds of a round, for /force/<kind>. Works for any game's events; the duel kinds are Ghost Duels'."""
+    types = {e.get("type") for e in book["events"]}
+    tiers = {e.get("tier") for e in book["events"] if e.get("type") == "vsDuel"}
+    wild_only = any(w.get("wildOnly") for e in book["events"] if e.get("type") == "winInfo" for w in e.get("wins", []))
     pay = book["payoutMultiplier"]
     out = ["win" if pay > 0 else "lose"]
-    if "bonusEnd" in types:
+    if "bonusEnd" in types or any(t and ("freespin" in t.lower() or t.lower().startswith("bonus")) for t in types):
         out.append("bonus")
     if tiers:
         out.append("duel")
@@ -206,13 +208,18 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    global WEB, PUBLISH
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8080)
     ap.add_argument("--books", type=int, default=20000, help="books used for normal play")
     ap.add_argument("--scan", type=int, default=200000, help="books scanned for forced examples")
     ap.add_argument("--balance", type=float, default=1000)
     ap.add_argument("--currency", default="EUR")
+    ap.add_argument("--web", default=WEB, help="frontend folder to serve (index.html at its root)")
+    ap.add_argument("--publish", default=PUBLISH, help="math publish_files folder (index.json, books, lookup tables)")
+    ap.add_argument("--game", default="ghost_duels", help="game id, only used in the printed replay link")
     args = ap.parse_args()
+    WEB, PUBLISH = os.path.abspath(args.web), os.path.abspath(args.publish)
     # claim the port before the slow book loading, so a clash is reported right away
     try:
         server = Server(("127.0.0.1", args.port), Handler)
@@ -222,7 +229,7 @@ def main():
     host = f"127.0.0.1:{args.port}"
     print(f"\nPlay:   http://{host}/?sessionID=local&lang=en&rgs_url=http://{host}")
     print(f"Bonus:  http://{host}/?sessionID=local&lang=en&rgs_url=http://{host}/force/bonus")
-    print(f"Replay: http://{host}/?replay=true&game=ghost_duels&version=1&mode=base&event=<book id>&amount=1000000&rgs_url=http://{host}")
+    print(f"Replay: http://{host}/?replay=true&game={args.game}&version=1&mode=base&event=<book id>&amount=1000000&rgs_url=http://{host}")
     print("        (mode=bonus replays a bonus buy round)\n")
     server.serve_forever()
 
