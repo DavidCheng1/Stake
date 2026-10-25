@@ -47,7 +47,7 @@ Last updated: 2026-10-25. All work is on the `ghost-duels` branch, which is not 
 ### Before uploading
 
 - [x] **25,000× max win in every mode** (SDK optimizer, see the table above).
-- [ ] **Refresh `_UPLOAD_TO_STAKE`** with the 96.00% math (it still holds the 2026-10-23 version without the 6× boost): `tools/release/package.py ghost_duels ghost-duels-web "Ghost Duels"`. Costs about 0.5 GB of LFS quota.
+- [x] **`_UPLOAD_TO_STAKE` refreshed** (2026-10-25): the 96.00% math with all seven modes, and the frontend with the 6× boost and the new Lich King idle.
 - [x] **16:9 cover art:** `media/cover-16x9.png` (1920×1080), rendered from `media/cover-16x9.html`. The 3:4 game tile exists (kept outside the repo).
 - [ ] **Ask Stake Engine (or check their docs):**
   - Do they accept a frontend that isn't built on their Svelte web-sdk?
