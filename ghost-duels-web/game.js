@@ -1727,93 +1727,45 @@ async function boot() {
   }
 }
 
-// ===== Lich King hero: a 24-frame hand-drawn idle loop (assets/lich-idle.webp, 6×4 frames of 562×640), played
-// forwards then backwards so it never jumps. Reactions to the game (point, cheer, laugh, gasp) move, tilt and light up
-// the whole figure on top of the loop. =====
-const LICH = { src: "assets/lich-idle.webp", cols: 6, frames: 24, fw: 562, fh: 640, fps: 12,
-  // where the frame sits in the hero box (870×1010 units, the size of the old mesh art): feet on the same line
-  x: 33, y: 70, scale: 1.4283,
-  spots: { feet: [281, 636], lamp: [118, 318], soul: [458, 80] } };
+// ===== Lich King hero: the hand-drawn idle as an animated WebP (assets/lich-idle.webp): the 24 drawn frames plus an
+// in-between for each pair and 8 frames morphing the last one back into the first, so it loops forwards at 24 fps.
+// The browser plays it; reactions to the game (point, cheer, laugh, gasp) lean, bounce, shake and light up the figure.
+// Reduced motion shows the still first frame (assets/lich-still.webp). =====
 function GhostKing(host) {
-  const L = LICH, VW = 870, VH = 1010;
-  host.style.aspectRatio = VW + " / " + VH;
-  const cv = document.createElement("canvas"); cv.className = "hero-cv"; host.replaceChildren(cv);
-  const ctx = cv.getContext("2d");
-  const sheet = new Image(); let ready = false; sheet.onload = () => { ready = true; }; sheet.src = L.src;
-  // ping-pong order: 0 … 23 … 1
-  const ORDER = [...Array(L.frames).keys(), ...Array.from({ length: L.frames - 2 }, (_, i) => L.frames - 2 - i)];
+  host.style.aspectRatio = "870 / 1010";
+  const fig = div("hero-fig"), lamp = div("hero-lamp"), img = new Image();
+  img.className = "hero-img"; img.alt = ""; img.decoding = "async";
+  fig.append(lamp, img); host.replaceChildren(fig);
   const POSES = {
-    idle:  { tilt: 0, lean: 0, shake: 0, glow: 0, bounce: 0, lift: 0, speed: 1 },
-    point: { tilt: -1.5, lean: -1, shake: 0, glow: .6, bounce: 0, lift: .4, speed: 1.3 },
-    cheer: { tilt: 2.5, lean: .5, shake: 0, glow: 1, bounce: 1, lift: 1, speed: 1.8 },
-    laugh: { tilt: 2, lean: .6, shake: 1, glow: 1, bounce: .4, lift: .5, speed: 1.6 },
-    gasp:  { tilt: 3.5, lean: 1.4, shake: .25, glow: 1.4, bounce: .3, lift: .7, speed: 2 }
+    idle:  { tilt: 0, lean: 0, shake: 0, glow: 0, bounce: 0, lift: 0 },
+    point: { tilt: -1.5, lean: -1, shake: 0, glow: .6, bounce: 0, lift: .4 },
+    cheer: { tilt: 2.5, lean: .5, shake: 0, glow: 1, bounce: 1, lift: 1 },
+    laugh: { tilt: 2, lean: .6, shake: 1, glow: 1, bounce: .4, lift: .5 },
+    gasp:  { tilt: 3.5, lean: 1.4, shake: .25, glow: 1.4, bounce: .3, lift: .7 }
   };
-  let cur = { ...POSES.idle }, target = POSES.idle, until = 0, lastT = 0, raf = 0, running = false, phase = 0;
-  function resize() {
-    // up to 1024 px wide: enough for the frames on 2x screens; a smaller canvas gets stretched and looks soft
-    const r = host.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2);
-    const sc = Math.min(1, 1024 / Math.max(1, r.width * d));
-    const w = Math.max(2, Math.round(r.width * d * sc)), h = Math.max(2, Math.round(r.height * d * sc));
-    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
-  }
-  addEventListener("resize", resize);
-  const glow = (x, y, r, a) => {
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgb(120 255 170 / ${a})`); g.addColorStop(1, "rgb(120 255 170 / 0)");
-    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
-  };
+  let cur = { ...POSES.idle }, target = POSES.idle, until = 0, lastT = 0, raf = 0;
+  // the figure is only moved while a reaction plays or eases back; the idle itself is the animation
   function frame(now) {
-    if (!ready) return;
-    resize();
     const t = now / 1000, dt = Math.min(.05, t - lastT || .016); lastT = t;
     if (now > until && target !== POSES.idle) target = POSES.idle;
     const k = 1 - Math.pow(.0012, dt);
-    for (const key in cur) cur[key] += (target[key] - cur[key]) * k;
-    const c = cur;
-    phase = (phase + dt * L.fps * c.speed) % ORDER.length;
-    const f = ORDER[Math.floor(phase)], sx = (f % L.cols) * L.fw, sy = Math.floor(f / L.cols) * L.fh;
-    const u = cv.width / VW; // canvas px per hero unit
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
-    // the figure in hero units, pivoting on its feet: lean, tilt, bounce, shake, a slight lift in big moments
-    const feetX = L.x + L.spots.feet[0] * L.scale, feetY = L.y + L.spots.feet[1] * L.scale;
-    const shake = Math.sin(t * 34) * c.shake, bounce = -Math.abs(Math.sin(t * 6.5)) * 14 * c.bounce;
-    ctx.setTransform(u, 0, 0, u, 0, 0);
-    ctx.translate(feetX + shake * 4, feetY + bounce);
-    ctx.rotate((c.tilt + c.lean * 1.5 + shake * 1.2) * Math.PI / 180);
-    const sc = L.scale * (1 + c.lift * .025);
-    ctx.scale(sc, sc);
-    ctx.translate(-L.spots.feet[0], -L.spots.feet[1]);
-    // lantern light on the cape behind the figure
-    const fl = .75 + Math.sin(t * 13) * .08 + Math.sin(t * 7.3) * .07 + c.glow * .2;
-    ctx.globalCompositeOperation = "lighter";
-    glow(L.spots.lamp[0], L.spots.lamp[1], 150, .22 * fl);
-    ctx.globalCompositeOperation = "source-over";
-    ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(sheet, sx, sy, L.fw, L.fh, 0, 0, L.fw, L.fh);
-    // in big moments the whole figure and its soul flame light up
-    if (c.glow > .02) {
-      ctx.globalCompositeOperation = "lighter";
-      ctx.globalAlpha = Math.min(.35, c.glow * .2);
-      ctx.drawImage(sheet, sx, sy, L.fw, L.fh, 0, 0, L.fw, L.fh);
-      ctx.globalAlpha = 1;
-      glow(L.spots.soul[0], L.spots.soul[1], 90, .3 * c.glow);
-      glow(L.spots.lamp[0], L.spots.lamp[1], 70, .35 * c.glow * fl);
-      ctx.globalCompositeOperation = "source-over";
-    }
+    let rest = true;
+    for (const key in cur) { cur[key] += (target[key] - cur[key]) * k; if (Math.abs(cur[key] - target[key]) > .002) rest = false; }
+    const c = cur, shake = Math.sin(t * 34) * c.shake, bounce = -Math.abs(Math.sin(t * 6.5)) * 1.4 * c.bounce;
+    fig.style.transform = `translate(${(shake * .45).toFixed(3)}%, ${bounce.toFixed(3)}%) rotate(${(c.tilt + c.lean * 1.5 + shake * 1.2).toFixed(3)}deg) scale(${(1 + c.lift * .025).toFixed(4)})`;
+    img.style.filter = c.glow > .01 ? `brightness(${(1 + c.glow * .22).toFixed(3)}) saturate(${(1 + c.glow * .15).toFixed(3)})` : "";
+    lamp.style.opacity = (1 + c.glow * .8).toFixed(3);
+    raf = rest && target === POSES.idle ? 0 : requestAnimationFrame(frame);
   }
-  let odd = false;
-  const stageEl = document.getElementById("stage");
-  const loop = now => {
-    odd = !odd;
-    if (!document.hidden && (!stageEl || !stageEl.classList.contains("dropping") || odd)) frame(now);
-    if (running) raf = requestAnimationFrame(loop);
-  };
   return {
-    start() { if (!running) { running = true; raf = requestAnimationFrame(loop); } },
-    stop() { running = false; cancelAnimationFrame(raf); },
-    still() { const tick = () => { if (!ready) return setTimeout(tick, 50); phase = 0; lastT = 0; frame(0); }; tick(); },
-    react(name, ms = 1400) { if (!POSES[name]) return; target = POSES[name]; until = performance.now() + ms; }
+    start() { img.src = "assets/lich-idle.webp"; },
+    stop() { img.src = "assets/lich-still.webp"; },
+    still() { img.src = "assets/lich-still.webp"; },
+    react(name, ms = 1400) {
+      if (!POSES[name]) return;
+      target = POSES[name]; until = performance.now() + ms;
+      if (!raf) { lastT = 0; raf = requestAnimationFrame(frame); }
+    }
   };
 }
 const hero = GhostKing(document.getElementById("hero"));
