@@ -66,8 +66,12 @@ class Review:
         """Open the game, dismiss the intro with a real click (which also starts audio) and wait until it is ready."""
         b.open(url, 3)
         if self.p.get("dismissIntro"):
-            b.wait_for(f"!!document.querySelector({json.dumps(self.p['dismissIntro'])})", 8)
-            b.click(self.p["dismissIntro"], touch)
+            gone = f"!document.querySelector({json.dumps(self.p['dismissIntro'])})"
+            b.wait_for(f"!({gone})", 8)
+            for _ in range(4):  # on a busy machine the first tap can land before the intro listens for it
+                b.click(self.p["dismissIntro"], touch)
+                if b.wait_for(gone, 3):
+                    break
         return b.wait_for(self.p["ready"], 25)
 
     def spin(self, b, touch=False):
