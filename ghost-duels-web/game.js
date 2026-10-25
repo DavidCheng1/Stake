@@ -458,13 +458,13 @@ async function spinReels(res) {
   await Promise.all(outs);
   reels.forEach(rl => { rl.tall.hidden = true; rl.tall.getAnimations().forEach(x => x.cancel()); rl.tall.replaceChildren(); rl.cells.forEach(c => { c.replaceChildren(); c.style.visibility = ""; }); });
 
-  // 2. schedule: VS adds a pause, once 2 FS are on the board every further reel teases
-  const stops = [], tease = []; let t = 40, fsSeen = 0;
+  // 2. schedule: VS adds a pause, once 2 FS are on the board every further reel teases for TEASE ms
+  const TEASE = 2400, stops = [], tease = []; let t = 40, fsSeen = 0;
   for (let c = 0; c < COLS; c++) {
     if (c > 0) t += RM ? 30 : 110;
     if (vsReels.includes(c - 1)) t += RM ? 0 : 480;
     tease[c] = fsSeen >= 2 && !RM;
-    if (tease[c]) t += 1500;
+    if (tease[c]) t += TEASE;
     stops[c] = t;
     if (!vsReels.includes(c) && res[c].includes("fs")) fsSeen++;
   }
@@ -490,18 +490,22 @@ async function spinReels(res) {
       { duration: 460, delay: stops[c], easing: DROP_EASE, fill: "backwards" }).finished.then(() => tallLanded(rl)));
     else tallLanded(rl);
   });
-  // tease overlays (blurred fast spin) run until that reel's drop starts
+  // tease: until that reel drops it zooms in, glows green, fills with fog and rolls a strip of symbols slowly to a stop,
+  // with the edging music building from reel to reel (the strip is decoration; the reel's real symbols drop afterwards)
+  let nthTease = 0;
   tease.forEach((on, c) => {
     if (!on) return;
-    sound.tease(Math.max(0, stops[c] - 1500) / 1000 / pace(), 1.5 / pace());
+    sound.edge(Math.max(0, stops[c] - TEASE) / 1000 / pace(), ++nthTease);
     later(() => {
-      const rl = reels[c], ov = div("teasefx");
-      for (let r = 0; r < ROWS; r++) { const im = new Image(); im.src = IMG[randSym()]; im.alt = ""; ov.appendChild(im); }
+      const rl = reels[c], ov = div("teasefx"), strip = div("tease-strip");
+      for (let r = 0; r < ROWS * 3; r++) { const im = new Image(); im.src = IMG[randSym()]; im.alt = ""; strip.appendChild(im); }
+      ov.append(strip, div("tease-fog"));
       rl.el.classList.add("tease"); rl.el.appendChild(ov);
+      sound.duck(TEASE / 1000 / pace()); // the background music steps back while the reel teases
       say(i18n("Noch ein FS…", "One more FS…")); shake(4, 300);
-      const iv = setInterval(() => qa(ov, "img").forEach(im => im.src = IMG[randSym()]), 90);
-      later(() => { clearInterval(iv); ov.remove(); rl.el.classList.remove("tease"); }, 1500);
-    }, Math.max(0, stops[c] - 1500));
+      strip.animate([{ transform: "translateY(-66.67%)" }, { transform: "translateY(0)" }], { duration: TEASE, easing: "cubic-bezier(.2, .75, .3, 1)", fill: "forwards" });
+      later(() => { ov.remove(); rl.el.classList.remove("tease"); }, TEASE);
+    }, Math.max(0, stops[c] - TEASE));
   });
   await Promise.all(done);
   stage.classList.remove("dropping");
@@ -1570,6 +1574,12 @@ const sound = (() => {
     },
     // an FS symbol lands: a heavy hit and a bright bell, a step higher for each FS already in this spin
     fsLand(nth = 1) { const t = at(); if (t == null) return; const up = 2 ** ((Math.min(nth, 7) - 1) * 2 / 12); tone(t, { f: 95, f2: 32, a: .003, d: .5, vol: .55 }); bell(t, NOTE(0) * up, .2, 1.8, .6); bell(t + .03, NOTE(7) * up, .1, 1.4, .6); },
+    // one free-spin symbol away (2.4 s per teasing reel): synth fallback for the designed edging music
+    edge(delay = 0) {
+      const t = at(delay); if (t == null) return;
+      hiss(t, { f: 300, f2: 2600, q: 5, a: 2.1, d: .3, vol: .16 });
+      for (let i = 0, at2 = 0; i < 6; i++, at2 += .5 * .82 ** i) tone(t + at2, { f: 85, f2: 50, a: .004, d: .16, vol: .28 });
+    },
     // one free-spin symbol away: a rising, pulsing riser over the tease
     tease(delay = 0, dur = 1.5) {
       const t = at(delay); if (t == null) return;
@@ -1581,7 +1591,7 @@ const sound = (() => {
   // ---- designed sounds (tools/sound_design.py -> assets/sfx/*.mp3) replace the synth voices above once loaded;
   // until a file is decoded, or if it fails, the synthesized version plays. Pitched samples are recorded at A5 (880 Hz).
   const SFX = ["click", "spin", "land", "land_heavy", "chime", "crystal", "tumble", "charge", "burst", "clash", "wail", "toll",
-    "sting", "sting_devil", "fanfare", "bigwin", "heartbeat", "crumble", "challenger", "banner", "fs_land"];
+    "sting", "sting_devil", "fanfare", "bigwin", "heartbeat", "crumble", "challenger", "banner", "fs_land", "edge"];
   const raw = Object.fromEntries(SFX.map(k => [k, fetch(`assets/sfx/${k}.mp3`).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)]));
   const buf = {};
   loadSfx = async () => { for (const k of SFX) { try { const ab = await raw[k]; if (ab) buf[k] = await ctx.decodeAudioData(ab); } catch (err) { console.warn("sfx " + k, err); } } };
@@ -1629,11 +1639,13 @@ const sound = (() => {
   use("lifeLost", null, t => smp("heartbeat", t, .7));
   use("banner", null, t => { duck(2); return smp("banner", t, .4); });
   // the FS hit is the loudest effect; the music dips under it and each further FS in a spin lands 2 semitones higher
+  // edging music under each teasing reel (the music dips from the tease itself); each further reel starts a semitone higher
+  use("edge", 0, (t, d, nth = 1) => smp("edge", t, .8, 2 ** ((Math.min(nth, 5) - 1) / 12)));
   use("fsLand", null, (t, nth = 1) => { duck(1.2); return smp("fs_land", t, 1, 2 ** ((Math.min(nth, 7) - 1) * 2 / 12)); });
   use("bigWin", null, (t, max = false) => { duck(max ? 4 : 3); if (!smp("bigwin", t, .8)) return false; if (max) smp("sting_devil", t + .3, .45); return true; });
 
   return {
-    ...fx, st,
+    ...fx, st, duck,
     set(part) { Object.assign(st, part); try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} apply(); },
   };
 })();

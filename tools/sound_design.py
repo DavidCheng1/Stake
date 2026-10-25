@@ -449,11 +449,33 @@ def s_fs_land():
     return reverb(x, 0.45, 1.8)
 
 
+def s_edge():
+    """Suspense under a teasing reel (one more FS needed), 2.4 s plus tail; the game raises it for each further reel.
+    A low drone swelling, a heartbeat that speeds up, a dissonant high tremolo, a rising whoosh and a whispering choir."""
+    sec, body = 3.0, 2.4
+    t = t_axis(sec)
+    swell = np.clip(t / body, 0, 1) ** 1.6 * np.where(t < body, 1, np.exp(-6 * (t - body)))
+    drone = biquad(osc(55 * (1 + 0.004 * np.sin(2 * np.pi * 0.7 * t)), sec, "saw") + osc(82.4, sec, "saw") * 0.6, "lp", 380, 0.9)
+    x = drone * (0.35 + 0.65 * swell) * 0.9
+    beat_at = 0.05
+    for i in range(7):  # heartbeat: lub-dub pairs, closer together each time
+        place(x, thump(70, 40, 0.16, 1.1), beat_at)
+        place(x, thump(62, 38, 0.18, 0.85), beat_at + 0.16)
+        beat_at += 0.5 * 0.82 ** i
+        if beat_at > body - 0.15:
+            break
+    trem = (osc(880, sec) + osc(932.3, sec) * 0.8 + osc(1318.5, sec) * 0.35) * (0.55 + 0.45 * np.sin(2 * np.pi * 13 * t))
+    x += biquad(trem, "lp", 4000, 0.7) * swell * 0.28
+    x += pad_to(whoosh(250, 4200, body, 1.4, 0.55, "pink"), sec) * np.clip(t / body, 0, 1)
+    x += choir([220, 233.1, 329.6], sec, "oo", 0.7) * swell * 0.8
+    return reverb(x, 0.4, 1.6)
+
+
 SOUNDS = {
     "click": s_click, "spin": s_spin, "land": s_land, "land_heavy": s_land_heavy, "chime": s_chime, "crystal": s_crystal,
     "tumble": s_tumble, "charge": s_charge, "burst": s_burst, "clash": s_clash, "wail": s_wail, "toll": s_toll,
     "sting": s_sting, "sting_devil": s_sting_devil, "fanfare": s_fanfare, "bigwin": s_bigwin, "heartbeat": s_heartbeat,
-    "crumble": s_crumble, "challenger": s_challenger, "banner": s_banner, "fs_land": s_fs_land,
+    "crumble": s_crumble, "challenger": s_challenger, "banner": s_banner, "fs_land": s_fs_land, "edge": s_edge,
 }
 
 
