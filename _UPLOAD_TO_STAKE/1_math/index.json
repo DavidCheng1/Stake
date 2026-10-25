@@ -7,6 +7,18 @@
             "weights": "lookUpTable_base_0.csv"
         },
         {
+            "name": "boost",
+            "cost": 3.0,
+            "events": "books_boost.jsonl.zst",
+            "weights": "lookUpTable_boost_0.csv"
+        },
+        {
+            "name": "boost6",
+            "cost": 6.0,
+            "events": "books_boost6.jsonl.zst",
+            "weights": "lookUpTable_boost6_0.csv"
+        },
+        {
             "name": "bonus",
             "cost": 182.0,
             "events": "books_bonus.jsonl.zst",
@@ -23,12 +35,6 @@
             "cost": 650.0,
             "events": "books_bonus5.jsonl.zst",
             "weights": "lookUpTable_bonus5_0.csv"
-        },
-        {
-            "name": "boost",
-            "cost": 3.0,
-            "events": "books_boost.jsonl.zst",
-            "weights": "lookUpTable_boost_0.csv"
         },
         {
             "name": "vsspin",
