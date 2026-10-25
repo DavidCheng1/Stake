@@ -492,7 +492,8 @@ async function spinReels(res) {
       { duration: 460, delay: stops[c], easing: DROP_EASE, fill: "backwards" }).finished.then(() => tallLanded(rl)));
     else tallLanded(rl);
   });
-  // tease: until that reel drops it zooms in, glows green, fills with fog and rolls a strip of symbols slowly to a stop,
+  // tease: until that reel stops it turns dark teal, neon beams light its edges, green ghost-fire rises through it and a
+  // strip of symbols rolls slowly to a stop on the reel's real result,
   // with the edging music building from reel to reel (the strip is decoration; the reel's real symbols drop afterwards)
   let nthTease = 0;
   tease.forEach((on, c) => {
@@ -502,7 +503,13 @@ async function spinReels(res) {
       const rl = reels[c], ov = div("teasefx"), strip = div("tease-strip");
       // the strip's first 7 rows are the reel's real result: the roll stops on exactly what the reel shows afterwards
       for (let r = 0; r < ROWS * 3; r++) { const im = new Image(); im.src = IMG[r < ROWS ? res[c][r] : randSym()]; im.alt = ""; strip.appendChild(im); }
-      ov.append(strip, div("tease-fog"), div("tease-fog b"));
+      const fire = div("tease-fire");
+      for (let i = 0; i < 30; i++) { // green ghost-fire flames rising at random spots and speeds, most of them along the edges
+        const w = div("tw"), edge = Math.random() < .7, x = edge ? (Math.random() < .5 ? 4 + Math.random() * 14 : 82 + Math.random() * 14) : 25 + Math.random() * 50;
+        w.style.setProperty("--x", x.toFixed(1) + "%"); w.style.setProperty("--d", (-Math.random() * 1.6).toFixed(2) + "s");
+        w.style.setProperty("--t", (1.1 + Math.random() * .8).toFixed(2) + "s"); w.style.setProperty("--s", (.6 + Math.random() * .7).toFixed(2)); fire.appendChild(w);
+      }
+      ov.append(strip, fire, div("tease-beam l"), div("tease-beam r"), div("tease-streak a"), div("tease-streak b"));
       rl.el.classList.add("tease"); rl.el.appendChild(ov);
       sound.duck(TEASE / 1000 / pace()); // the background music steps back while the reel teases
       say(i18n("Noch ein FS…", "One more FS…")); shake(4, 300);
@@ -855,7 +862,6 @@ function makeRune(v, id) {
   const el = div("rtok"); el.style.setProperty("--c", SYM[id].rgb);
   const img = new Image(); img.src = IMG[id]; img.alt = ""; img.draggable = false;
   const t = document.createElement("span"); t.className = "rv"; t.textContent = fmtV(v * bet);
-  if (v >= 6) el.classList.add("big");
   el.append(img, t); return el;
 }
 function dropIn(el, heavy) {

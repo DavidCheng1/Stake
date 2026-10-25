@@ -41,24 +41,34 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .reel { position: relative; display: grid; grid-template-rows: repeat(7, minmax(0, 1fr)); }
 .cell { position: relative; display: grid; place-items: center; min-height: 0; border-radius: 6px; }
 .cell > .sym { width: auto; height: 94%; }
-/* Tease (2 FS on the board): each further reel glows green, fills with thick fog and rolls slowly to a stop on its real
-   symbols. The reel keeps its place on the grid; the symbols inside it are drawn bigger. */
-.teasefx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; border-radius: 6px; background: rgb(6 26 18 / .6); }
-.tease-strip { position: absolute; left: 0; right: 0; top: 0; height: 300%; display: grid; grid-template-rows: repeat(21, minmax(0, 1fr)); }
-.tease-strip img { height: 100%; margin: auto; display: block; filter: brightness(1.05) drop-shadow(0 0 .5cqw rgb(109 255 179 / .6)); }
-.tease-fog { position: absolute; inset: -20% -60%; z-index: 2; pointer-events: none; filter: blur(.7cqw);
-  background: radial-gradient(50% 14% at 28% 10%, rgb(205 255 232 / .85), transparent 72%), radial-gradient(56% 16% at 74% 30%, rgb(160 255 205 / .8), transparent 72%),
-    radial-gradient(52% 14% at 26% 52%, rgb(205 255 232 / .8), transparent 72%), radial-gradient(56% 16% at 72% 74%, rgb(160 255 205 / .8), transparent 72%),
-    radial-gradient(50% 14% at 30% 94%, rgb(205 255 232 / .85), transparent 72%), linear-gradient(rgb(120 255 180 / .32), rgb(120 255 180 / .45));
-  animation: teaseFog 2.2s ease-in-out infinite alternate; }
-.tease-fog.b { inset: -30% -70%; opacity: .75; filter: blur(1.1cqw); animation: teaseFogB 3.1s ease-in-out infinite alternate;
-  background: radial-gradient(60% 18% at 70% 18%, rgb(225 255 240 / .8), transparent 72%), radial-gradient(60% 18% at 30% 44%, rgb(140 255 195 / .75), transparent 72%),
-    radial-gradient(60% 18% at 68% 68%, rgb(225 255 240 / .8), transparent 72%), radial-gradient(60% 18% at 32% 90%, rgb(140 255 195 / .75), transparent 72%); }
-@keyframes teaseFog { from { transform: translate(-10%, 8%); } to { transform: translate(10%, -8%); } }
-@keyframes teaseFogB { from { transform: translate(12%, -6%); } to { transform: translate(-12%, 10%); } }
+/* Tease (2 FS on the board): the column turns dark teal, neon green beams run along its edges with thinner streaks inside,
+   green ghost-fire rises through it, and a strip of symbols rolls slowly to a stop on the reel's real result. */
+.teasefx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; border-radius: 6px;
+  background: linear-gradient(rgb(9 42 44 / .9), rgb(7 32 35 / .92)); }
+.tease-strip { position: absolute; left: 0; right: 0; top: 0; height: 300%; display: grid; grid-template-rows: repeat(21, minmax(0, 1fr)); z-index: 1; }
+.tease-strip img { height: 94%; margin: auto; display: block; filter: drop-shadow(0 0 .5cqw rgb(110 255 140 / .6)); }
+/* crisp neon lines: a bright core on each edge, a thin second line inside it, and two faint streaks in the middle */
+.tease-beam { position: absolute; top: 0; bottom: 0; width: 5.5%; z-index: 3; border-radius: 3px; animation: beamFlicker .16s steps(2) infinite alternate;
+  background: linear-gradient(90deg, rgb(70 255 110), #d9ffd9 50%, rgb(70 255 110)); box-shadow: 0 0 1cqw .25cqw rgb(70 255 110), 0 0 2.6cqw .4cqw rgb(50 230 90 / .7); }
+.tease-beam.l { left: 2%; } .tease-beam.r { right: 2%; }
+.tease-beam::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40%; background: rgb(90 255 125); box-shadow: 0 0 .8cqw .1cqw rgb(70 255 110); }
+.tease-beam.l::after { left: 220%; } .tease-beam.r::after { right: 220%; }
+.tease-streak { position: absolute; top: 0; bottom: 0; width: 1.2%; z-index: 3; animation: streak 1.1s ease-in-out infinite alternate;
+  background: linear-gradient(transparent, rgb(170 255 170 / .9) 25%, #eaffea 50%, rgb(170 255 170 / .9) 75%, transparent); box-shadow: 0 0 .6cqw rgb(90 255 120 / .9); }
+.tease-streak.a { left: 30%; } .tease-streak.b { right: 28%; animation-delay: -.5s; }
+@keyframes beamFlicker { from { opacity: .8; } to { opacity: 1; } }
+@keyframes streak { from { opacity: .25; } to { opacity: .8; } }
+/* ghost-fire: small distinct green flames drifting up the column and fading */
+.tease-fire { position: absolute; inset: 0; z-index: 2; }
+.tease-fire .tw { position: absolute; left: var(--x); bottom: -8%; width: 17%; height: 9%; border-radius: 50% 50% 40% 40% / 75% 75% 25% 25%;
+  background: radial-gradient(45% 55% at 50% 72%, #eaffe6, rgb(120 255 140 / .95) 40%, rgb(40 200 90 / .55) 65%, transparent 74%);
+  filter: drop-shadow(0 0 .4cqw rgb(90 255 120 / .9)); transform: translateX(-50%) scale(var(--s)); animation: wisp var(--t) linear var(--d) infinite; }
+@keyframes wisp { 0% { transform: translate(-50%, 0) scale(var(--s)); opacity: 0; } 12% { opacity: 1; }
+  55% { transform: translate(-25%, -700%) scale(calc(var(--s) * .8), calc(var(--s) * 1.3)); opacity: .8; }
+  100% { transform: translate(-70%, -1400%) scale(calc(var(--s) * .4), calc(var(--s) * .9)); opacity: 0; } }
 .reel.tease { z-index: 2; }
 .reel.tease::after { content: ""; position: absolute; inset: 0; border-radius: 6px; pointer-events: none; z-index: 3;
-  box-shadow: 0 0 0 .4cqw rgb(109 255 179), 0 0 3cqw rgb(109 255 179 / .95), inset 0 0 3cqw rgb(109 255 179 / .7); animation: tease .5s ease-in-out infinite alternate; }
+  box-shadow: 0 0 2cqw rgb(90 255 120 / .65); animation: tease .5s ease-in-out infinite alternate; }
 @keyframes tease { from { opacity: .55; } to { opacity: 1; } }
 .reel.tease .cell .sym { animation-duration: .05s !important; }
 .reel.spinning .cell { overflow: hidden; filter: blur(2px) brightness(.8); }
@@ -164,7 +174,6 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .rtok:not(.linked) .rv { opacity: .7; }
 .rtok.linked .rv { background: rgb(var(--lc) / .85); border-color: #fff8; box-shadow: 0 0 .9cqw rgb(var(--lc)); color: #fff; text-shadow: 0 0 .6cqw #fff, 0 .1cqw 0 #000; }
 .rtok.linked img { filter: drop-shadow(0 0 .9cqw rgb(var(--lc))) brightness(1.2); }
-.rtok.big .rv { font-size: 1.95cqw; }
 
 /* Slow falling column */
 .ghostspin { position: absolute; inset: 8%; opacity: .2; filter: blur(2px) saturate(.4); animation: ghostDrop .095s linear; pointer-events: none; }
@@ -192,7 +201,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .life-big { position: absolute; left: 50%; top: 46%; width: 10%; aspect-ratio: .7; transform: translate(-50%, -50%); z-index: 9; pointer-events: none; }
 .life-big .life { width: 100%; height: 100%; }
 .life-big .lbl2 { position: absolute; left: 50%; top: 108%; transform: translateX(-50%); white-space: nowrap; font: 800 2.4cqw/1 var(--ui); letter-spacing: .06em; color: #ffd6dc; text-shadow: 0 0 1cqw rgb(255 60 90 / .8), 0 .2cqw 0 #000; }
-@media (prefers-reduced-motion: reduce) { .cr-glow, .crate::after, .rtok img, .cell.falling::before, .life::before, .life::after { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .cr-glow, .crate::after, .tease-fire .tw, .tease-beam, .tease-streak, .rtok img, .cell.falling::before, .life::before, .life::after { animation: none !important; } }
 
 /* Ghost King hero (right) and logo (top left) */
 .hero { position: absolute; left: 66%; top: 28.5%; width: 35.5%; aspect-ratio: 870 / 1010; pointer-events: none; }
