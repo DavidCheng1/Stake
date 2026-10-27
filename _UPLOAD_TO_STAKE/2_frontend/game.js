@@ -7,11 +7,14 @@ const money = v => RGS.formatMoney(v);
 // German for lang=de, English for every other language
 // social mode (Stake.us) is English only, with restricted gambling words replaced
 const i18n = (de, en) => RGS.lang === "de" && !RGS.social ? de : RGS.socialText(en);
-// ---------- Pace: turbo plays a round faster; a click during a round (slam stop) hurries the rest of it ----------
+// ---------- Pace: turbo plays a round faster; a click during a round (slam stop) hurries the sequence that is playing ----------
 // Every wait (sleep, later) and every scripted animation runs at pace(); the idle CSS loops keep their own speed.
 const TURBO = 2, SLAM = 6;
 let turbo = false, slam = false;
 const pace = () => (turbo ? TURBO : 1) * (slam ? SLAM : 1);
+// Each sequence of a round (reels, a win, a tumble, a duel, a banner, a bonus spin...) calls this when it starts,
+// so a skip hurries only the sequence it was pressed in and the next one plays at normal speed again.
+function nextSequence() { slam = false; }
 const waits = new Set();
 const sleep = ms => new Promise(res => {
   const d = ms / pace(), w = { res, end: performance.now() + d };
@@ -445,6 +448,7 @@ const DROP_KF = from => [
 const DROP_EASE = "cubic-bezier(.45,0,.8,.5)";
 
 async function spinReels(res) {
+  nextSequence();
   const P = pitchPx();
   let fsLanded = 0; // FS symbols land left to right; each one sounds a step higher than the last
   stage.classList.add("dropping");
@@ -619,18 +623,21 @@ let countId = 0;
 // sets the win field at once and stops any running count-up, which would otherwise keep writing its older value
 function setWin(v) { countId++; shown = v; winVal.textContent = money(v); }
 function countTo(target, dur = 700) {
-  const id = ++countId, from = shown, t0 = performance.now(); dur /= pace();
-  let lastTick = 0;
+  const id = ++countId, from = shown;
+  let lastTick = 0, k = 0, last = performance.now();
   return new Promise(res => (function step(t) {
     if (id !== countId) return res();
-    // a frame's timestamp can be slightly older than t0; below 0 the easing curve would swing far negative
-    const k = Math.min(1, Math.max(0, (t - t0) / dur)); shown = k < 1 ? from + (target - from) * (1 - Math.pow(1 - k, 3)) : target;
-    if (dur > 300 && k < 1 && t - lastTick > 85) { lastTick = t; sound.tick(); }
+    // progress follows the current pace each frame, so a skip speeds up a count that is already running
+    // (a frame's timestamp can be slightly older than the start; it never counts backwards)
+    k = Math.min(1, k + Math.max(0, t - last) * pace() / dur); last = Math.max(last, t);
+    shown = k < 1 ? from + (target - from) * (1 - Math.pow(1 - k, 3)) : target;
+    if (dur / pace() > 300 && k < 1 && t - lastTick > 85) { lastTick = t; sound.tick(); }
     winVal.textContent = money(k < 1 ? RGS.roundMoney(shown) : shown); if (k < 1) requestAnimationFrame(step); else res();
-  })(t0));
+  })(last));
 }
 
 async function showWins(clusters, before) {
+  nextSequence();
   winVal.classList.add("hit");
   hero.react(clusters.some(cl => cl.mult > 1) || clusters.reduce((a1, cl) => a1 + cl.win, 0) >= 10 * bet ? "cheer" : "point", 1700);
   const inWin = new Set(); clusters.forEach(cl => cl.cells.forEach(([c, r]) => inWin.add(c + "," + r)));
@@ -662,6 +669,7 @@ async function showWins(clusters, before) {
 
 // tumbleBoard event: exploding cells, removed VS reels and the new symbols per reel (top first)
 async function tumble(ev) {
+  nextSequence();
   sound.tumble();
   const gone = new Set(ev.explodingSymbols.map(p => p.reel + "," + p.row));
   const usedVs = ev.removedVsReels;
@@ -728,6 +736,7 @@ const DUEL_T3 = [[150, 35], [200, 25], [250, 15], [300, 10], [500, 8], [750, 5],
 // value pools above are only used for the rolling badge animation
 // The vsDuel event decides everything shown here; challengers that lose are only for tension.
 async function reelDuel(d) {
+  nextSequence();
   const reelIdx = d.reel, rl = reels[reelIdx], tall = rl.tall;
   const tier = d.tier, m1 = d.top.mult, m1b = d.bottom.mult;
   const ghostTop = d.top.symbol, ghostBot = d.bottom.symbol, topWins1 = d.topWins;
@@ -839,6 +848,7 @@ async function reelDuel(d) {
 
 // ---------- Banner ----------
 async function banner(title, sub, hold = 1700) {
+  nextSequence();
   hero.react("cheer", hold + 600); sound.banner();
   document.getElementById("bTitle").textContent = title; document.getElementById("bSub").textContent = sub;
   bannerEl.hidden = false;
@@ -981,6 +991,7 @@ function bonusHud(extra) {
 }
 
 async function slowSpin(landed) {
+  nextSequence();
   const empties = kCells(null);
   empties.forEach(([c, r]) => { reels[c].cells[r].classList.add("falling"); });
   spinBtn.classList.add("turning");
@@ -1059,6 +1070,7 @@ async function harvest(start, spinEvents, end) {
   }
   if (!kCells(null).length) await banner(i18n("Volle Gruft!", "Full Crypt!"), i18n("Alle Felder belegt", "Every cell filled"), 1400);
 
+  nextSequence(); // the finale (crates opening, runes collected) is its own sequence
   // Finale: linked groups get their crate multiplier
   const groups = linkGroups();
   drawGroupLinks(groups);
@@ -1125,6 +1137,7 @@ function clustersFor(ev) {
 }
 
 async function showCascade(duels, ev, rounds) {
+  nextSequence();
   const clusters = clustersFor(ev);
   if (duels.length) {
     const cols = duels.map(d => d.reel);
@@ -1147,6 +1160,7 @@ async function showCascade(duels, ev, rounds) {
 }
 
 async function showFsTrigger(ev) {
+  nextSequence();
   const fsCells = ev.positions.map(p => [p.reel, p.row]);
   sound.fanfare();
   qa(reelsEl, ".cell, .tall").forEach(c => c.classList.remove("win", "dim")); clearLit();
@@ -1233,10 +1247,11 @@ const buttons = ["betMinus", "betPlus", "autoBtn"].map(id => document.getElement
 const spinBtn = document.getElementById("spin"), autoBtn = document.getElementById("autoBtn");
 let autoOn = false, loading = true;
 const canSkip = () => !loading && !RGS.jurisdiction.disabledSlamstop;
-// during a round Spin stays clickable: it skips the rest of the round instead of starting a new one
+// during a round Spin stays clickable: it skips the sequence that is playing instead of starting a new round
 const lock = on => { busy = on; buttons.forEach(b => b.disabled = on); spinBtn.disabled = on && !canSkip(); if (!on) { slam = false; updateBet(); } updateBuy(); };
-// slam stop: a click on Spin or the board (or Space) during a round plays the rest of it SLAM times faster
-function skip() { if (!busy || slam || !canSkip()) return; slam = true; hurry(); }
+// slam stop: a click on Spin or the board (or Space) plays the sequence that is running SLAM times faster and fades out
+// the sounds it scheduled; a second click in the same sequence does nothing, one in the next sequence skips that one
+function skip() { if (!busy || slam || !canSkip()) return; slam = true; hurry(); sound.cut(); }
 
 // Wallet flow: play debits the bet (x the mode's cost) and returns the book; end-round credits a win.
 async function play(mode = boost ? boost.mode : "BASE") {
@@ -1388,7 +1403,9 @@ const sound = (() => {
   const KEY = "ghostDuels.sound", MUSIC_SRC = "assets/spooky-carousel.mp3";
   const st = { music: 65, sfx: 80, muted: false }; // sliders 0–100
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
-  let ctx, master, musicBus, sfxBus, duckBus, verb, noise, started = false, loadSfx = () => {};
+  let ctx, master, musicBus, sfxBus, duckBus, verb, seq, noise, started = false, loadSfx = () => {};
+  // effects of the current sequence: dry to the effects bus, wet into the reverb; a skip fades this pair out (cut)
+  const newSeq = () => { const dry = ctx.createGain(), wet = ctx.createGain(); dry.connect(sfxBus); wet.connect(verb); return { dry, wet }; };
   const file = fetch(MUSIC_SRC).then(r => { if (!r.ok) throw new Error("music " + r.status); return r.arrayBuffer(); });
   file.catch(() => {}); // reported in loadMusic()
   const level = v => (v / 100) ** 2; // slider to gain, roughly even steps in loudness
@@ -1415,6 +1432,7 @@ const sound = (() => {
     verb.buffer = ir;
     const dark = ctx.createBiquadFilter(); dark.type = "lowpass"; dark.frequency.value = 3800;
     verb.connect(dark).connect(sfxBus);
+    seq = newSeq();
     apply(0);
     noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const nd = noise.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
@@ -1441,7 +1459,7 @@ const sound = (() => {
   // ---- synth helpers: an enveloped oscillator and an enveloped, filtered noise burst
   const env = (g, t, a, peak, d) => { g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d); };
   // out(g, rev): a voice goes to the effects bus, and a share of it (rev 0..1) into the crypt reverb
-  const out = (g, rev) => { g.connect(sfxBus); if (rev) { const sg = ctx.createGain(); sg.gain.value = rev; g.connect(sg).connect(verb); } };
+  const out = (g, rev) => { g.connect(seq.dry); if (rev) { const sg = ctx.createGain(); sg.gain.value = rev; g.connect(sg).connect(seq.wet); } };
   function tone(t, { type = "sine", f, f2, a = .002, d = .1, vol = .3, rev = 0, vib = 0, vibRate = 5.5, lp = 0, detune = 0 }) {
     const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.detune.value = detune;
     o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + a + d);
@@ -1470,14 +1488,25 @@ const sound = (() => {
   const growl = (t, dur = 1.1, vol = .12) => [55, 58.3, 82.4].forEach((f, i) => tone(t, { type: "sawtooth", f, f2: f * .82, a: .05, d: dur, vol: vol * (i === 2 ? .5 : 1), lp: 700, vib: .05, vibRate: 17, rev: .3 }));
   // music steps back under big moments and returns afterwards
   function duck(hold = 2) {
-    if (!duckBus) return;
+    if (!duckBus || slam) return; // nothing big plays while a sequence is being skipped
     const t = ctx.currentTime, g = duckBus.gain;
     g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(.28, t + .15); g.setValueAtTime(.28, t + .15 + hold); g.linearRampToValueAtTime(1, t + .15 + hold + .9);
   }
   // effects are skipped until the first gesture and in hidden tabs (they would pile up and play on return)
-  const at = (delay = 0) => ctx && !document.hidden ? ctx.currentTime + Math.max(0, delay) : null;
+  // a sequence being skipped starts no new effects (they would pile up); button clicks still sound (always)
+  const at = (delay = 0, always = false) => ctx && !document.hidden && (always || !slam) ? ctx.currentTime + Math.max(0, delay) : null;
+  // a skip: the skipped sequence's sounds (also those scheduled for later) fade out at once, the music comes back up,
+  // and the next sequence gets a fresh bus
+  function cut() {
+    if (!ctx || !seq) return;
+    const t = ctx.currentTime, old = seq;
+    for (const n of [old.dry, old.wet]) { n.gain.cancelScheduledValues(t); n.gain.setValueAtTime(n.gain.value, t); n.gain.linearRampToValueAtTime(0, t + .06); }
+    setTimeout(() => { old.dry.disconnect(); old.wet.disconnect(); }, 400);
+    seq = newSeq();
+    const g = duckBus.gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(1, t + .4);
+  }
   const fx = {
-    click() { const t = at(); if (t == null) return; tone(t, { type: "triangle", f: 1900, f2: 1100, d: .045, vol: .16 }); hiss(t, { f: 4200, q: 2, d: .018, vol: .1 }); },
+    click() { const t = at(0, true); if (t == null) return; tone(t, { type: "triangle", f: 1900, f2: 1100, d: .045, vol: .16 }); hiss(t, { f: 4200, q: 2, d: .018, vol: .1 }); },
     // the old board falls out: a falling whoosh with a soft thump
     spin() { const t = at(); if (t == null) return; hiss(t, { f: 2400, f2: 320, q: .8, a: .03, d: .38, vol: .26 }); tone(t, { f: 150, f2: 55, a: .004, d: .2, vol: .3 }); },
     // a reel comes to rest: a wooden knock that climbs a little from reel to reel; heavy for VS reels and crates
@@ -1594,13 +1623,13 @@ const sound = (() => {
   function smp(name, t, vol = 1, rate = 1) {
     const b = buf[name]; if (!b) return false;
     const s = ctx.createBufferSource(), g = ctx.createGain();
-    s.buffer = b; s.playbackRate.value = rate; g.gain.value = vol; s.connect(g).connect(sfxBus); s.start(t);
+    s.buffer = b; s.playbackRate.value = rate; g.gain.value = vol; s.connect(g).connect(seq.dry); s.start(t);
     return true;
   }
   const pitch = semi => NOTE(semi) * 2 / 880; // rate that turns the A5 recording into the synth's note
   const use = (name, delayArg, play) => {
     const synth = fx[name];
-    fx[name] = (...a) => { const t = at(delayArg == null ? 0 : a[delayArg] || 0); if (t == null) return; if (!play(t, ...a)) synth(...a); };
+    fx[name] = (...a) => { const t = at(delayArg == null ? 0 : a[delayArg] || 0, name === "click"); if (t == null) return; if (!play(t, ...a)) synth(...a); };
   };
   use("click", null, t => smp("click", t, .45));
   use("spin", null, t => smp("spin", t, .5));
@@ -1641,7 +1670,7 @@ const sound = (() => {
   use("bigWin", null, (t, max = false) => { duck(max ? 4 : 3); if (!smp("bigwin", t, .8)) return false; if (max) smp("sting_devil", t + .3, .45); return true; });
 
   return {
-    ...fx, st, duck,
+    ...fx, st, duck, cut,
     set(part) { Object.assign(st, part); try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} apply(); },
   };
 })();
