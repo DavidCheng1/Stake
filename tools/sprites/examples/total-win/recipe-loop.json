@@ -1,0 +1,164 @@
+{
+ "frames": 100,
+ "size": 640,
+ "pad": 0.2,
+ "anchor": "center",
+ "cutout": "off",
+ "upscale": "off",
+ "name": "total-win-loop",
+ "fps": 24,
+ "motions": [
+  {
+   "type": "pulse",
+   "amount": 0.012,
+   "cycles": 2
+  },
+  {
+   "type": "flap",
+   "amount": 7,
+   "cycles": 4,
+   "pivot": [
+    0.34,
+    0.34
+   ],
+   "region": [
+    0.03,
+    0.1,
+    0.37,
+    0.68
+   ],
+   "reach": 0.1
+  },
+  {
+   "type": "flap",
+   "amount": -7,
+   "cycles": 4,
+   "pivot": [
+    0.66,
+    0.34
+   ],
+   "region": [
+    0.63,
+    0.1,
+    0.97,
+    0.64
+   ],
+   "reach": 0.1
+  },
+  {
+   "type": "move",
+   "dx": 0.004,
+   "dy": 0.014,
+   "cycles": 2,
+   "region": [
+    0.18,
+    0.55,
+    0.33,
+    0.9
+   ]
+  },
+  {
+   "type": "move",
+   "dx": -0.004,
+   "dy": 0.014,
+   "cycles": 2,
+   "phase": 0.35,
+   "region": [
+    0.7,
+    0.41,
+    0.82,
+    0.67
+   ]
+  },
+  {
+   "type": "glow",
+   "color": "#ff3a3a",
+   "threshold": 0.45,
+   "amount": 0.9,
+   "min": 0.2,
+   "radius": 0.02,
+   "cycles": 4,
+   "region": [
+    0.45,
+    0.05,
+    0.57,
+    0.2
+   ]
+  },
+  {
+   "type": "flicker",
+   "amount": 0.35,
+   "cycles": 9,
+   "region": [
+    0.29,
+    0.6,
+    0.34,
+    0.75
+   ]
+  },
+  {
+   "type": "flicker",
+   "amount": 0.35,
+   "cycles": 11,
+   "phase": 0.3,
+   "region": [
+    0.7,
+    0.58,
+    0.75,
+    0.73
+   ]
+  },
+  {
+   "type": "shine",
+   "amount": 0.7,
+   "cycles": 1,
+   "sweep": 0.35,
+   "phase": 0.55,
+   "width": 0.07,
+   "region": [
+    0.3,
+    0.12,
+    0.7,
+    0.75
+   ]
+  },
+  {
+   "type": "rays",
+   "amount": 0.35,
+   "count": 16,
+   "color": "#ffb070",
+   "radius": 0.42,
+   "sharpness": 8,
+   "cycles": 1
+  },
+  {
+   "type": "particles",
+   "kind": "embers",
+   "color": "#ff5533",
+   "count": 30,
+   "rise": 0.35,
+   "layer": "back",
+   "cycles": 1,
+   "region": [
+    0.05,
+    0.3,
+    0.95,
+    1.0
+   ]
+  },
+  {
+   "type": "particles",
+   "kind": "sparkles",
+   "color": "#fff0b0",
+   "count": 16,
+   "size": 0.006,
+   "cycles": 1,
+   "region": [
+    0.28,
+    0.1,
+    0.72,
+    0.75
+   ]
+  }
+ ]
+}

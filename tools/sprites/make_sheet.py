@@ -276,8 +276,12 @@ class Animator:
                 m["_p"] = dict(x=self.rng.uniform(x0, x1, k), y=self.rng.uniform(y0, y1, k), ph=self.rng.uniform(0, 1, k),
                                size=self.rng.uniform(0.6, 1.4, k), drift=self.rng.uniform(-1, 1, k), y0=y0, y1=y1,
                                cyc=self.rng.integers(1, 3, k) * m.get("cycles", 1))
-            elif kind == "flicker":
-                m["_w"] = cv.region(m.get("region"), m.get("feather", 0.1))
+            elif kind in ("flicker", "move") or (kind in ("glow", "shine") and m.get("region")):
+                m["_w"] = cv.region(m.get("region"), m.get("feather", 0.1 if kind != "move" else 0.03))
+            elif kind == "flap":  # turns a region (a wing) about its pivot, more the further from the pivot
+                px, py = cv.pt(*m["pivot"])
+                reach = m.get("reach", 0.12) * cv.S
+                m["_w"] = cv.region(m.get("region"), m.get("feather", 0.04)) * smoothstep(0, reach, np.hypot(cv.X - px, cv.Y - py))
 
     def t(self, i):
         return i / self.n if self.loop else i / max(self.n - 1, 1)
@@ -297,6 +301,9 @@ class Animator:
             if kind == "breathe":
                 sy *= 1 + a * math.sin(th)
                 sx *= 1 - a * 0.5 * math.sin(th)
+            elif kind == "pulse":
+                sx *= 1 + a * math.sin(th)
+                sy *= 1 + a * math.sin(th)
             elif kind == "float":
                 ty += a * cv.S * math.sin(th)
             elif kind == "rotate":
@@ -326,6 +333,15 @@ class Animator:
             if kind == "sway":
                 hgt = np.clip((ay - qy) / max(ay - self.bbox[1], 1), 0, 1) ** m.get("stiffness", 1.5)
                 qx = qx - a * cv.S * math.sin(th) * hgt
+            elif kind == "flap":
+                px, py = cv.pt(*m["pivot"])
+                ang = math.radians(a) * math.sin(th) * m["_w"]
+                ca, sa = np.cos(ang), np.sin(ang)
+                ddx, ddy = qx - px, qy - py
+                qx, qy = px + ca * ddx + sa * ddy, py - sa * ddx + ca * ddy
+            elif kind == "move":
+                qx = qx - m["_w"] * m.get("dx", 0) * cv.S * math.sin(th)
+                qy = qy - m["_w"] * m.get("dy", 0) * cv.S * math.sin(th)
             elif kind == "wobble":
                 A, B, C, D = m["_f"]
                 w = m["_w"] * a * cv.S
@@ -357,7 +373,7 @@ class Animator:
                 sweep = m.get("sweep", 0.4)
                 if frac < sweep:
                     cpos = -0.25 + 1.5 * frac / sweep
-                    band = np.exp(-((u - cpos) / m.get("width", 0.08)) ** 2) * a
+                    band = np.exp(-((u - cpos) / m.get("width", 0.08)) ** 2) * a * m.get("_w", 1)
                     img[..., :3] += band[..., None] * hex_rgb(m.get("color")) * img[..., 3:]
         glow = np.zeros_like(img)
         for m in self.motions:
@@ -367,7 +383,7 @@ class Animator:
                 pulse = a * (base + (1 - base) * (0.5 + 0.5 * math.sin(th)))
                 straight = unpremul(img)
                 lum = straight[..., :3].max(2)
-                e = smoothstep(m.get("threshold", 0.7), 1.0, lum) * img[..., 3]
+                e = smoothstep(m.get("threshold", 0.7), 1.0, lum) * img[..., 3] * m.get("_w", 1)
                 if m.get("color"):
                     col = hex_rgb(m["color"])
                     sim = np.exp(-((straight[..., :3] - col) ** 2).sum(2) / m.get("match", 0.25))

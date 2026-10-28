@@ -44,6 +44,9 @@ Every motion has `type`, `amount`, `cycles` (whole repeats per loop, so the loop
 | type | does | extra keys |
 |---|---|---|
 | breathe | vertical stretch about the anchor, with a slight inverse width | |
+| pulse | even scale about the anchor (a heartbeat for titles) | |
+| flap | turns a region about a pivot, more toward its far end (wings, arms, banners); mirror with a negative amount, `amount` in degrees | `pivot` [fx, fy], `region`, `reach` (0.12: no turn this close to the pivot) |
+| move | shifts one part inside a region (a ghost bobbing) | `region`, `dx`, `dy`, `feather` (0.03) |
 | sway | bends sideways, more toward the top | `stiffness` (1.5) |
 | float | bobs up and down | |
 | rotate | tilts about the anchor, `amount` in degrees | |
@@ -51,8 +54,12 @@ Every motion has `type`, `amount`, `cycles` (whole repeats per loop, so the loop
 | pop | once only: scales in with overshoot and fades in | `duration` (0.25), `from` (0.3), `overshoot` (1.7) |
 | wobble | smooth noise warp inside a region (cloth, hair, smoke) | `region`, `scale` (0.08), `feather`, `vertical` |
 | flame | upward-flowing warp, strongest at the region's top | `region`, `scale` (0.05), `speed` |
-| glow | pulsing bloom from the bright parts | `threshold` (0.7), `color`, `match_color`, `radius` (0.03), `spread`, `min` |
+| glow | pulsing bloom from the bright parts | `threshold` (0.7), `color`, `match_color`, `radius` (0.03), `spread`, `min`, `region` |
 | flicker | brightness flicker in a region (torch light, eyes) | `region` |
-| shine | a light band sweeping across the subject | `angle` (25), `width` (0.08), `sweep` (0.4 of each cycle), `color` |
+| shine | a light band sweeping across the subject | `angle` (25), `width` (0.08), `sweep` (0.4 of each cycle), `color`, `region` |
 | particles | `kind`: `embers` (rising sparks), `sparkles` (twinkling stars), `wisps` (ghostly smoke) | `count`, `color`, `size`, `rise`, `region`, `layer` (`front`/`back`) |
 | rays | rotating light rays behind the subject | `count` (12), `color`, `radius` (0.7), `sharpness`, `center`, `clockwise` |
+
+## Intro plus loop
+
+For a screen that pops in and then idles (win screens), make two sheets from the same motion list: the loop, and the intro with `"once": true` plus `pop`/`shake` appended at the end. Keep the order and the whole-number `cycles` identical: then the intro's last frame equals the loop's first frame, and the game swaps from one to the other without a jump. `tools/sprites/examples/total-win` is a worked example (the cut-out emblem and both recipes): a design screenshot cropped to the emblem, cut out, a leftover background patch removed, and wings, ghosts, eyes, candles, shine, rays and embers animated.
