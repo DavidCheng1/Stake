@@ -24,16 +24,25 @@ Set `PIP_CACHE_DIR`, `TMP` and `SPRITE_TMP` to a folder on D: while installing a
 ## Routine
 
 1. **Look at the picture** (Read it). Note what the subject is, whether it has transparency, its size, and where the parts are that should move: cloth, hair, flames, eyes, gems, the text of a title. Write their regions as `[x0, y0, x1, y1]` fractions of the picture.
-2. **Write a recipe** in `sprites-out/<name>/recipe.json`, starting from the closest preset in `tools/sprites/recipes`:
+2. **Rig it when it has separate parts** (wings, characters, hanging items, a title plaque): this is the default for artwork with distinct pieces. Warping one flat picture looks dragged and stretched; the user rejected that. Split it with a rig (`tools/sprites/rig.py`, see below) so every part moves as a solid piece about its own pivot, and use the recipe only for light effects on top. Plain warp recipes are for soft things only: smoke, cloth, hair, breathing.
+3. **Write a recipe** in `sprites-out/<name>/recipe.json`, starting from the closest preset in `tools/sprites/recipes`:
    - `idle-character`: breathing, sway, cloth wobble, glow, wisps (a loop)
    - `floating-symbol`: float, tilt, glow, shine, sparkles (a loop)
    - `win-title`: pop in with overshoot and shake, rays, shine, glow, sparkles (`"once": true`)
    - `win-title-loop`: the title after its intro: breathing, rays, shine, sparkles, embers (a loop)
    Map each line of the brief to a motion. Keep it subtle: big warps look rubbery.
-3. **Render**: `py tools\sprites\make_sheet.py <picture> --recipe sprites-out\<name>\recipe.json --name <name>` (several key drawings: `--keys a.png b.png c.png`). 100 frames take about 3 minutes.
-4. **Check**: `py tools\sprites\check_sheet.py sprites-out\<name>`, then Read `strip.png`. A loop must close cleanly; nothing important may be cut off at the frame edge (raise `pad`); glow must not wash out the subject (raise `threshold`, lower `amount`). Fix the recipe and render again until it matches the brief. Usually it takes two or three rounds.
-5. **Hand over**: the folder, `preview.html` to open (play, step with the arrow keys, onion skin, game background), what each motion does and what to change for more or less. Say plainly what a single picture cannot do: new poses, turning, limbs moving independently. That needs key drawings (`--keys`), which RIFE in-betweens.
-6. **Into the game**, only when asked: `anim.webp` is used as an `<img>` like `assets/lich-idle.webp`; or `sheet.webp` + `sheet.json` with a canvas or CSS `steps()` player. Mind the download size for the Stake upload: 100 frames at 512 px are about 5 MB; use `--size 384` or fewer frames where that is enough. Copy assets into `ghost-duels-web/assets`, then refresh `_UPLOAD_TO_STAKE/2_frontend`.
+4. **Render**: `py tools\sprites\make_sheet.py <picture> --recipe sprites-out\<name>\recipe.json --name <name>` (several key drawings: `--keys a.png b.png c.png`). 100 frames take about 3 minutes.
+5. **Check**: `py tools\sprites\check_sheet.py sprites-out\<name>`, then Read `strip.png`. A loop must close cleanly; nothing important may be cut off at the frame edge (raise `pad`); glow must not wash out the subject (raise `threshold`, lower `amount`). Fix the recipe and render again until it matches the brief. Usually it takes two or three rounds.
+6. **Hand over**: the folder, `preview.html` to open (play, step with the arrow keys, onion skin, game background), what each motion does and what to change for more or less. Say plainly what a single picture cannot do: new poses, turning, limbs moving independently. That needs key drawings (`--keys`), which RIFE in-betweens.
+7. **Into the game**, only when asked: `anim.webp` is used as an `<img>` like `assets/lich-idle.webp`; or `sheet.webp` + `sheet.json` with a canvas or CSS `steps()` player. Mind the download size for the Stake upload: 100 frames at 512 px are about 5 MB; use `--size 384` or fewer frames where that is enough. Copy assets into `ghost-duels-web/assets`, then refresh `_UPLOAD_TO_STAKE/2_frontend`.
+
+## Rigs: parts that move separately
+
+`rig.json` lists the parts in picture pixels (draw a 20 px grid over the picture and Read it to find them): `rect` around the part, `fg` polygons surely inside it, `bg` polygons surely not (neighbouring parts of a similar colour), `z` (higher is in front), `pivot` (where it hinges: a wing's root, the top of a hanging cross, the bottom of a ghost). The part named `base` gets everything else; give it a `core` polygon around its own outline so glow and shadow around the moving parts go to them. Hidden areas behind front parts are filled in, so nothing tears open.
+
+Check the split before rendering: `py tools\sprites\rig.py split <picture> <rig.json> --out <folder>`, then Read `overlay.png` (each part tinted, with its pivot dot). Fix rects and seeds until every part is whole and nothing belongs to the wrong part.
+
+Tracks per part: `loop` (`prop` rotate/x/y/scale/scalex/scaley/alpha, `wave` sin/flap/bounce, `amount`, whole `cycles`, `phase`) and `intro` (`keys` [time, value, ease] with eases linear, in, out, inout, back, elastic, bounce). Put `"rig": "rig.json"` in the recipe (path next to the recipe). Good motion: wings flap from the root (flap wave, 8 to 10 degrees, a slight scaley for depth), hanging things swing like pendulums, floating characters bob and tilt with some squash, and parts arrive one after another in the intro (unfold, drop with a bounce, fly in with back easing, swing in with elastic).
 
 ## Recipe reference
 
@@ -62,4 +71,4 @@ Every motion has `type`, `amount`, `cycles` (whole repeats per loop, so the loop
 
 ## Intro plus loop
 
-For a screen that pops in and then idles (win screens), make two sheets from the same motion list: the loop, and the intro with `"once": true` plus `pop`/`shake` appended at the end. Keep the order and the whole-number `cycles` identical: then the intro's last frame equals the loop's first frame, and the game swaps from one to the other without a jump. `tools/sprites/examples/total-win` is a worked example (the cut-out emblem and both recipes): a design screenshot cropped to the emblem, cut out, a leftover background patch removed, and wings, ghosts, eyes, candles, shine, rays and embers animated.
+For a screen that pops in and then idles (win screens), make two sheets from the same motion list: the loop, and the intro with `"once": true` plus `pop`/`shake` appended at the end. Keep the order and the whole-number `cycles` identical: then the intro's last frame equals the loop's first frame, and the game swaps from one to the other without a jump. `tools/sprites/examples/total-win` is a worked example: the cut-out emblem from a design screenshot, its rig (wings, devil head, plaque, cape, crosses, ghosts) with an intro where the parts arrive one after another, and the intro and loop recipes with the light effects.

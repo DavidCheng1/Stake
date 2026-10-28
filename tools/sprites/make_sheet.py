@@ -534,6 +534,7 @@ def main():
     ap.add_argument("image", nargs="?", help="the picture to animate")
     ap.add_argument("--keys", nargs="+", help="several key drawings instead of one picture, in order")
     ap.add_argument("--recipe", help="JSON with the motions (see tools/sprites/recipes)")
+    ap.add_argument("--rig", help="rig JSON: the picture split into parts that move separately (see rig.py)")
     ap.add_argument("--name")
     ap.add_argument("--out", help="output folder (default sprites-out/<name>)")
     ap.add_argument("--frames", type=int)
@@ -576,6 +577,30 @@ def main():
                     keys = big
             else:
                 note("  no Real-ESRGAN: plain upscaling")
+        rig_path = args.rig or (recipe.get("rig") and os.path.join(os.path.dirname(os.path.abspath(args.recipe)), recipe["rig"]))
+        if rig_path:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            import rig as rigmod
+
+            with open(rig_path, encoding="utf-8") as f:
+                spec = json.load(f)
+            note(f"splitting the picture into {len(spec['parts'])} parts (rig)")
+            rig = rigmod.Rig(spec, keys[0], cv, frames_n, loop, keys[0].shape[1] / w0, cache_dir=out)
+            rest = rigmod.Rig.frame(rig, 0) if loop else None
+            if rest is None:  # a one-shot starts empty: measure the parts at rest
+                rig.loop = True
+                rest = rig.frame(0)
+                rig.loop = False
+            ys, xs = np.nonzero(rest[..., 3] > 0.05)
+            anim = Animator(recipe, cv, frames_n, loop, (xs.min(), ys.min(), xs.max(), ys.max()), recipe.get("seed", 7))
+            frames = []
+            for i in range(frames_n):
+                f = anim.frame(rig.frame(i), i)
+                frames.append(unpremul(cv2.resize(f, (cv.w // SS, cv.h // SS), interpolation=cv2.INTER_AREA)))
+                if (i + 1) % 20 == 0:
+                    note(f"  frame {i + 1}/{frames_n}")
+            write_outputs(frames, out, name, cols, fps, loop)
+            return
         if len(keys) > 1:
             note(f"drawing {frames_n} frames between {len(keys)} key drawings (RIFE)")
             srcs = interpolate(keys, frames_n, loop, tmp)
