@@ -1,0 +1,10 @@
+{
+  "frames": 100, "fps": 24, "size": 512, "pad": 0.12, "anchor": "bottom",
+  "motions": [
+    {"type": "breathe", "amount": 0.012, "cycles": 2},
+    {"type": "sway", "amount": 0.01, "cycles": 1},
+    {"type": "wobble", "amount": 0.006, "cycles": 2, "scale": 0.1, "region": [0, 0.35, 1, 1]},
+    {"type": "glow", "threshold": 0.8, "amount": 0.4, "cycles": 2, "radius": 0.03},
+    {"type": "particles", "kind": "wisps", "color": "#9fe8ff", "count": 10, "layer": "back", "cycles": 1}
+  ]
+}

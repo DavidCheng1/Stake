@@ -1,0 +1,11 @@
+{
+  "once": true, "frames": 100, "fps": 30, "size": 640, "pad": 0.3, "anchor": "center",
+  "motions": [
+    {"type": "pop", "duration": 0.22, "from": 0.2, "overshoot": 1.8},
+    {"type": "shake", "amount": 0.006, "cycles": 14, "duration": 0.35},
+    {"type": "rays", "amount": 0.45, "count": 14, "color": "#ffd76a", "cycles": 1, "radius": 0.8},
+    {"type": "shine", "amount": 0.9, "cycles": 2, "sweep": 0.35, "phase": 0.8, "width": 0.08},
+    {"type": "glow", "threshold": 0.8, "amount": 0.5, "cycles": 3},
+    {"type": "particles", "kind": "sparkles", "color": "#fff3c4", "count": 24, "cycles": 2}
+  ]
+}

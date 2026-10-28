@@ -2,3 +2,6 @@ release/
 !tools/release/
 __pycache__/
 .review-out/
+
+# sprite sheets made by tools/sprites (big; copy what the game uses into ghost-duels-web/assets)
+sprites-out/
