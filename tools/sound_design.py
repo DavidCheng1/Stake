@@ -10,12 +10,14 @@ can transpose them with playbackRate. Edit a recipe below and rerun to change a 
 
 import math
 import os
+import wave
 
 import lameenc
 import numpy as np
 
 SR = 44100
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ghost-duels-web", "assets", "sfx")
+SRC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "audio-src")
 rng = np.random.default_rng(1313)
 
 
@@ -434,19 +436,49 @@ def s_banner():
     return reverb(x, 0.45, 1.6)
 
 
+def load_wav(name):
+    """A 16-bit WAV from audio-src/ as a stereo float array at SR (stdlib wave plus FFT resampling)."""
+    with wave.open(os.path.join(SRC, name)) as w:
+        sr, ch = w.getframerate(), w.getnchannels()
+        x = np.frombuffer(w.readframes(w.getnframes()), "<i2").astype(float).reshape(-1, ch).T / 32768
+    if ch == 1:
+        x = np.vstack([x, x])
+    if sr != SR:
+        m = int(round(x.shape[1] * SR / sr))
+        X = np.fft.rfft(x, axis=1)[:, : m // 2 + 1]
+        x = np.fft.irfft(X, m, axis=1) * m / x.shape[1]
+    return x
+
+
 def s_fs_land():
-    """An FS symbol lands (A4 base; the game raises it for the 2nd, 3rd... FS): a deep impact, a bright haunted
-    bell, a choir stab and a ghostly shriek, loud enough to cut through everything else."""
-    sec = 1.9
-    x = pad_to(thump(95, 32, 0.6, 1.5), sec)
-    x += pad_to(biquad(noise(0.35, "brown"), "lp", 300, 0.8) * env_ad(0.35, 0.002, 0.15, 5) * 1.2, sec)
-    x += pad_to(bell(440, 1.8, 1.1, 1.3), sec) + pad_to(bell(880 * 1.5, 1.2, 0.35, 1.0), sec)
-    stab = choir([220, 220 * 2 ** (3 / 12), 330, 440], 0.7, "ah", 1.0) * env_ad(0.7, 0.01, 0.35, 3)
-    x += pad_to(stab * 1.3, sec)
-    shriek = voice(vibrato(sweep(620, 980, 0.6), 0.6, 0.04, 7, 0), 0.6, "oo", 0.5) * env_adsr(0.6, 0.03, 0.15, 0.7, 0.3)
-    x += place(np.zeros(n(sec)), shriek * 0.45, 0.04)
-    x += pad_to(biquad(noise(0.06), "hp", 4000, 0.7) * env_ad(0.06, 0.0005, 0.02, 6) * 0.8, sec)  # sharp attack
-    return reverb(x, 0.45, 1.8)
+    """An FS symbol lands (the game raises it 2 semitones for each further FS): the magical scatter sample
+    (audio-src/fs_scatter.wav) made sharp - mud below 450 Hz thinned, presence and air lifted, a crisp glassy
+    attack, a little weight underneath, gentle saturation so it cuts through, and the tail shortened to 1.6 s."""
+    x = load_wav("fs_scatter.wav")
+    sec = 1.6
+    x = x[:, : n(sec)]
+    x = np.stack([biquad(biquad(biquad(biquad(c, "hp", 170, 0.7), "peak", 420, 0.9, -4),
+                                "peak", 3200, 0.8, 5), "peak", 8500, 0.6, 7) for c in x])
+    t = t_axis(sec)
+    x *= 1 + 1.4 * np.exp(-t / 0.035)  # transient: the first few hundredths of a second stand out
+    x *= np.clip((sec - t) / 0.6, 0, 1) ** 1.5  # tighter tail
+    x = x / np.abs(x).max()
+    # crisp attack on top: a glassy ping on the sample's own partials (it rings on ~595 Hz), a short bright noise
+    # tick (own random generator, so the other sounds stay as they were), and a soft low thump for weight
+    hit = pad_to(osc(2380, 0.25) * env_ad(0.25, 0.0005, 0.08, 6) * 0.35, sec) + pad_to(osc(3570, 0.18) * env_ad(0.18, 0.0005, 0.05, 6) * 0.2, sec)
+    tick = np.random.default_rng(595).standard_normal(n(0.05)) / 3
+    hit += pad_to(biquad(tick, "hp", 5500, 0.7) * env_ad(0.05, 0.0003, 0.015, 7) * 1.1, sec)
+    hit += pad_to(thump(110, 45, 0.3, 0.55), sec)
+    st = x + hit
+    st = np.tanh(st * 1.8) / np.tanh(1.8)  # gentle saturation: denser, louder at the same peak
+    wet = reverb(st.mean(0), 0.15, 0.6)[:, : n(sec)]
+    return st * 0.85 + pad_to_st(wet, sec) * 0.25
+
+
+def pad_to_st(st, sec):
+    out = np.zeros((2, n(sec)))
+    out[:, : min(st.shape[1], n(sec))] = st[:, : n(sec)]
+    return out
 
 
 def s_edge():
