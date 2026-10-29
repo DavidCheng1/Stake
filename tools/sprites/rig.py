@@ -291,16 +291,141 @@ class Rig:
         return out
 
 
+# ---------------------------------------------------------------- export for live playback (web/rigplayer.js)
+def load_rgba(path):
+    return np.asarray(Image.open(path).convert("RGBA"), np.float32) / 255
+
+
+def big_layers(layers, owner, big):
+    """The layers at the size of an upscaled copy of the picture: shapes from the split, pixels from the copy."""
+    h, w = big.shape[:2]
+    out = []
+    for i, l in enumerate(layers):
+        if l is None:
+            out.append(None)
+            continue
+        own = cv2.resize((owner == i).astype(np.float32), (w, h), interpolation=cv2.INTER_LINEAR)
+        alpha = np.where(own > 0.5, big[..., 3], cv2.resize(l[..., 3], (w, h), interpolation=cv2.INTER_LINEAR))
+        rgb = np.where(own[..., None] > 0.5, big[..., :3], cv2.resize(l[..., :3], (w, h), interpolation=cv2.INTER_CUBIC))
+        out.append(np.dstack([rgb, alpha]))
+    return out
+
+
+def sharpen_up(l, f):
+    """Plain upscaling with a light unsharp mask, for when no upscaled copy (Real-ESRGAN) is given."""
+    h, w = l.shape[:2]
+    pre = l.copy()
+    pre[..., :3] *= pre[..., 3:]
+    big = cv2.resize(pre, (round(w * f), round(h * f)), interpolation=cv2.INTER_LANCZOS4)
+    big = np.clip(big + 0.5 * (big - cv2.GaussianBlur(big, (0, 0), 0.9 * f)), 0, 1)
+    a = big[..., 3:]
+    big[..., :3] = np.where(a > 1e-4, big[..., :3] / np.maximum(a, 1e-4), 0)
+    return np.clip(big, 0, 1)
+
+
+def save_crop(l, path, quality):
+    """Save the opaque box of a layer; returns it as [x, y, w, h] in the layer's px."""
+    ys, xs = np.nonzero(l[..., 3] > 0.004)
+    if not len(xs):
+        return None
+    x0, y0, x1, y1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+    crop = (np.clip(l[y0:y1, x0:x1], 0, 1) * 255 + 0.5).astype(np.uint8)
+    Image.fromarray(crop, "RGBA").save(path, quality=quality, method=6, alpha_quality=100)
+    return [int(x0), int(y0), int(x1 - x0), int(y1 - y0)]
+
+
+def light_layer(l, rect, f, fx):
+    """A glow effect as a picture of light: the bright pixels of a part inside `rect`, with their bloom."""
+    a = l[..., 3]
+    m = np.zeros(a.shape, np.float32)
+    x0, y0, x1, y1 = (round(v * f) for v in rect)
+    m[y0:y1, x0:x1] = 1
+    m = cv2.GaussianBlur(m, (0, 0), 2 * f)
+    lum = l[..., :3].max(2)
+    th = fx.get("threshold", 0.6)
+    e = np.clip((lum - th) / max(1 - th, 1e-6), 0, 1) ** 2 * a * m
+    col = hex_rgb(fx["color"]) if fx.get("color") else None
+    light = e[..., None] * (col if col is not None else l[..., :3])
+    bloom = cv2.GaussianBlur(light, (0, 0), fx.get("radius", 10) * f) * fx.get("spread", 2.5)
+    rgb = bloom + light * 0.6
+    alpha = np.clip(rgb.max(2), 0, 1)
+    return np.dstack([np.where(alpha[..., None] > 1e-4, rgb / np.maximum(alpha[..., None], 1e-4), 0), alpha])
+
+
+def hex_rgb(c):
+    c = c.lstrip("#")
+    return np.array([int(c[i:i + 2], 16) / 255 for i in (0, 2, 4)], np.float32)
+
+
+def export(img, spec, out, big=None, scale=None, quality=90, seg=None):
+    """Write every part as its own picture plus rig.json for rigplayer.js, which moves them live in the browser.
+    Coordinates stay in px of the picture as given; `scale` is how many image px the exported pictures have per px."""
+    parts = spec["parts"]
+    layers, owner = split(img, spec, seg=seg)
+    h, w = img.shape[:2]
+    if big is not None:
+        f = big.shape[1] / w
+        layers = big_layers(layers, owner, big)
+        if scale and abs(scale - f) > 1e-3:
+            layers = [None if l is None else cv2.resize(l, (round(w * scale), round(h * scale)), interpolation=cv2.INTER_AREA)
+                      for l in layers]
+            f = scale
+    else:
+        f = scale or 2
+        layers = [None if l is None else sharpen_up(l, f) for l in layers]
+    os.makedirs(out, exist_ok=True)
+    web = spec.get("web", {})
+    doc = {"w": w, "h": h, "pad": web.get("pad", 0.08), "intro": web.get("intro_seconds", 3.3),
+           "loop": web.get("loop_seconds", 4), "fade": web.get("fade", 0.1), "shake": web.get("shake"), "parts": [], "effects": []}
+    for i in sorted(range(len(parts)), key=lambda k: parts[k].get("z", 0)):
+        p, l = parts[i], layers[i]
+        if l is None:
+            continue
+        box = save_crop(l, os.path.join(out, f"{p['name']}.webp"), quality)
+        if box is None:
+            continue
+        doc["parts"].append({"name": p["name"], "src": f"{p['name']}.webp", "box": [round(v / f, 3) for v in box],
+                             "pivot": p.get("pivot", [w / 2, h / 2]), "loop": p.get("loop", []), "intro": p.get("intro", [])})
+    names = [p["name"] for p in parts]
+    for n, fx in enumerate(web.get("effects", [])):
+        fx = dict(fx)
+        if fx["type"] in ("glow", "shine") and "part" not in fx:  # the part that owns most of the rect
+            x0, y0, x1, y1 = fx["rect"]
+            ids, counts = np.unique(owner[y0:y1, x0:x1], return_counts=True)
+            ok = ids >= 0
+            fx["part"] = names[int(ids[ok][np.argmax(counts[ok])])]
+        if fx["type"] == "glow":
+            light = light_layer(layers[names.index(fx["part"])], fx["rect"], f, fx)
+            box = save_crop(light, os.path.join(out, f"fx{n}.webp"), quality)
+            if box is None:
+                continue
+            fx.update(src=f"fx{n}.webp", box=[round(v / f, 3) for v in box])
+        doc["effects"].append(fx)
+    with open(os.path.join(out, "rig.json"), "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, separators=(",", ":"))
+    size = sum(os.path.getsize(os.path.join(out, x)) for x in os.listdir(out))
+    print(f"{len(doc['parts'])} parts, {len(doc['effects'])} effects at {f:g}x -> {out} ({size // 1024} KB)")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["split"])
+    ap.add_argument("cmd", choices=["split", "export"])
     ap.add_argument("image")
     ap.add_argument("rig")
     ap.add_argument("--out")
+    ap.add_argument("--big", help="export: an upscaled copy of the picture (Real-ESRGAN), the parts take their pixels from it")
+    ap.add_argument("--scale", type=float, help="export: image px per picture px (default: the --big factor, else 2)")
+    ap.add_argument("--quality", type=int, default=90)
     args = ap.parse_args()
     spec = json.load(open(args.rig, encoding="utf-8"))
-    img = np.asarray(Image.open(args.image).convert("RGBA"), np.float32) / 255
+    img = load_rgba(args.image)
     out = args.out or os.path.dirname(os.path.abspath(args.rig))
+    if args.cmd == "export":
+        seg = None
+        if spec.get("split_from"):  # find the parts on this picture (e.g. before recolouring)
+            seg = load_rgba(os.path.join(os.path.dirname(os.path.abspath(args.rig)), spec["split_from"]))
+        export(img, spec, out, load_rgba(args.big) if args.big else None, args.scale, args.quality, seg)
+        return
     os.makedirs(out, exist_ok=True)
     layers, owner = split(img, spec)
     overlay(img, spec["parts"], owner, os.path.join(out, "overlay.png"))

@@ -863,31 +863,25 @@ async function banner(title, sub, hold = 1700) {
 // ---------- Total Win screen after the free spins: the emblem plays its intro once (100 frames at 30 fps), then its
 // loop, while the bonus win counts up under it. The animations download when a bonus starts; reduced motion shows
 // a still. Made with tools/sprites (examples/total-win). ----------
-const TW_ART = { intro: "assets/total-win-intro.webp", loop: "assets/total-win-loop.webp", still: "assets/total-win-still.webp" };
-const TW_INTRO_MS = 100 * 33;
-const twBlobs = {};
+// the emblem's parts move live (rigplayer.js), so it stays sharp at any size; exported by tools/sprites/rig.py export
+const TW_RIG = "assets/total-win";
+let twRig = null;
 function preloadTotalWin() {
-  for (const [k, src] of Object.entries(TW_ART)) if (!twBlobs[k]) twBlobs[k] = fetch(src).then(r => r.ok ? r.blob() : null).catch(() => null);
-}
-// every showing gets fresh blob URLs of the downloaded bytes, so each animation starts again from its first frame
-async function twImage(k) {
-  const b = await twBlobs[k]; if (!b) return null;
-  const im = new Image(); im.alt = ""; im.draggable = false; im.src = URL.createObjectURL(b);
-  try { await im.decode(); } catch { URL.revokeObjectURL(im.src); return null; }
-  return im;
+  twRig ??= RigPlayer.load(TW_RIG).catch(() => null);
 }
 // returns false when the art is missing, then the caller shows the plain banner
 async function totalWinScreen(total, spins) {
   nextSequence();
   preloadTotalWin();
   const intro = !RM && !turbo; // turbo starts on the loop
-  const first = await twImage(RM ? "still" : intro ? "intro" : "loop");
-  if (!first) return false;
+  const rig = await twRig;
+  if (!rig) return false;
   const el = document.getElementById("totalWin"), box = document.getElementById("twArt"), amtEl = document.getElementById("twAmount");
   const x = (Math.round(total / bet * 100) / 100).toLocaleString(RGS.lang, { maximumFractionDigits: 2 });
   document.getElementById("twSub").textContent = i18n(`${spins} Freispiele gespielt · ${x}× Einsatz`, `${spins} free spins played · ${x}× bet`);
-  box.replaceChildren(first); amtEl.textContent = money(0); el.hidden = false;
-  const introEnd = performance.now() + (intro ? TW_INTRO_MS : 0);
+  const cv = document.createElement("canvas");
+  box.replaceChildren(cv); amtEl.textContent = money(0); el.hidden = false;
+  const anim = RigPlayer.play(cv, rig, { intro, still: RM });
   hero.react("cheer", 4000); sound.fanfare();
   el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
   // teal embers rising around the emblem while the screen is up
@@ -908,16 +902,15 @@ async function totalWinScreen(total, spins) {
     if (k < 1) requestAnimationFrame(step); else res();
   })(last));
   if (intro) { // the intro runs in real time; a skip jumps to the loop
-    while (performance.now() < introEnd && !slam) await new Promise(r => setTimeout(r, 40));
-    const loopImg = await twImage("loop");
-    if (loopImg) { box.replaceChildren(loopImg); URL.revokeObjectURL(first.src); }
+    while (!anim.introDone && !slam) await new Promise(r => setTimeout(r, 40));
+    anim.skipIntro();
   }
   await counted;
   if (!RM) amtEl.animate([{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }], { duration: 420, easing: "ease-out" });
   await sleep(2200);
   await el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).finished;
   el.hidden = true; clearTimeout(embers);
-  box.querySelectorAll("img").forEach(im => URL.revokeObjectURL(im.src)); box.replaceChildren();
+  anim.stop(); box.replaceChildren();
   return true;
 }
 

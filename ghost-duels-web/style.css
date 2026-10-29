@@ -516,7 +516,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   background: radial-gradient(ellipse 60% 55% at 50% 42%, rgb(8 44 37 / .6), rgb(3 10 9 / .9)); }
 .totalwin-box { position: relative; width: 62cqw; aspect-ratio: 640 / 320; margin-top: -2cqw; }
 .totalwin-art { position: absolute; inset: 0; }
-.totalwin-art img { display: block; width: 100%; height: 100%; animation: twAura 2.1s ease-in-out infinite alternate; }
+.totalwin-art canvas { display: block; width: 100%; height: 100%; animation: twAura 2.1s ease-in-out infinite alternate; }
 @keyframes twAura { from { filter: drop-shadow(0 0 .5cqw rgb(51 230 196 / .75)) drop-shadow(0 0 1.6cqw rgb(51 230 196 / .35)); }
   to { filter: drop-shadow(0 0 .8cqw rgb(51 230 196 / .95)) drop-shadow(0 0 2.6cqw rgb(51 230 196 / .5)); } }
 .totalwin-rays { position: absolute; left: 50%; top: 50%; width: 120%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
@@ -529,7 +529,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   filter: drop-shadow(0 .35cqw 0 #2a1902) drop-shadow(0 0 1.4cqw rgb(63 242 200 / .45)); }
 .totalwin-sub { position: relative; margin-top: 1.1cqw; font-size: 2.1cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #e6fff7;
   text-shadow: 0 .2cqw .5cqw #000, 0 0 1.2cqw rgb(63 242 200 / .4); }
-@media (prefers-reduced-motion: reduce) { .totalwin-art img, .totalwin-rays { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .totalwin-art canvas, .totalwin-rays { animation: none; } }
 .fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
 
 .tests { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

@@ -34,7 +34,7 @@ Set `PIP_CACHE_DIR`, `TMP` and `SPRITE_TMP` to a folder on D: while installing a
 4. **Render**: `py tools\sprites\make_sheet.py <picture> --recipe sprites-out\<name>\recipe.json --name <name>` (several key drawings: `--keys a.png b.png c.png`). 100 frames take about 3 minutes.
 5. **Check**: `py tools\sprites\check_sheet.py sprites-out\<name>`, then Read `strip.png`. A loop must close cleanly; nothing important may be cut off at the frame edge (raise `pad`); glow must not wash out the subject (raise `threshold`, lower `amount`). Fix the recipe and render again until it matches the brief. Usually it takes two or three rounds.
 6. **Hand over**: the folder, `preview.html` to open (play, step with the arrow keys, onion skin, game background), what each motion does and what to change for more or less. Say plainly what a single picture cannot do: new poses, turning, limbs moving independently. That needs key drawings (`--keys`), which RIFE in-betweens.
-7. **Into the game**, only when asked: `anim.webp` is used as an `<img>` like `assets/lich-idle.webp`; or `sheet.webp` + `sheet.json` with a canvas or CSS `steps()` player. Mind the download size for the Stake upload: 100 frames at 512 px are about 5 MB; use `--size 384` or fewer frames where that is enough. Copy assets into `ghost-duels-web/assets`, then refresh `_UPLOAD_TO_STAKE/2_frontend`.
+7. **Into the game**, only when asked. A rigged picture goes in live (next section): sharp at any size and a few hundred KB. Otherwise `anim.webp` is used as an `<img>` like `assets/lich-idle.webp`; or `sheet.webp` + `sheet.json` with a canvas or CSS `steps()` player. Mind the download size for the Stake upload: 100 frames at 512 px are about 5 MB; use `--size 384` or fewer frames where that is enough. Copy assets into `ghost-duels-web/assets`, then refresh `_UPLOAD_TO_STAKE/2_frontend`.
 
 ## Rigs: parts that move separately
 
@@ -43,6 +43,15 @@ Set `PIP_CACHE_DIR`, `TMP` and `SPRITE_TMP` to a folder on D: while installing a
 Check the split before rendering: `py tools\sprites\rig.py split <picture> <rig.json> --out <folder>`, then Read `overlay.png` (each part tinted, with its pivot dot). Fix rects and seeds until every part is whole and nothing belongs to the wrong part.
 
 Tracks per part: `loop` (`prop` rotate/x/y/scale/scalex/scaley/alpha, `wave` sin/flap/bounce, `amount`, whole `cycles`, `phase`) and `intro` (`keys` [time, value, ease] with eases linear, in, out, inout, back, elastic, bounce). Put `"rig": "rig.json"` in the recipe (path next to the recipe). Good motion: wings flap from the root (flap wave, 8 to 10 degrees, a slight scaley for depth), hanging things swing like pendulums, floating characters bob and tilt with some squash, and parts arrive one after another in the intro (unfold, drop with a bounce, fly in with back easing, swing in with elastic).
+
+## Live in the game: export instead of a sheet
+
+A rig shown large (win screens, titles) belongs in the game as its parts, not as a video: a sheet is fixed at its frame size, gets blurry when the browser stretches it, and costs several MB. `py tools\sprites\rig.py export <picture> <rig.json> --out <folder> [--big <upscaled.png>] [--scale 2]` writes one WebP per part, light layers for the glows, and a `rig.json` that `ghost-duels-web/rigplayer.js` plays on a canvas (`RigPlayer.load(dir)`, `RigPlayer.play(canvas, rig, {intro, still})`, which returns `introDone`, `skipIntro()`, `stop()`).
+
+- Upscale first for sharpness: `realesrgan\realesrgan-ncnn-vulkan.exe -i <picture> -o <picture>-x4.png -n realesrgan-x4plus-anime`, then `--big <picture>-x4.png --scale 3` (parts are still found on the small picture, pixels come from the big one). Without it the parts are resized with Lanczos and a light sharpen.
+- The browser part goes under `"web"` in rig.json, in picture px: `pad`, `intro_seconds`, `loop_seconds`, `fade` (intro fade-in as a fraction), `shake` (`amount` px, `cycles`, `duration`), and `effects`: `glow` (`rect`, `part` or the part owning most of the rect, `color` or the part's own colours, `threshold`, `radius` px, `amount`, `min`, `cycles`, `phase`, `wave` sin or flicker), `shine` (`part`, `rect`, `amount`, `cycles`, `sweep`, `phase`, `width`, `angle`), `sparkles` (`rect`, `count`, `size` px, `color`, `cycles`, `seed`).
+- Rays, aura and embers belong to the game (CSS and its particle canvas), not the rig. Check with a headless screenshot at an intro and a loop moment.
+- `tools/sprites/examples/total-win` is the worked example; the game's Total Win screen plays it from `ghost-duels-web/assets/total-win`.
 
 ## Recipe reference
 

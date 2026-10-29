@@ -871,5 +871,94 @@
    ]
   }
  ],
- "split_from": "emblem.png"
+ "split_from": "emblem.png",
+ "web": {
+  "note": "live playback (rigplayer.js): same moves as recipe-intro/recipe-loop; rays, aura and embers come from the game",
+  "pad": 0.08,
+  "intro_seconds": 3.3,
+  "loop_seconds": 4.17,
+  "fade": 0.12,
+  "shake": {
+   "amount": 2.8,
+   "cycles": 14,
+   "duration": 0.25
+  },
+  "effects": [
+   {
+    "type": "glow",
+    "part": "devil",
+    "rect": [
+     311,
+     14,
+     394,
+     62
+    ],
+    "color": "#5dff9a",
+    "threshold": 0.45,
+    "radius": 12,
+    "amount": 0.9,
+    "min": 0.25,
+    "cycles": 4
+   },
+   {
+    "type": "glow",
+    "rect": [
+     200,
+     170,
+     230,
+     202
+    ],
+    "threshold": 0.55,
+    "radius": 4,
+    "wave": "flicker",
+    "amount": 0.4,
+    "cycles": 9
+   },
+   {
+    "type": "glow",
+    "rect": [
+     485,
+     171,
+     517,
+     204
+    ],
+    "threshold": 0.55,
+    "radius": 4,
+    "wave": "flicker",
+    "amount": 0.4,
+    "cycles": 11,
+    "phase": 0.3
+   },
+   {
+    "type": "shine",
+    "part": "base",
+    "rect": [
+     208,
+     35,
+     484,
+     218
+    ],
+    "amount": 0.75,
+    "cycles": 1,
+    "sweep": 0.35,
+    "phase": 0.55,
+    "width": 0.07,
+    "angle": 25
+   },
+   {
+    "type": "sparkles",
+    "rect": [
+     194,
+     29,
+     498,
+     218
+    ],
+    "count": 16,
+    "size": 4.2,
+    "color": "#fff3c4",
+    "cycles": 1,
+    "seed": 7
+   }
+  ]
+ }
 }
