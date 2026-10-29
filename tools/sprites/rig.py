@@ -25,6 +25,7 @@ rig.json lists the parts. Coordinates are pixels of the picture as given (before
 """
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -125,18 +126,23 @@ def build_layers(img, parts, owner):
     return layers
 
 
-def split(img, spec, cache_dir=None):
-    """Parts of the picture as layers; cached in cache_dir (rebuilt when the picture or rig changes)."""
+def split(img, spec, cache_dir=None, seg=None):
+    """Parts of the picture as layers; cached in cache_dir (rebuilt when the picture or rig changes).
+    `seg`: find the parts on this version of the picture (same size), take the pixels from `img`."""
     parts = spec["parts"]
     key = None
     if cache_dir:
-        key = str(abs(hash((img.tobytes()[::997], json.dumps(parts, sort_keys=True)))))
+        h = hashlib.md5(img.tobytes())  # Python's hash() changes per run, so it can't key a cache on disk
+        if seg is not None:
+            h.update(seg.tobytes())
+        h.update(json.dumps(parts, sort_keys=True).encode())
+        key = h.hexdigest()
         f = os.path.join(cache_dir, "rig_cache.npz")
         if os.path.exists(f):
             d = np.load(f, allow_pickle=False)
             if str(d["key"]) == key:
                 return [d[f"l{i}"] if f"l{i}" in d else None for i in range(len(parts))], d["owner"]
-    owner = segment(img, parts)
+    owner = segment(img if seg is None else seg, parts)
     layers = build_layers(img, parts, owner)
     if cache_dir:
         os.makedirs(cache_dir, exist_ok=True)
@@ -227,7 +233,10 @@ class Rig:
         self.parts, self.cv, self.n, self.loop, self.f = spec["parts"], cv, n, loop, factor
         src_h, src_w = img.shape[:2]
         small = img if factor == 1 else cv2.resize(img, (round(src_w / factor), round(src_h / factor)), interpolation=cv2.INTER_AREA)
-        layers, self.owner = split(small, spec, cache_dir)
+        seg = spec.get("_split_img")
+        if seg is not None and seg.shape[:2] != small.shape[:2]:
+            seg = cv2.resize(seg, (small.shape[1], small.shape[0]), interpolation=cv2.INTER_AREA)
+        layers, self.owner = split(small, spec, cache_dir, seg)
         self.layers = []
         for p, l in zip(self.parts, layers):
             if l is None:

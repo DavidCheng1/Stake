@@ -400,7 +400,14 @@ class Animator:
         front = np.zeros_like(img)
         for m in self.motions:
             kind = m["type"]
-            if kind == "rays":
+            if kind == "aura":  # a soft coloured glow around the whole outline, behind it
+                base = m.get("min", 0.6)
+                pulse = m.get("amount", 0.6) * (base + (1 - base) * (0.5 + 0.5 * math.sin(self.theta(m, i))))
+                blur = cv2.GaussianBlur(img[..., 3], (0, 0), m.get("radius", 0.02) * cv.S)
+                inten = np.clip(blur * m.get("spread", 1.6), 0, 1) * pulse
+                back[..., :3] += inten[..., None] * hex_rgb(m.get("color", "#3ff2d0"))
+                back[..., 3] += inten
+            elif kind == "rays":
                 bx0, by0, bx1, by1 = self.bbox
                 cx, cy = cv.pt(*m["center"]) if "center" in m else ((bx0 + bx1) / 2, (by0 + by1) / 2)
                 nr = m.get("count", 12)
@@ -495,7 +502,7 @@ img.onload = () => { draw(); requestAnimationFrame(tick); }; img.src = "sheet.pn
 """
 
 
-def write_outputs(frames, out, name, cols, fps, loop):
+def write_outputs(frames, out, name, cols, fps, loop, quality=85):
     os.makedirs(out, exist_ok=True)
     n = len(frames)
     rows = math.ceil(n / cols)
@@ -511,7 +518,7 @@ def write_outputs(frames, out, name, cols, fps, loop):
     Image.fromarray(u8, "RGBA").save(os.path.join(out, "sheet.webp"), quality=90, method=4)
     pics = [Image.fromarray((np.clip(f, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA") for f in frames]
     pics[0].save(os.path.join(out, "anim.webp"), save_all=True, append_images=pics[1:], duration=round(1000 / fps),
-                 loop=0 if loop else 1, quality=85, method=4, background=(0, 0, 0, 0))
+                 loop=0 if loop else 1, quality=quality, method=4, background=(0, 0, 0, 0))
     meta = {"name": name, "frames": n, "cols": cols, "rows": rows, "frameWidth": fw, "frameHeight": fh, "fps": fps,
             "loop": loop, "sheet": "sheet.webp", "anim": "anim.webp"}
     with open(os.path.join(out, "sheet.json"), "w", encoding="utf-8") as f:
@@ -584,6 +591,8 @@ def main():
 
             with open(rig_path, encoding="utf-8") as f:
                 spec = json.load(f)
+            if spec.get("split_from"):  # find the parts on another version of the picture (the original colours)
+                spec["_split_img"] = load_rgba(os.path.join(os.path.dirname(os.path.abspath(rig_path)), spec["split_from"]))
             note(f"splitting the picture into {len(spec['parts'])} parts (rig)")
             rig = rigmod.Rig(spec, keys[0], cv, frames_n, loop, keys[0].shape[1] / w0, cache_dir=out)
             rest = rigmod.Rig.frame(rig, 0) if loop else None
@@ -599,7 +608,7 @@ def main():
                 frames.append(unpremul(cv2.resize(f, (cv.w // SS, cv.h // SS), interpolation=cv2.INTER_AREA)))
                 if (i + 1) % 20 == 0:
                     note(f"  frame {i + 1}/{frames_n}")
-            write_outputs(frames, out, name, cols, fps, loop)
+            write_outputs(frames, out, name, cols, fps, loop, recipe.get("quality", 85))
             return
         if len(keys) > 1:
             note(f"drawing {frames_n} frames between {len(keys)} key drawings (RIFE)")
@@ -620,7 +629,7 @@ def main():
             frames.append(unpremul(small))
             if (i + 1) % 20 == 0:
                 note(f"  frame {i + 1}/{frames_n}")
-        write_outputs(frames, out, name, cols, fps, loop)
+        write_outputs(frames, out, name, cols, fps, loop, recipe.get("quality", 85))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

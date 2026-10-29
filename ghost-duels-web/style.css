@@ -510,6 +510,26 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .banner { position: absolute; inset: 0; z-index: 9; display: grid; place-content: center; text-align: center; gap: 6px; background: rgb(3 10 9 / .8); padding-inline: 4cqw; }
 .banner h3 { font-family: var(--display); font-weight: 400; font-size: 8cqw; margin: 0; line-height: 1; color: #ff7de0; text-shadow: 0 0 2.4cqw rgb(255 79 210 / .6), 0 .4cqw 0 #3a0636; }
 .banner p { margin: 0; font-size: 2.6cqw; font-weight: 700; color: var(--gold); letter-spacing: .06em; }
+/* Total Win screen after the free spins: the animated emblem (only the emblem and its fine effects are in the
+   animation), with the soft parts drawn here: turning gold rays and a pulsing teal aura; the amount in gold */
+.totalwin { position: absolute; inset: 0; z-index: 9; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  background: radial-gradient(ellipse 60% 55% at 50% 42%, rgb(8 44 37 / .6), rgb(3 10 9 / .9)); }
+.totalwin-box { position: relative; width: 62cqw; aspect-ratio: 640 / 320; margin-top: -2cqw; }
+.totalwin-art { position: absolute; inset: 0; }
+.totalwin-art img { display: block; width: 100%; height: 100%; animation: twAura 2.1s ease-in-out infinite alternate; }
+@keyframes twAura { from { filter: drop-shadow(0 0 .5cqw rgb(51 230 196 / .75)) drop-shadow(0 0 1.6cqw rgb(51 230 196 / .35)); }
+  to { filter: drop-shadow(0 0 .8cqw rgb(51 230 196 / .95)) drop-shadow(0 0 2.6cqw rgb(51 230 196 / .5)); } }
+.totalwin-rays { position: absolute; left: 50%; top: 50%; width: 120%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(rgb(233 196 106 / .38) 0 4deg, transparent 9deg 22.5deg);
+  mask: radial-gradient(closest-side, #000 15%, rgb(0 0 0 / .6) 45%, transparent 100%); -webkit-mask: radial-gradient(closest-side, #000 15%, rgb(0 0 0 / .6) 45%, transparent 100%);
+  animation: twRays 24s linear infinite; }
+@keyframes twRays { to { rotate: 360deg; } }
+.totalwin-amount { position: relative; font-family: var(--display); font-size: 7.6cqw; line-height: 1.05; margin-top: -1cqw; letter-spacing: .03em; font-variant-numeric: tabular-nums;
+  color: #f2c341; background: linear-gradient(#fff4b0, #f2c341 48%, #c4730f); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 .35cqw 0 #2a1902) drop-shadow(0 0 1.4cqw rgb(63 242 200 / .45)); }
+.totalwin-sub { position: relative; margin-top: 1.1cqw; font-size: 2.1cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #e6fff7;
+  text-shadow: 0 .2cqw .5cqw #000, 0 0 1.2cqw rgb(63 242 200 / .4); }
+@media (prefers-reduced-motion: reduce) { .totalwin-art img, .totalwin-rays { animation: none; } }
 .fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
 
 .tests { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

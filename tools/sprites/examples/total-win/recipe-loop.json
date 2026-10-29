@@ -2,24 +2,20 @@
  "rig": "rig.json",
  "frames": 100,
  "size": 640,
- "pad": 0.2,
+ "pad": 0.08,
  "anchor": "center",
  "cutout": "off",
  "upscale": "off",
+ "quality": 80,
  "name": "total-win-loop",
  "fps": 24,
  "motions": [
   {
-   "type": "pulse",
-   "amount": 0.008,
-   "cycles": 2
-  },
-  {
    "type": "glow",
-   "color": "#ff3a3a",
+   "color": "#5dff9a",
    "threshold": 0.45,
    "amount": 0.9,
-   "min": 0.2,
+   "min": 0.25,
    "radius": 0.02,
    "cycles": 4,
    "region": [
@@ -54,7 +50,7 @@
   },
   {
    "type": "shine",
-   "amount": 0.7,
+   "amount": 0.75,
    "cycles": 1,
    "sweep": 0.35,
    "phase": 0.55,
@@ -67,33 +63,9 @@
    ]
   },
   {
-   "type": "rays",
-   "amount": 0.35,
-   "count": 16,
-   "color": "#ffb070",
-   "radius": 0.42,
-   "sharpness": 8,
-   "cycles": 1
-  },
-  {
-   "type": "particles",
-   "kind": "embers",
-   "color": "#ff5533",
-   "count": 30,
-   "rise": 0.35,
-   "layer": "back",
-   "cycles": 1,
-   "region": [
-    0.05,
-    0.3,
-    0.95,
-    1.0
-   ]
-  },
-  {
    "type": "particles",
    "kind": "sparkles",
-   "color": "#fff0b0",
+   "color": "#fff3c4",
    "count": 16,
    "size": 0.006,
    "cycles": 1,
@@ -104,5 +76,6 @@
     0.75
    ]
   }
- ]
+ ],
+ "note": "Game version: the rays, the teal aura and the embers are drawn by the game (CSS and its particle canvas). No pulse: a still plaque lets WebP store only what moves"
 }

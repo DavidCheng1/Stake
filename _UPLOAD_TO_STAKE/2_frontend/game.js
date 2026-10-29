@@ -860,6 +860,67 @@ async function banner(title, sub, hold = 1700) {
   bannerEl.hidden = true;
 }
 
+// ---------- Total Win screen after the free spins: the emblem plays its intro once (100 frames at 30 fps), then its
+// loop, while the bonus win counts up under it. The animations download when a bonus starts; reduced motion shows
+// a still. Made with tools/sprites (examples/total-win). ----------
+const TW_ART = { intro: "assets/total-win-intro.webp", loop: "assets/total-win-loop.webp", still: "assets/total-win-still.webp" };
+const TW_INTRO_MS = 100 * 33;
+const twBlobs = {};
+function preloadTotalWin() {
+  for (const [k, src] of Object.entries(TW_ART)) if (!twBlobs[k]) twBlobs[k] = fetch(src).then(r => r.ok ? r.blob() : null).catch(() => null);
+}
+// every showing gets fresh blob URLs of the downloaded bytes, so each animation starts again from its first frame
+async function twImage(k) {
+  const b = await twBlobs[k]; if (!b) return null;
+  const im = new Image(); im.alt = ""; im.draggable = false; im.src = URL.createObjectURL(b);
+  try { await im.decode(); } catch { URL.revokeObjectURL(im.src); return null; }
+  return im;
+}
+// returns false when the art is missing, then the caller shows the plain banner
+async function totalWinScreen(total, spins) {
+  nextSequence();
+  preloadTotalWin();
+  const intro = !RM && !turbo; // turbo starts on the loop
+  const first = await twImage(RM ? "still" : intro ? "intro" : "loop");
+  if (!first) return false;
+  const el = document.getElementById("totalWin"), box = document.getElementById("twArt"), amtEl = document.getElementById("twAmount");
+  const x = (Math.round(total / bet * 100) / 100).toLocaleString(RGS.lang, { maximumFractionDigits: 2 });
+  document.getElementById("twSub").textContent = i18n(`${spins} Freispiele gespielt · ${x}× Einsatz`, `${spins} free spins played · ${x}× bet`);
+  box.replaceChildren(first); amtEl.textContent = money(0); el.hidden = false;
+  const introEnd = performance.now() + (intro ? TW_INTRO_MS : 0);
+  hero.react("cheer", 4000); sound.fanfare();
+  el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
+  // teal embers rising around the emblem while the screen is up
+  let embers = 0;
+  const ember = () => {
+    if (el.hidden || RM) return;
+    const b = box.getBoundingClientRect(), s = stage.getBoundingClientRect();
+    for (let i = 0; i < 3; i++) fx.emit(b.left - s.left + b.width * (.08 + Math.random() * .84), b.top - s.top + b.height * (.55 + Math.random() * .4), { n: 1, kind: "wisp", rgb: Math.random() < .75 ? "79 240 200" : "233 196 106", scale: b.width / 900 });
+    embers = setTimeout(ember, 140);
+  };
+  ember();
+  // the amount counts up while the emblem arrives; it follows the pace, so a skip finishes it at once
+  let k = 0, last = performance.now(), lastTick = 0;
+  const counted = new Promise(res => (function step(t) {
+    k = Math.min(1, k + Math.max(0, t - last) * pace() / 2400); last = Math.max(last, t);
+    amtEl.textContent = money(k < 1 ? RGS.roundMoney(total * (1 - Math.pow(1 - k, 3))) : total);
+    if (k < 1 && t - lastTick > 85) { lastTick = t; sound.tick(); }
+    if (k < 1) requestAnimationFrame(step); else res();
+  })(last));
+  if (intro) { // the intro runs in real time; a skip jumps to the loop
+    while (performance.now() < introEnd && !slam) await new Promise(r => setTimeout(r, 40));
+    const loopImg = await twImage("loop");
+    if (loopImg) { box.replaceChildren(loopImg); URL.revokeObjectURL(first.src); }
+  }
+  await counted;
+  if (!RM) amtEl.animate([{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }], { duration: 420, easing: "ease-out" });
+  await sleep(2200);
+  await el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).finished;
+  el.hidden = true; clearTimeout(embers);
+  box.querySelectorAll("img").forEach(im => URL.revokeObjectURL(im.src)); box.replaceChildren();
+  return true;
+}
+
 // ---------- Geisterkisten (free spins with crates, runes and 3 lives) ----------
 const RUNE_IDS = ["rune_green", "rune_blue", "rune_purple", "rune_fire", "rune_pink"];
 // What lands and its values come from the bonusStart / bonusSpin / bonusEnd events.
@@ -1025,6 +1086,7 @@ async function harvest(start, spinEvents, end) {
   const fsCells = start.crates.map(k => [k.reel, k.row]), n = Math.min(7, fsCells.length);
   say(`${n} FS · ${i18n("Freispiele!", "Free Spins!")}`);
   stage.classList.add("bonus");
+  preloadTotalWin();
   await banner(n === 3 ? i18n("Geisterkisten", "Ghost Crates") : `${n} ${i18n("Geisterkisten", "Ghost Crates")}`, i18n(`3 Leben · Nur Runen in ${MIN_LINK}er-Gruppen an einer Kiste zählen`, `3 lives · Only groups of ${MIN_LINK}+ runes touching a crate count`), 2100);
   K = reels.map(() => Array(ROWS).fill(null));
   reels.forEach(rl => { rl.tall.hidden = true; rl.tall.replaceChildren(); rl.cells.forEach(c => c.style.visibility = ""); });
@@ -1110,7 +1172,8 @@ async function harvest(start, spinEvents, end) {
   }
   await countTo(total, 400);
   livesEl.hidden = true;
-  await banner(total >= 50 * bet ? i18n("Riesige Beute!", "Huge Haul!") : i18n("Freispiele vorbei", "Free Spins over"), i18n(money(total) + " gewonnen", money(total) + " won"), 2200);
+  if (!(total > 0 && await totalWinScreen(total, spinEvents.length)))
+    await banner(total >= 50 * bet ? i18n("Riesige Beute!", "Huge Haul!") : i18n("Freispiele vorbei", "Free Spins over"), i18n(money(total) + " gewonnen", money(total) + " won"), 2200);
   say(i18n(`Geisterkisten · ${money(total)} gewonnen`, `Ghost Crates · ${money(total)} won`));
   stage.classList.remove("bonus");
   G = reels.map(() => Array.from({ length: ROWS }, () => { let id; do { id = randSym(); } while (id === "fs" || id === "vs"); return id; }));
