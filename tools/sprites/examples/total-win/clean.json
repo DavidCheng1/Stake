@@ -1,0 +1,108 @@
+{
+ "note": "cut at the outer outline and peel off the red glow; the keep shapes have no full outline of their own: the devil's lit dome, the right candle with its flame, the red cape (thin outline, would be taken for glow)",
+ "dark": 0.45,
+ "close": 5,
+ "keep": [
+  [
+   [
+    341,
+    33
+   ],
+   [
+    374,
+    33
+   ],
+   [
+    378,
+    52
+   ],
+   [
+    338,
+    52
+   ]
+  ],
+  [
+   [
+    492,
+    188
+   ],
+   [
+    513,
+    188
+   ],
+   [
+    513,
+    214
+   ],
+   [
+    492,
+    214
+   ]
+  ],
+  [
+   [
+    499,
+    171
+   ],
+   [
+    510,
+    171
+   ],
+   [
+    510,
+    189
+   ],
+   [
+    499,
+    189
+   ]
+  ],
+  [
+   [
+    306,
+    206
+   ],
+   [
+    406,
+    206
+   ],
+   [
+    406,
+    291
+   ],
+   [
+    306,
+    291
+   ]
+  ]
+ ],
+ "glow": {
+  "hue": [
+   350,
+   22
+  ],
+  "sat": 0.6
+ },
+ "drop": [
+  [
+   208,
+   76
+  ],
+  [
+   505,
+   76
+  ],
+  [
+   493,
+   182
+  ],
+  [
+   231,
+   200
+  ],
+  [
+   224,
+   168
+  ]
+ ]
+}

@@ -96,6 +96,41 @@ def segment(img, parts):
     return owner
 
 
+def regions(img, dark=0.3):
+    """Areas enclosed by outlines (4-connected, outline pixels are 0) and the outline mask."""
+    a = img[..., 3]
+    line = (img[..., :3].max(2) < dark) & (a > 0.3)
+    n, lab = cv2.connectedComponents((~line & (a > 0.5)).astype(np.uint8), connectivity=4)
+    return n, lab, line
+
+
+def snap_owner(img, owner, parts, dark=0.3, reach=4.0, share=0.6, vote=True):
+    """Move the cuts between parts onto the outlines: an area enclosed by outlines goes wholly to the part that owns
+    most of it (`share` at least), and an outline pixel goes to the front-most part whose area is within `reach` px
+    of the nearest one, so the shared line between a front and a back part belongs to the front part.
+    vote=False keeps the areas as they are and only settles the outlines (for a second pass at a bigger size)."""
+    a = img[..., 3]
+    n, lab, line = regions(img, dark)
+    k = len(parts)
+    ok = (owner >= 0) & (lab > 0)
+    counts = np.bincount(lab[ok] * k + owner[ok], minlength=n * k).reshape(n, k)
+    tot = counts.sum(1)
+    best = counts.argmax(1)
+    sure = (tot > 0) & (counts[np.arange(n), best] >= share * np.maximum(tot, 1))
+    sure[0] = False
+    out = np.where(sure[lab], best[lab], owner) if vote else owner.copy()
+    z = np.array([p.get("z", 0) for p in parts], np.float32)
+    area = (lab > 0)
+    dist = np.stack([cv2.distanceTransform((~(area & (out == i))).astype(np.uint8), cv2.DIST_L2, 5) for i in range(k)])
+    near = dist.min(0)
+    cand = dist <= near + reach
+    front = np.argmax(np.where(cand, z[:, None, None], -1e9), axis=0)
+    fix = (line | ((a > 0.02) & ~area)) & (near <= 3 * reach)
+    out = np.where(fix, front, out)
+    out[a <= 0.02] = -1
+    return out
+
+
 def build_layers(img, parts, owner):
     """One RGBA layer per part: its visible pixels plus the filled-in area that parts in front of it hide."""
     h, w = img.shape[:2]
@@ -323,15 +358,118 @@ def sharpen_up(l, f):
     return np.clip(big, 0, 1)
 
 
-def save_crop(l, path, quality):
-    """Save the opaque box of a layer; returns it as [x, y, w, h] in the layer's px."""
+def crop_box(l):
+    """The opaque box of a layer as [x, y, w, h] in the layer's px, or None."""
     ys, xs = np.nonzero(l[..., 3] > 0.004)
     if not len(xs):
         return None
-    x0, y0, x1, y1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
-    crop = (np.clip(l[y0:y1, x0:x1], 0, 1) * 255 + 0.5).astype(np.uint8)
+    return [int(xs.min()), int(ys.min()), int(xs.max() + 1 - xs.min()), int(ys.max() + 1 - ys.min())]
+
+
+def save_crop(l, path, quality):
+    """Save the opaque box of a layer; returns it as [x, y, w, h] in the layer's px."""
+    box = crop_box(l)
+    if box is None:
+        return None
+    x, y, w, h = box
+    crop = (np.clip(l[y:y + h, x:x + w], 0, 1) * 255 + 0.5).astype(np.uint8)
     Image.fromarray(crop, "RGBA").save(path, quality=quality, method=6, alpha_quality=100)
-    return [int(x0), int(y0), int(x1 - x0), int(y1 - y0)]
+    return box
+
+
+def pack(sizes, width=2048, gap=4):
+    """Shelf packing, tallest first: positions [x, y] for boxes of (w, h), and the sheet's (w, h)."""
+    order = sorted(range(len(sizes)), key=lambda i: -sizes[i][1])
+    pos, x, y, shelf, used = [None] * len(sizes), gap, gap, 0, 0
+    for i in order:
+        w, h = sizes[i]
+        if x + w + gap > width:
+            x, y, shelf = gap, y + shelf + gap, 0
+        pos[i] = [x, y]
+        x += w + gap
+        shelf = max(shelf, h)
+        used = max(used, x)
+    return pos, (used, y + shelf + gap)
+
+
+def merge_fragments(owner, k, min_frac=0.03):
+    """Pieces of a part cut off from its main body (smaller than `min_frac` of the part) go to the part around them."""
+    out = owner.copy()
+    stray = np.zeros(owner.shape, bool)
+    for i in range(k):
+        m = (owner == i).astype(np.uint8)
+        n, lab, st, _ = cv2.connectedComponentsWithStats(m, connectivity=8)
+        if n <= 2:
+            continue
+        big = st[1:, cv2.CC_STAT_AREA].max()
+        for c in range(1, n):
+            if st[c, cv2.CC_STAT_AREA] < min_frac * big:
+                stray |= lab == c
+    if stray.any():
+        keep = ((owner >= 0) & ~stray).astype(np.uint8)
+        _, near = cv2.distanceTransformWithLabels(1 - keep, cv2.DIST_L2, 5, labelType=cv2.DIST_LABEL_PIXEL)
+        ys, xs = np.nonzero(keep)
+        lut = np.full(near.max() + 1, -1, np.int32)
+        lut[near[ys, xs]] = owner[ys, xs]
+        out[stray] = lut[near[stray]]
+    return out
+
+
+def clean_layers(img, spec, base_dir, scale, seg=None):
+    """The parts cut precisely, at `scale`: the picture is cleaned and redrawn (clean.py: silhouette at the outer
+    outline, crisp outlines, recoloured), the cuts follow the outlines (snap_owner, at 1x and again at full size),
+    neighbouring parts blend over a pixel, and every part is filled in where parts in front of it hide it."""
+    import clean as clean_mod
+
+    parts = spec["parts"]
+    cfg = json.load(open(os.path.join(base_dir, spec["clean"]), encoding="utf-8")) if spec.get("clean") else {}
+    rules = json.load(open(os.path.join(base_dir, spec["recolor"]), encoding="utf-8"))["rules"] if spec.get("recolor") else None
+    owner0 = segment(img if seg is None else seg, parts)
+    res = clean_mod.clean(img, scale, rules, owner0, parts, cfg)
+    big, fill, owner1 = res["big"], res["fill"], res["owner"]
+    H, W = big.shape[:2]
+    up = cv2.resize(owner1.astype(np.int32), (W, H), interpolation=cv2.INTER_NEAREST)
+    up = np.where(big[..., 3] > 0.02, up, -1)
+    missing = (up < 0) & (big[..., 3] > 0.02)
+    if missing.any():  # edge pixels the 1x map had as empty: the nearest part
+        known = (up >= 0).astype(np.uint8)
+        _, near = cv2.distanceTransformWithLabels(1 - known, cv2.DIST_L2, 5, labelType=cv2.DIST_LABEL_PIXEL)
+        ys, xs = np.nonzero(known)
+        lut = np.zeros(near.max() + 1, np.int32)
+        lut[near[ys, xs]] = up[ys, xs]
+        up = np.where(missing, lut[near], up)
+    owner = snap_owner(big, up, parts, cfg.get("ink", 0.3), reach=3 * scale, vote=False)
+    owner = merge_fragments(owner, len(parts))
+    z = np.array([p.get("z", 0) for p in parts])
+    zmap = np.where(owner >= 0, z[np.maximum(owner, 0)], -10**6)
+    blur = [cv2.GaussianBlur((owner == i).astype(np.float32), (0, 0), 0.45 * scale) for i in range(len(parts))]
+    total = np.maximum(sum(blur), 1e-6)
+    fill8 = (np.clip(fill, 0, 1) * 255 + 0.5).astype(np.uint8)
+    layers = []
+    for i, p in enumerate(parts):
+        own = owner == i
+        if not own.any():
+            layers.append(None)
+            continue
+        soft = np.clip(blur[i] / total, 0, 1)
+        covered = (zmap > p.get("z", 0)) & ~own & (big[..., 3] > 0.02)
+        ext = np.zeros_like(own)
+        if covered.any():
+            hull = np.zeros((H, W), np.uint8)
+            cv2.fillConvexPoly(hull, cv2.convexHull(cv2.findNonZero(own.astype(np.uint8))), 1)
+            dist = cv2.distanceTransform((~own).astype(np.uint8), cv2.DIST_L2, 5)
+            ext = covered & (hull > 0) & (dist < p.get("extend", 20) * scale)
+        layer = np.zeros((H, W, 4), np.float32)
+        layer[..., :3] = big[..., :3]
+        if ext.any():  # hidden area: this part's own colours carried on
+            mine = owner1 == i
+            hidden = cv2.inpaint(fill8, (~mine).astype(np.uint8), 4, cv2.INPAINT_TELEA).astype(np.float32) / 255
+            hidden = cv2.resize(hidden, (W, H), interpolation=cv2.INTER_CUBIC)
+            sel = ext & (soft < 0.5)
+            layer[sel, :3] = hidden[sel]
+        layer[..., 3] = np.maximum(big[..., 3] * soft, ext.astype(np.float32))
+        layers.append(layer)
+    return layers, owner1, big
 
 
 def light_layer(l, rect, f, fx):
@@ -357,38 +495,45 @@ def hex_rgb(c):
     return np.array([int(c[i:i + 2], 16) / 255 for i in (0, 2, 4)], np.float32)
 
 
-def export(img, spec, out, big=None, scale=None, quality=90, seg=None):
-    """Write every part as its own picture plus rig.json for rigplayer.js, which moves them live in the browser.
-    Coordinates stay in px of the picture as given; `scale` is how many image px the exported pictures have per px."""
+def export(img, spec, out, big=None, scale=None, quality=90, seg=None, base_dir="."):
+    """Write the parts as one sprite sheet (atlas.webp, with the light layers of the glow effects) plus rig.json for
+    rigplayer.js, which moves them live in the browser. Coordinates stay in px of the picture as given; the sheet has
+    `scale` image px per picture px. With "clean" (and "recolor") in the rig, the picture is cleaned up first."""
     parts = spec["parts"]
-    layers, owner = split(img, spec, seg=seg)
     h, w = img.shape[:2]
-    if big is not None:
-        f = big.shape[1] / w
-        layers = big_layers(layers, owner, big)
-        if scale and abs(scale - f) > 1e-3:
-            layers = [None if l is None else cv2.resize(l, (round(w * scale), round(h * scale)), interpolation=cv2.INTER_AREA)
-                      for l in layers]
-            f = scale
+    if spec.get("clean") or spec.get("recolor"):
+        f = scale or 3
+        layers, owner, _ = clean_layers(img, spec, base_dir, f, seg)
     else:
-        f = scale or 2
-        layers = [None if l is None else sharpen_up(l, f) for l in layers]
+        layers, owner = split(img, spec, seg=seg)
+        if big is not None:
+            f = big.shape[1] / w
+            layers = big_layers(layers, owner, big)
+            if scale and abs(scale - f) > 1e-3:
+                layers = [None if l is None else cv2.resize(l, (round(w * scale), round(h * scale)), interpolation=cv2.INTER_AREA)
+                          for l in layers]
+                f = scale
+        else:
+            f = scale or 2
+            layers = [None if l is None else sharpen_up(l, f) for l in layers]
     os.makedirs(out, exist_ok=True)
     web = spec.get("web", {})
     doc = {"w": w, "h": h, "pad": web.get("pad", 0.08), "intro": web.get("intro_seconds", 3.3),
-           "loop": web.get("loop_seconds", 4), "fade": web.get("fade", 0.1), "shake": web.get("shake"), "parts": [], "effects": []}
+           "loop": web.get("loop_seconds", 4), "fade": web.get("fade", 0.1), "shake": web.get("shake"),
+           "atlas": "atlas.webp", "parts": [], "effects": []}
+    names = [p["name"] for p in parts]
+    pics = []  # (entry, crop) for the sheet
     for i in sorted(range(len(parts)), key=lambda k: parts[k].get("z", 0)):
         p, l = parts[i], layers[i]
-        if l is None:
-            continue
-        box = save_crop(l, os.path.join(out, f"{p['name']}.webp"), quality)
+        box = None if l is None else crop_box(l)
         if box is None:
             continue
-        doc["parts"].append({"name": p["name"], "src": f"{p['name']}.webp", "box": [round(v / f, 3) for v in box],
-                             "pivot": p.get("pivot", [w / 2, h / 2]), "loop": p.get("loop", []), "intro": p.get("intro", [])})
-    names = [p["name"] for p in parts]
-    for n, fx in enumerate(web.get("effects", [])):
-        fx = dict(fx)
+        e = {"name": p["name"], "box": [round(v / f, 3) for v in box], "pivot": p.get("pivot", [w / 2, h / 2]),
+             "loop": p.get("loop", []), "intro": p.get("intro", [])}
+        doc["parts"].append(e)
+        pics.append((e, l[box[1]:box[1] + box[3], box[0]:box[0] + box[2]]))
+    for fx in web.get("effects", []):
+        fx = {k: v for k, v in fx.items() if k != "note"}
         if fx["type"] in ("glow", "shine") and "part" not in fx:  # the part that owns most of the rect
             x0, y0, x1, y1 = fx["rect"]
             ids, counts = np.unique(owner[y0:y1, x0:x1], return_counts=True)
@@ -396,15 +541,24 @@ def export(img, spec, out, big=None, scale=None, quality=90, seg=None):
             fx["part"] = names[int(ids[ok][np.argmax(counts[ok])])]
         if fx["type"] == "glow":
             light = light_layer(layers[names.index(fx["part"])], fx["rect"], f, fx)
-            box = save_crop(light, os.path.join(out, f"fx{n}.webp"), quality)
+            box = crop_box(light)
             if box is None:
                 continue
-            fx.update(src=f"fx{n}.webp", box=[round(v / f, 3) for v in box])
+            fx["box"] = [round(v / f, 3) for v in box]
+            pics.append((fx, light[box[1]:box[1] + box[3], box[0]:box[0] + box[2]]))
         doc["effects"].append(fx)
+    pos, (sw, sh) = pack([(c.shape[1], c.shape[0]) for _, c in pics])
+    sheet = np.zeros((sh, sw, 4), np.float32)
+    for (e, c), (x, y) in zip(pics, pos):
+        sheet[y:y + c.shape[0], x:x + c.shape[1]] = c
+        e["frame"] = [x, y, c.shape[1], c.shape[0]]
+    Image.fromarray((np.clip(sheet, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA").save(
+        os.path.join(out, "atlas.webp"), quality=quality, method=6, alpha_quality=100)
     with open(os.path.join(out, "rig.json"), "w", encoding="utf-8") as fh:
         json.dump(doc, fh, separators=(",", ":"))
-    size = sum(os.path.getsize(os.path.join(out, x)) for x in os.listdir(out))
-    print(f"{len(doc['parts'])} parts, {len(doc['effects'])} effects at {f:g}x -> {out} ({size // 1024} KB)")
+    size = sum(os.path.getsize(os.path.join(out, x)) for x in ("atlas.webp", "rig.json"))
+    print(f"{len(doc['parts'])} parts, {len(doc['effects'])} effects at {f:g}x, sheet {sw}x{sh} -> {out} ({size // 1024} KB)")
+    return doc, sheet
 
 
 def main():
@@ -414,7 +568,7 @@ def main():
     ap.add_argument("rig")
     ap.add_argument("--out")
     ap.add_argument("--big", help="export: an upscaled copy of the picture (Real-ESRGAN), the parts take their pixels from it")
-    ap.add_argument("--scale", type=float, help="export: image px per picture px (default: the --big factor, else 2)")
+    ap.add_argument("--scale", type=float, help="export: image px per picture px (default: 3 with clean, the --big factor, else 2)")
     ap.add_argument("--quality", type=int, default=90)
     args = ap.parse_args()
     spec = json.load(open(args.rig, encoding="utf-8"))
@@ -424,7 +578,8 @@ def main():
         seg = None
         if spec.get("split_from"):  # find the parts on this picture (e.g. before recolouring)
             seg = load_rgba(os.path.join(os.path.dirname(os.path.abspath(args.rig)), spec["split_from"]))
-        export(img, spec, out, load_rgba(args.big) if args.big else None, args.scale, args.quality, seg)
+        export(img, spec, out, load_rgba(args.big) if args.big else None, args.scale, args.quality, seg,
+               os.path.dirname(os.path.abspath(args.rig)))
         return
     os.makedirs(out, exist_ok=True)
     layers, owner = split(img, spec)

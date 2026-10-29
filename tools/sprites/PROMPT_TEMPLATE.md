@@ -43,6 +43,8 @@ Tips for the best result:
   Then nothing has to be cut out or filled in behind the parts, and they are pixel-perfect.
 - Parts that overlap a lot in the picture (a wing behind a ghost) still work: the hidden area is filled in, but a
   separate layer is cleaner.
+- A glow drawn around the art in the picture is removed (the cut follows the outer black outline) and the game adds its
+  own glow; cut from a screenshot is fine. Clear black outlines give the cleanest cuts and the sharpest redraw.
 - Moves are solid: a part turns, slides, squashes and fades. For a real pose change (an arm waving, a head turning)
   send 2 to 6 drawings of the poses.
 

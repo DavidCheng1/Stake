@@ -55,10 +55,19 @@ const RigPlayer = (() => {
   }
   const image = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
 
+  // a part or light layer: its picture (one sheet for all, or a file each) and where it sits, in picture px
+  function blit(g, p, x, y, w, h) {
+    if (p.frame) g.drawImage(p.img, ...p.frame, x, y, w, h);
+    else g.drawImage(p.img, x, y, w, h);
+  }
+
   async function load(dir) {
     const rig = await (await fetch(dir + "/rig.json")).json();
-    const all = [...rig.parts, ...rig.effects.filter(e => e.src)];
-    await Promise.all(all.map(async p => { p.img = await image(dir + "/" + p.src); }));
+    const all = [...rig.parts, ...rig.effects.filter(e => e.src || e.frame)];
+    if (rig.atlas) {
+      const sheet = await image(dir + "/" + rig.atlas);
+      for (const p of all) p.img = sheet;
+    } else await Promise.all(all.map(async p => { p.img = await image(dir + "/" + p.src); }));
     const r = rng(rig.effects.find(e => e.type === "sparkles")?.seed ?? 7);
     for (const e of rig.effects) if (e.type === "sparkles") {
       const [x0, y0, x1, y1] = e.rect;
@@ -114,13 +123,16 @@ const RigPlayer = (() => {
         const sh = partFx(p.name).find(e => e.type === "shine");
         const frac = sh ? ((sh.cycles ?? 1) * t + (sh.phase ?? 0)) % 1 : 1;
         if (sh && frac < (sh.sweep ?? .4)) drawShine(p, sh, frac / (sh.sweep ?? .4), k);
-        else ctx.drawImage(p.img, bx, by, bw, bh);
+        else blit(ctx, p, bx, by, bw, bh);
         ctx.globalCompositeOperation = "lighter";
         for (const e of partFx(p.name)) if (e.type === "glow") {
+          // "loop": false shows only in the intro; "flash" keys scale it during the intro
+          if (e.loop === false && ti == null) continue;
           const base = e.min ?? 0;
-          const w = e.wave === "flicker" ? clamp(.5 + .5 * wave({ ...e, amount: 1 }, t)) : base + (1 - base) * (.5 + .5 * Math.sin(TAU * ((e.cycles ?? 1) * t + (e.phase ?? 0))));
+          let w = e.loop === false ? 1 : e.wave === "flicker" ? clamp(.5 + .5 * wave({ ...e, amount: 1 }, t)) : base + (1 - base) * (.5 + .5 * Math.sin(TAU * ((e.cycles ?? 1) * t + (e.phase ?? 0))));
+          if (e.flash && ti != null) w *= keyed(e.flash, ti);
           ctx.globalAlpha = clamp(a * (e.amount ?? .6) * w);
-          ctx.drawImage(e.img, ...e.box);
+          if (ctx.globalAlpha > .003) blit(ctx, e, ...e.box);
         }
         ctx.globalCompositeOperation = "source-over";
       }
@@ -146,7 +158,7 @@ const RigPlayer = (() => {
       if (shine.width !== w || shine.height !== h) { shine.width = w; shine.height = h; }
       sctx.globalCompositeOperation = "source-over"; sctx.globalAlpha = 1;
       sctx.clearRect(0, 0, w, h);
-      sctx.drawImage(p.img, 0, 0, w, h);
+      blit(sctx, p, 0, 0, w, h);
       const [x0, y0, x1, y1] = e.rect, ang = (e.angle ?? 25) * Math.PI / 180;
       const cos = Math.cos(ang), sin = Math.sin(ang), len = (x1 - x0) * Math.abs(cos) + (y1 - y0) * Math.abs(sin);
       const c = -.25 + 1.5 * u, hw = (e.width ?? .08) * 2;

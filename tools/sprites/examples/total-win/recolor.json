@@ -1,221 +1,137 @@
 {
+ "note": "game palette by gradient maps (dark to light), applied by clean.py to the picture without its outlines; later rules win",
  "rules": [
   {
+   "note": "wings and cape: violet",
    "parts": [
     "wingL",
     "wingR"
    ],
-   "hue": [
-    290,
-    45
-   ],
-   "sat": [
-    0.25,
-    1
-   ],
-   "to": 277,
-   "sat_mul": 0.78,
-   "val_mul": 0.7
+   "map": [
+    "#0d0418",
+    "#2c0f55",
+    "#5a22a3",
+    "#8d4fe0",
+    "#c39bff"
+   ]
   },
   {
    "parts": [
     "cape"
    ],
-   "hue": [
-    290,
-    45
+   "map": [
+    "#0e0416",
+    "#331050",
+    "#6a2296",
+    "#a456d6",
+    "#d9a8ff"
+   ]
+  },
+  {
+   "note": "devil: gunmetal helmet, violet horns, green eyes",
+   "parts": [
+    "devil"
    ],
-   "sat": [
-    0.25,
-    1
-   ],
-   "to": 280,
-   "sat_mul": 0.78,
-   "val_mul": 0.66
+   "map": [
+    "#0a0b10",
+    "#262a36",
+    "#555d72",
+    "#9aa4ba",
+    "#e3e9f5"
+   ]
   },
   {
    "parts": [
     "devil"
    ],
    "hue": [
-    320,
-    35
-   ],
-   "sat": [
-    0.45,
-    1
-   ],
-   "to": 277,
-   "sat_mul": 0.7,
-   "val_mul": 0.8
-  },
-  {
-   "parts": [
-    "crossL",
-    "crossR"
-   ],
-   "hue": [
-    320,
-    30
-   ],
-   "sat": [
-    0.4,
-    1
-   ],
-   "to": 140
-  },
-  {
-   "parts": [
-    "ghostL",
-    "ghostR"
-   ],
-   "hue": [
-    20,
-    80
-   ],
-   "to": 165,
-   "sat_mul": 0.45,
-   "val_mul": 1.0
-  },
-  {
-   "parts": [
-    "ghostL",
-    "ghostR"
-   ],
-   "hue": [
     330,
-    22
-   ],
-   "sat": [
-    0.7,
-    1
-   ],
-   "alpha": [
-    0.9,
-    1
-   ],
-   "to": 172,
-   "sat_mul": 0.8
-  },
-  {
-   "parts": [
-    "base"
-   ],
-   "hue": [
-    0,
-    48
-   ],
-   "sat": [
-    0.15,
-    0.95
-   ],
-   "val": [
-    0.35,
-    1
-   ],
-   "to": 200,
-   "sat_to": 0.14,
-   "val_mul": 0.74
-  },
-  {
-   "parts": [
-    "base"
-   ],
-   "val": [
-    0,
-    0.82
-   ],
-   "hue": [
-    290,
-    48
-   ],
-   "sat": [
-    0.3,
-    1
-   ],
-   "to": 172,
-   "sat_mul": 0.85
-  },
-  {
-   "parts": [
-    "base"
-   ],
-   "hue": [
-    290,
     30
    ],
    "sat": [
-    0.8,
+    0.5,
     1
    ],
-   "val": [
-    0.2,
-    1
-   ],
-   "to": 172,
-   "sat_mul": 0.8
+   "map": [
+    "#0d0418",
+    "#2c0f55",
+    "#5a22a3",
+    "#8d4fe0",
+    "#c39bff"
+   ]
   },
   {
+   "note": "plaque: silver stone frame",
+   "parts": [
+    "base"
+   ],
+   "map": [
+    "#0b0d12",
+    "#2a303c",
+    "#5d6779",
+    "#a3aec0",
+    "#eef3f8"
+   ]
+  },
+  {
+   "note": "plaque: dark teal inside",
    "parts": [
     "base"
    ],
    "rect": [
-    258,
-    55,
-    458,
-    135
+    226,
+    64,
+    484,
+    206
+   ],
+   "val": [
+    0,
+    0.38
+   ],
+   "map": [
+    "#030a0a",
+    "#0a1d1c",
+    "#123532"
+   ],
+   "range": [
+    0,
+    0.25
+   ]
+  },
+  {
+   "note": "plaque: the red runes inside glow teal",
+   "parts": [
+    "base"
+   ],
+   "rect": [
+    226,
+    64,
+    484,
+    206
    ],
    "hue": [
-    280,
-    28
+    335,
+    25
    ],
    "sat": [
-    0.35,
+    0.6,
     1
    ],
    "val": [
-    0.82,
-    1
+    0.38,
+    0.9
    ],
-   "to": 30,
-   "sat_mul": 1.0,
-   "val_mul": 0.95
+   "map": [
+    "#08302b",
+    "#139080",
+    "#3ff2d0",
+    "#c8fff3"
+   ]
   },
   {
+   "note": "thorny vines",
    "parts": [
     "base"
-   ],
-   "rect": [
-    282,
-    135,
-    430,
-    210
-   ],
-   "hue": [
-    280,
-    28
-   ],
-   "sat": [
-    0.35,
-    1
-   ],
-   "val": [
-    0.82,
-    1
-   ],
-   "to": 30,
-   "sat_mul": 1.0,
-   "val_mul": 0.95
-  },
-  {
-   "parts": [
-    "base"
-   ],
-   "rect": [
-    258,
-    55,
-    458,
-    210
    ],
    "hue": [
     28,
@@ -223,84 +139,332 @@
    ],
    "sat": [
     0.2,
+    0.62
+   ],
+   "val": [
+    0.12,
+    0.8
+   ],
+   "map": [
+    "#091210",
+    "#1f3632",
+    "#46706a",
+    "#93c2b8"
+   ]
+  },
+  {
+   "note": "small warm areas inside the plaque (runes, glow) glow teal",
+   "parts": [
+    "base"
+   ],
+   "region": {
+    "rect": [
+     226,
+     64,
+     484,
+     206
+    ],
+    "area": [
+     1,
+     400
+    ]
+   },
+   "hue": [
+    330,
+    60
+   ],
+   "sat": [
+    0.25,
+    1
+   ],
+   "map": [
+    "#08302b",
+    "#139080",
+    "#3ff2d0",
+    "#c8fff3"
+   ]
+  },
+  {
+   "note": "letters: whole areas between outlines in the letter boxes",
+   "parts": [
+    "base"
+   ],
+   "region": {
+    "rect": [
+     262,
+     58,
+     455,
+     130
+    ],
+    "sat": [
+     0.5,
+     1
+    ],
+    "val": [
+     0.6,
+     1
+    ],
+    "area": [
+     10,
+     4000
+    ]
+   },
+   "map": [
+    "#3d1600",
+    "#8f4306",
+    "#e08a12",
+    "#ffc838",
+    "#fff4b8"
+   ]
+  },
+  {
+   "parts": [
+    "base"
+   ],
+   "region": {
+    "rect": [
+     285,
+     130,
+     428,
+     212
+    ],
+    "sat": [
+     0.5,
+     1
+    ],
+    "val": [
+     0.6,
+     1
+    ],
+    "area": [
+     10,
+     4000
+    ]
+   },
+   "map": [
+    "#3d1600",
+    "#8f4306",
+    "#e08a12",
+    "#ffc838",
+    "#fff4b8"
+   ]
+  },
+  {
+   "note": "eyes",
+   "rect": [
+    322,
+    44,
+    376,
+    68
+   ],
+   "hue": [
+    330,
+    30
+   ],
+   "sat": [
+    0.5,
     1
    ],
    "val": [
-    0.82,
+    0.7,
     1
    ],
-   "to": 47
+   "map": [
+    "#03301a",
+    "#0f9a45",
+    "#5dff9a",
+    "#e6ffee"
+   ]
   },
   {
+   "note": "gem on the cape: silver setting, green stone",
    "rect": [
-    318,
-    36,
-    378,
-    66
-   ],
-   "hue": [
-    320,
-    45
+    344,
+    196,
+    370,
+    224
    ],
    "sat": [
-    0.35,
-    1
-   ],
-   "to": 135,
-   "sat_mul": 1.0,
-   "val_mul": 1.05
-  },
-  {
-   "rect": [
-    203,
-    174,
-    226,
-    199
-   ],
-   "hue": [
-    5,
-    65
-   ],
-   "sat": [
-    0.3,
-    1
-   ],
-   "to": 135,
-   "sat_mul": 1.1
-  },
-  {
-   "rect": [
-    488,
-    176,
-    514,
-    201
-   ],
-   "hue": [
-    5,
-    65
-   ],
-   "sat": [
-    0.3,
-    1
-   ],
-   "to": 135,
-   "sat_mul": 1.1
-  },
-  {
-   "hue": [
-    300,
-    45
-   ],
-   "sat": [
-    0.3,
-    1
-   ],
-   "alpha": [
     0,
-    0.92
+    0.5
    ],
-   "to": 168,
-   "val_mul": 1.1
+   "map": [
+    "#0b0d12",
+    "#2a303c",
+    "#5d6779",
+    "#a3aec0",
+    "#eef3f8"
+   ]
+  },
+  {
+   "rect": [
+    344,
+    196,
+    370,
+    224
+   ],
+   "hue": [
+    330,
+    25
+   ],
+   "sat": [
+    0.6,
+    1
+   ],
+   "map": [
+    "#022012",
+    "#07592b",
+    "#1fbf5e",
+    "#7dffb0",
+    "#e8fff0"
+   ]
+  },
+  {
+   "note": "ghosts: mint",
+   "parts": [
+    "ghostL",
+    "ghostR"
+   ],
+   "map": [
+    "#0a2624",
+    "#17605a",
+    "#3ec2ad",
+    "#9ff5e3",
+    "#effffb"
+   ]
+  },
+  {
+   "note": "crosses: lavender with green gems",
+   "parts": [
+    "crossL",
+    "crossR"
+   ],
+   "map": [
+    "#21183a",
+    "#5b4a86",
+    "#9f8fcc",
+    "#dcd0f5",
+    "#fbf8ff"
+   ],
+   "gamma": 0.8
+  },
+  {
+   "parts": [
+    "crossL",
+    "crossR"
+   ],
+   "hue": [
+    330,
+    25
+   ],
+   "sat": [
+    0.55,
+    1
+   ],
+   "map": [
+    "#022012",
+    "#07592b",
+    "#1fbf5e",
+    "#7dffb0",
+    "#e8fff0"
+   ]
+  },
+  {
+   "note": "candles: ivory wax, teal flames",
+   "rect": [
+    200,
+    188,
+    232,
+    216
+   ],
+   "sat": [
+    0,
+    0.5
+   ],
+   "val": [
+    0.6,
+    1
+   ],
+   "map": [
+    "#3b3026",
+    "#8c7b68",
+    "#d9ccb8",
+    "#fffaf0"
+   ]
+  },
+  {
+   "rect": [
+    492,
+    187,
+    514,
+    214
+   ],
+   "sat": [
+    0,
+    0.5
+   ],
+   "val": [
+    0.6,
+    1
+   ],
+   "map": [
+    "#3b3026",
+    "#8c7b68",
+    "#d9ccb8",
+    "#fffaf0"
+   ]
+  },
+  {
+   "rect": [
+    204,
+    166,
+    218,
+    190
+   ],
+   "hue": [
+    0,
+    75
+   ],
+   "sat": [
+    0.25,
+    1
+   ],
+   "val": [
+    0.5,
+    1
+   ],
+   "map": [
+    "#08302b",
+    "#139080",
+    "#3ff2d0",
+    "#c8fff3"
+   ]
+  },
+  {
+   "rect": [
+    499,
+    166,
+    512,
+    190
+   ],
+   "hue": [
+    0,
+    75
+   ],
+   "sat": [
+    0.25,
+    1
+   ],
+   "val": [
+    0.5,
+    1
+   ],
+   "map": [
+    "#08302b",
+    "#139080",
+    "#3ff2d0",
+    "#c8fff3"
+   ]
   }
  ]
 }

@@ -83,13 +83,13 @@
     {
      "prop": "rotate",
      "wave": "flap",
-     "amount": 9,
-     "cycles": 4
+     "amount": 10,
+     "cycles": 2
     },
     {
      "prop": "scaley",
-     "amount": 0.04,
-     "cycles": 4,
+     "amount": 0.05,
+     "cycles": 2,
      "phase": 0.25
     }
    ],
@@ -122,7 +122,8 @@
       ]
      ]
     }
-   ]
+   ],
+   "extend": 6
   },
   {
    "name": "wingR",
@@ -203,13 +204,13 @@
     {
      "prop": "rotate",
      "wave": "flap",
-     "amount": -9,
-     "cycles": 4
+     "amount": -10,
+     "cycles": 2
     },
     {
      "prop": "scaley",
-     "amount": 0.04,
-     "cycles": 4,
+     "amount": 0.05,
+     "cycles": 2,
      "phase": 0.25
     }
    ],
@@ -242,16 +243,17 @@
       ]
      ]
     }
-   ]
+   ],
+   "extend": 6
   },
   {
    "name": "devil",
-   "z": 2,
+   "z": 4,
    "rect": [
-    298,
+    296,
     0,
-    398,
-    62
+    402,
+    70
    ],
    "pivot": [
     348,
@@ -268,32 +270,32 @@
       18
      ],
      [
-      368,
-      40
+      372,
+      57
      ],
      [
-      330,
-      40
+      326,
+      57
      ]
     ]
    ],
    "bg": [
     [
      [
-      290,
-      60
+      280,
+      68
      ],
      [
-      400,
-      60
+      420,
+      68
      ],
      [
-      400,
-      72
+      420,
+      80
      ],
      [
-      290,
-      72
+      280,
+      80
      ]
     ]
    ],
@@ -355,6 +357,54 @@
        0.16,
        1,
        "back"
+      ]
+     ]
+    },
+    {
+     "prop": "scaley",
+     "keys": [
+      [
+       0.16,
+       1
+      ],
+      [
+       0.2,
+       0.94,
+       "out"
+      ],
+      [
+       0.27,
+       1.03,
+       "inout"
+      ],
+      [
+       0.34,
+       1,
+       "inout"
+      ]
+     ]
+    },
+    {
+     "prop": "scalex",
+     "keys": [
+      [
+       0.16,
+       1
+      ],
+      [
+       0.2,
+       1.05,
+       "out"
+      ],
+      [
+       0.27,
+       0.985,
+       "inout"
+      ],
+      [
+       0.34,
+       1,
+       "inout"
       ]
      ]
     },
@@ -436,7 +486,8 @@
       180
      ]
     ]
-   ]
+   ],
+   "extend": 6
   },
   {
    "name": "cape",
@@ -763,6 +814,20 @@
        "linear"
       ]
      ]
+    },
+    {
+     "prop": "rotate",
+     "keys": [
+      [
+       0.24,
+       -25
+      ],
+      [
+       0.46,
+       0,
+       "back"
+      ]
+     ]
     }
    ]
   },
@@ -867,13 +932,27 @@
        "linear"
       ]
      ]
+    },
+    {
+     "prop": "rotate",
+     "keys": [
+      [
+       0.28,
+       25
+      ],
+      [
+       0.5,
+       0,
+       "back"
+      ]
+     ]
     }
    ]
   }
  ],
  "split_from": "emblem.png",
  "web": {
-  "note": "live playback (rigplayer.js): same moves as recipe-intro/recipe-loop; rays, aura and embers come from the game",
+  "note": "live playback (rigplayer.js). Rays, aura and embers come from the game. Brief: examples/total-win/brief.md",
   "pad": 0.08,
   "intro_seconds": 3.3,
   "loop_seconds": 4.17,
@@ -885,51 +964,115 @@
   },
   "effects": [
    {
+    "note": "white flash when the plaque lands (intro only)",
+    "type": "glow",
+    "part": "base",
+    "rect": [
+     196,
+     48,
+     512,
+     228
+    ],
+    "color": "#ffffff",
+    "threshold": 0.55,
+    "radius": 14,
+    "amount": 1,
+    "loop": false,
+    "flash": [
+     [
+      0.08,
+      0
+     ],
+     [
+      0.15,
+      1
+     ],
+     [
+      0.45,
+      0
+     ]
+    ]
+   },
+   {
+    "note": "warm pulse on the gold letters",
+    "type": "glow",
+    "part": "base",
+    "rect": [
+     260,
+     56,
+     456,
+     212
+    ],
+    "color": "#ffcf5a",
+    "threshold": 0.78,
+    "radius": 7,
+    "amount": 0.4,
+    "min": 0.15,
+    "cycles": 2
+   },
+   {
+    "note": "the devil's eyes pulse, and flare as the head lands",
     "type": "glow",
     "part": "devil",
     "rect": [
-     311,
-     14,
-     394,
-     62
+     318,
+     40,
+     380,
+     70
     ],
     "color": "#5dff9a",
     "threshold": 0.45,
-    "radius": 12,
+    "radius": 10,
     "amount": 0.9,
-    "min": 0.25,
-    "cycles": 4
+    "min": 0.3,
+    "cycles": 4,
+    "flash": [
+     [
+      0.3,
+      0
+     ],
+     [
+      0.35,
+      1.8
+     ],
+     [
+      0.55,
+      1
+     ]
+    ]
    },
    {
+    "note": "candle flames flicker",
     "type": "glow",
     "rect": [
-     200,
-     170,
-     230,
-     202
+     203,
+     165,
+     219,
+     192
     ],
-    "threshold": 0.55,
-    "radius": 4,
+    "threshold": 0.45,
+    "radius": 5,
     "wave": "flicker",
-    "amount": 0.4,
+    "amount": 0.6,
     "cycles": 9
    },
    {
     "type": "glow",
     "rect": [
-     485,
-     171,
-     517,
-     204
+     498,
+     165,
+     513,
+     192
     ],
-    "threshold": 0.55,
-    "radius": 4,
+    "threshold": 0.45,
+    "radius": 5,
     "wave": "flicker",
-    "amount": 0.4,
+    "amount": 0.6,
     "cycles": 11,
     "phase": 0.3
    },
    {
+    "note": "a shine sweeps across the plaque once per loop",
     "type": "shine",
     "part": "base",
     "rect": [
@@ -960,5 +1103,7 @@
     "seed": 7
    }
   ]
- }
+ },
+ "clean": "clean.json",
+ "recolor": "recolor.json"
 }
