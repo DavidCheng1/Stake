@@ -1,6 +1,9 @@
 """Ghost Duels sound effects, designed from scratch with numpy and written as MP3 to ghost-duels-web/assets/sfx/.
 
-    math-sdk\\env\\Scripts\\python.exe tools\\sound_design.py          (needs numpy and lameenc)
+    D:\\GhostDuels\\audio-tools\\venv\\Scripts\\python.exe tools\\sound_design.py          (needs numpy and lameenc)
+
+Sounds replaced by an ElevenLabs take (audio-src/elevenlabs/applied.json, see tools/elevenlabs_sfx.py) are skipped,
+so a rerun never overwrites them.
 
 Every sound is layered synthesis put through a generated stereo "crypt" reverb: haunted bells with inharmonic
 partials, vowel-formant ghost voices and choir, a drawbar pipe organ, filtered-noise whooshes, knocks and thunder.
@@ -8,6 +11,7 @@ Results are deterministic (fixed random seed). Pitched sounds are recorded at A5
 can transpose them with playbackRate. Edit a recipe below and rerun to change a sound.
 """
 
+import json
 import math
 import os
 import wave
@@ -525,8 +529,16 @@ def write_mp3(name, st):
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
+    try:
+        with open(os.path.join(SRC, "elevenlabs", "applied.json"), encoding="utf-8") as f:
+            replaced = json.load(f)
+    except FileNotFoundError:
+        replaced = {}
     total = 0
     for name, fn in SOUNDS.items():
+        if name in replaced:
+            print(f"{name:12} skipped: ElevenLabs take {replaced[name]['take']}")
+            continue
         st = fn()
         assert np.isfinite(st).all(), name
         size, dur = write_mp3(name, st)

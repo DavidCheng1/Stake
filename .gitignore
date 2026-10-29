@@ -5,3 +5,8 @@ __pycache__/
 
 # sprite sheets made by tools/sprites (big; copy what the game uses into ghost-duels-web/assets)
 sprites-out/
+
+# ElevenLabs takes and their comparison page (tools/elevenlabs_sfx.py): local only; what the game uses is in assets/sfx,
+# the original sounds in audio-src/sfx-old, the prompt and settings of each used take in audio-src/elevenlabs/applied.json
+audio-src/elevenlabs/takes/
+audio-src/elevenlabs/compare.html

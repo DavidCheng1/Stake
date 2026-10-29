@@ -1,0 +1,301 @@
+{
+  "click": {
+    "take": "click_t1.mp3",
+    "version": 2,
+    "backup": "click_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Short crisp UI click for a slot game button: a dry wooden tap with a tiny bone rattle and a faint bright tick on top. Clean, satisfying, punchy, starts instantly, no reverb, no tail.",
+      "duration_s": 0.5,
+      "prompt_influence": 0.7,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:03:01",
+      "score": 100,
+      "notes": []
+    }
+  },
+  "spin": {
+    "take": "spin_t4.mp3",
+    "version": 2,
+    "backup": "spin_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "One-shot slot machine spin: a sharp punchy thud hits instantly at the very first moment, then a fast downward whoosh as the old reels drop away, with a quick bone rattle and a spectral swirl. Short, tight, energetic, Halloween casino, loud, punchy.",
+      "duration_s": 1.2,
+      "prompt_influence": 0.55,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:06:25",
+      "score": 85,
+      "notes": [
+        "slow attack 18 ms (max 15)"
+      ]
+    }
+  },
+  "land": {
+    "take": "land_t1.mp3",
+    "version": 2,
+    "backup": "land_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "One-shot slot reel stop: a single hard, punchy coffin-lid knock with a crisp bone snap and a tight deep thud. Satisfying, dry, very short, starts instantly, no reverb, no tail.",
+      "duration_s": 0.5,
+      "prompt_influence": 0.65,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:02:20",
+      "score": 92,
+      "notes": [
+        "long: 0.48 s audible (fits 0.3 s, gets faded)"
+      ]
+    }
+  },
+  "land_heavy": {
+    "take": "land_heavy_t4.mp3",
+    "version": 2,
+    "backup": "land_heavy_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Instant heavy impact: a stone tomb slab slams down hard, a deep boom and cracking stone at the very first moment, then a short chain rattle and green magic sparks. Short, punchy, epic, Halloween, loud.",
+      "duration_s": 0.9,
+      "prompt_influence": 0.55,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:06:32",
+      "score": 90,
+      "notes": [
+        "little punch (crest 6.4 dB)"
+      ]
+    }
+  },
+  "clash": {
+    "take": "clash_t1.mp3",
+    "version": 2,
+    "backup": "clash_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "One-shot ghost duel clash: two blades collide with a huge metallic impact, a shockwave boom and a short spectral wail, sparks flying, metal ringing out. Aggressive, thrilling Halloween battle arena, loud, punchy, wide stereo.",
+      "duration_s": 1.2,
+      "prompt_influence": 0.45,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:03:35",
+      "score": 82,
+      "notes": [
+        "long: 1.2 s audible (fits 1.0 s, gets faded)",
+        "50 clipped samples"
+      ]
+    }
+  },
+  "wail": {
+    "take": "wail_t2.mp3",
+    "version": 2,
+    "backup": "wail_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "One-shot knockout: a heavy punchy hit, then a ghost's long descending wail fading away as it is banished. Dramatic and satisfying for the winner, Halloween battle, loud.",
+      "duration_s": 2.4,
+      "prompt_influence": 0.5,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:03:42",
+      "score": 100,
+      "notes": []
+    }
+  },
+  "crumble": {
+    "take": "crumble_t1.mp3",
+    "version": 2,
+    "backup": "crumble_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Old stone runes crumbling to dust: a short dry grinding crumble with falling grit and a soft low thud. Quick, light, Halloween.",
+      "duration_s": 1.0,
+      "prompt_influence": 0.55,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:04:17",
+      "score": 100,
+      "notes": []
+    }
+  },
+  "banner": {
+    "take": "banner_t1.mp3",
+    "version": 2,
+    "backup": "banner_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Banner reveal: a fast rising spectral whoosh into a bright haunted bell hit with a sparkle burst. Exciting announcement, Halloween casino, A major, punchy, loud, wide stereo.",
+      "duration_s": 2.2,
+      "prompt_influence": 0.45,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:04:26",
+      "score": 90,
+      "notes": [
+        "193 clipped samples"
+      ]
+    }
+  },
+  "bigwin": {
+    "take": "bigwin_t4.mp3",
+    "version": 3,
+    "backup": "bigwin_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "BIG WIN money payout: starts instantly with a loud cash register cha-ching, then a huge cascade of gold coins pouring and clinking into a metal slot machine tray, jackpot bells ringing and sparkling chimes. Euphoric, rich, rewarding casino jackpot, loud, punchy, wide stereo.",
+      "duration_s": 4.5,
+      "prompt_influence": 0.45,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:41:23",
+      "score": 90,
+      "notes": [
+        "123 clipped samples"
+      ]
+    }
+  },
+  "sting_devil": {
+    "take": "sting_devil_t6.mp3",
+    "version": 2,
+    "backup": "sting_devil_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Starts with an instant massive demonic hit: a brass and choir braam slams at the very first moment, with a deep pipe organ pedal and a monstrous growl, then a ringing gong. Terrifying yet triumphant, epic Halloween jackpot moment, loud, wide stereo.",
+      "duration_s": 4.5,
+      "prompt_influence": 0.5,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:07:09",
+      "score": 100,
+      "notes": []
+    }
+  },
+  "challenger": {
+    "take": "challenger_t3.mp3",
+    "version": 2,
+    "backup": "challenger_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Ghost pirate challenger entrance that starts instantly with a cannon boom, then a deep ship horn blast, rattling chains, a dark organ chord and a ghostly pirate laugh. Menacing, exciting, Halloween, cinematic, loud, punchy.",
+      "duration_s": 3.0,
+      "prompt_influence": 0.5,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T19:07:23",
+      "score": 90,
+      "notes": [
+        "25 clipped samples"
+      ]
+    }
+  },
+  "charge": {
+    "take": "charge_t6.mp3",
+    "version": 2,
+    "backup": "charge_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Fast energy charge-up riser: a reversed sparkle shimmer and a crackling electric hum swelling from silence to a loud peak, rising in pitch, cut off sharply at the end. Power about to explode, game sound effect.",
+      "duration_s": 1.0,
+      "prompt_influence": 0.6,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T20:09:37",
+      "score": 100,
+      "notes": []
+    }
+  },
+  "burst": {
+    "take": "burst_t2.mp3",
+    "version": 2,
+    "backup": "burst_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Instant explosion: a massive punchy boom and a crack of green lightning, flying debris and a short rumbling tail. Powerful, exciting game sound effect, loud, punchy.",
+      "duration_s": 2.0,
+      "prompt_influence": 0.5,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T20:09:40",
+      "score": 90,
+      "notes": [
+        "16 clipped samples"
+      ]
+    }
+  },
+  "sting": {
+    "take": "sting_t3.mp3",
+    "version": 2,
+    "backup": "sting_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Win stinger for a slot game: an instant bright chime hit, a fast ascending bell arpeggio and a big major chord with a sparkle tail. Triumphant, rewarding, exciting, loud, punchy, clean.",
+      "duration_s": 3.0,
+      "prompt_influence": 0.5,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T20:09:55",
+      "score": 90,
+      "notes": [
+        "weak A major (-0.21), sounds like F minor"
+      ]
+    }
+  },
+  "fanfare": {
+    "take": "fanfare_t6.mp3",
+    "version": 2,
+    "backup": "fanfare_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Epic bonus reveal: an instant cinematic braam hit, a magical sparkle explosion and a fast rising arpeggio of bells into a big triumphant chord. Euphoric, rewarding slot game, loud, wide stereo.",
+      "duration_s": 5.0,
+      "prompt_influence": 0.45,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T20:10:16",
+      "score": 65,
+      "notes": [
+        "slow attack 72 ms (max 25)",
+        "156 clipped samples"
+      ]
+    }
+  },
+  "fs_land": {
+    "take": "fs_land_t3.mp3",
+    "version": 2,
+    "backup": "fs_land_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Bonus symbol landing: an instant punchy hit with a golden coin ring and a crystal sparkle, short and bright. Exciting, rewarding slot game, loud, clean.",
+      "duration_s": 1.6,
+      "prompt_influence": 0.5,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T20:10:33",
+      "score": 80,
+      "notes": [
+        "14 clipped samples",
+        "harsh at the game's top pitch (x2)"
+      ]
+    }
+  },
+  "edge": {
+    "take": "edge_t5.mp3",
+    "version": 2,
+    "backup": "edge_old.mp3",
+    "date": "2026-10-29",
+    "source": {
+      "prompt": "Suspense riser for a slot game: quiet at first and growing louder and higher for two and a half seconds, a heartbeat speeding up, rising tremolo strings and a reverse cymbal swell, then a sudden stop and a short dark tail. Edge-of-your-seat anticipation.",
+      "duration_s": 3.5,
+      "prompt_influence": 0.5,
+      "model_id": "eleven_text_to_sound_v2",
+      "output_format": "mp3_44100_128",
+      "generated": "2026-10-29T20:10:49",
+      "score": 100,
+      "notes": [
+        "865 ms silence before it (trimmed when applied)"
+      ]
+    }
+  }
+}

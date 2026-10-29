@@ -1,0 +1,541 @@
+{
+  "_about": "ElevenLabs sound-effect spec for Ghost Duels: one entry per file in ghost-duels-web/assets/sfx. 'use' is how game.js plays it (sound module, use(...) calls), 'gen' is the request, 'judge' the measurable bar a take must clear. See README.md in this folder.",
+  "defaults": {
+    "model_id": "eleven_text_to_sound_v2",
+    "output_format": "mp3_44100_128",
+    "key": "A minor (game scale: A Phrygian; music: Spooky Carousel, A minor, ~96 BPM); wins resolve to A major",
+    "style": "Haunted Halloween casino: haunted bells, ghost choir, pipe organ, bone and wood, chains, thunder, green spectral magic"
+  },
+  "sounds": [
+    {
+      "name": "click",
+      "role": "Any button press (bet +/-, menus, autoplay, info).",
+      "use": {
+        "vol": 0.45,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "very often"
+      },
+      "gen": {
+        "duration_s": 0.5,
+        "prompt_influence": 0.7,
+        "takes": 2,
+        "prompt": "Short crisp UI click for a slot game button: a dry wooden tap with a tiny bone rattle and a faint bright tick on top. Clean, satisfying, punchy, starts instantly, no reverb, no tail."
+      },
+      "judge": {
+        "max_audible_s": 0.15,
+        "max_attack_ms": 12
+      }
+    },
+    {
+      "name": "spin",
+      "role": "Spin pressed: the old board falls out before the new symbols drop. Every round, thousands of times.",
+      "use": {
+        "vol": 0.5,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "every spin"
+      },
+      "gen": {
+        "duration_s": 1.2,
+        "prompt_influence": 0.55,
+        "takes": 6,
+        "prompt": "One-shot slot machine spin: a sharp punchy thud hits instantly at the very first moment, then a fast downward whoosh as the old reels drop away, with a quick bone rattle and a spectral swirl. Short, tight, energetic, Halloween casino, loud, punchy."
+      },
+      "judge": {
+        "max_audible_s": 1.1,
+        "max_attack_ms": 15,
+        "note": "not too bright: it repeats every spin"
+      }
+    },
+    {
+      "name": "land",
+      "role": "A reel comes to rest. 7 per spin, faster in turbo; the game raises it a little per reel.",
+      "use": {
+        "vol": 0.5,
+        "rates": [
+          1,
+          1.24
+        ],
+        "frequency": "7 per spin"
+      },
+      "gen": {
+        "duration_s": 0.5,
+        "prompt_influence": 0.65,
+        "takes": 3,
+        "prompt": "One-shot slot reel stop: a single hard, punchy coffin-lid knock with a crisp bone snap and a tight deep thud. Satisfying, dry, very short, starts instantly, no reverb, no tail."
+      },
+      "judge": {
+        "max_audible_s": 0.3,
+        "max_attack_ms": 10,
+        "single_hit": true,
+        "note": "needs mid-range knock, phone speakers drop the low thud"
+      }
+    },
+    {
+      "name": "land_heavy",
+      "role": "A VS reel or a ghost crate slams down (also under every crate landing in the bonus).",
+      "use": {
+        "vol": 0.65,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "often in duels and bonus"
+      },
+      "gen": {
+        "duration_s": 0.9,
+        "prompt_influence": 0.55,
+        "takes": 6,
+        "prompt": "Instant heavy impact: a stone tomb slab slams down hard, a deep boom and cracking stone at the very first moment, then a short chain rattle and green magic sparks. Short, punchy, epic, Halloween, loud."
+      },
+      "judge": {
+        "max_audible_s": 0.9,
+        "max_attack_ms": 10
+      }
+    },
+    {
+      "name": "chime",
+      "keep": "Pitched note source: the game plays it as A5 and transposes it into the win arpeggios (2-5 notes, scale steps) and the small duel sting. A generated sound has no exact pitch and usually more than one note; keep the designed bell. Possible later: generate one bell strike and retune it to exactly 880 Hz.",
+      "role": "Win arpeggios, small duel win.",
+      "use": {
+        "vol": [
+          0.22,
+          0.32
+        ],
+        "rates": "scale steps from A5",
+        "frequency": "every win"
+      }
+    },
+    {
+      "name": "crystal",
+      "keep": "Pitched note source (A5) for runes landing and being collected, stepped up the scale per rune. Same reason as chime.",
+      "role": "Bonus: rune lands, rune collected.",
+      "use": {
+        "vol": [
+          0.2,
+          0.32
+        ],
+        "rates": "scale steps from A5",
+        "frequency": "bonus"
+      }
+    },
+    {
+      "name": "tumble",
+      "role": "Winning symbols vanish (every cascade step).",
+      "use": {
+        "vol": 0.4,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "every win"
+      },
+      "gen": {
+        "duration_s": 0.8,
+        "prompt_influence": 0.55,
+        "takes": 6,
+        "prompts": [
+          "One-shot: a bright juicy pop as winning slot symbols burst, with a quick sparkle shower and a tiny coin jingle. Starts instantly, satisfying, rewarding, short, punchy, casino game.",
+          "One-shot: winning slot symbols shatter like glass into glittering sparkles, a crisp crystal crash with a quick magical shimmer tail. Starts instantly, satisfying, short, punchy.",
+          "One-shot: a ghostly poof of green smoke with a bright magical sparkle burst and a soft upward whoosh. Starts instantly, short, satisfying, Halloween game."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 0.7,
+        "max_attack_ms": 15
+      }
+    },
+    {
+      "name": "charge",
+      "role": "The small VS symbol charges up, right before it bursts into a VS reel.",
+      "use": {
+        "vol": 0.45,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "every VS reel"
+      },
+      "gen": {
+        "duration_s": 1.0,
+        "prompt_influence": 0.6,
+        "takes": 6,
+        "prompts": [
+          "Reverse cymbal swell: a reversed crash cymbal and a reversed magic whoosh, quiet at first and growing louder and louder for one second, ending abruptly at its loudest point. Electric green energy crackle, tension, Halloween.",
+          "Fast energy charge-up riser: a reversed sparkle shimmer and a crackling electric hum swelling from silence to a loud peak, rising in pitch, cut off sharply at the end. Power about to explode, game sound effect."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 1.0,
+        "rising": true,
+        "note": "must end at its loudest, the burst follows"
+      }
+    },
+    {
+      "name": "burst",
+      "role": "The VS reel bursts open. Also reused, slightly higher (rate 1.15), as the slam that starts a duel.",
+      "use": {
+        "vol": 0.8,
+        "rates": [
+          1,
+          1.15
+        ],
+        "frequency": "every VS reel and duel"
+      },
+      "gen": {
+        "duration_s": 2.0,
+        "prompt_influence": 0.5,
+        "takes": 6,
+        "prompts": [
+          "Instant cinematic impact hit: a huge punchy boom with a bright glass shatter and an explosion of magic sparkles, short deep tail. Epic, exciting feature reveal for a slot game, loud, wide stereo.",
+          "Instant explosion: a massive punchy boom and a crack of green lightning, flying debris and a short rumbling tail. Powerful, exciting game sound effect, loud, punchy.",
+          "Wild reel unlocked: an instant heavy metal gate slam and a magical burst of energy with a bright sparkle shimmer, short tail. Exciting, powerful, casino game, loud, punchy."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 1.8,
+        "max_attack_ms": 15
+      }
+    },
+    {
+      "name": "clash",
+      "role": "Two duel fighters collide; harder and lower the higher the stakes.",
+      "use": {
+        "vol": [
+          0.45,
+          0.75
+        ],
+        "rates": [
+          0.85,
+          1
+        ],
+        "frequency": "every duel round"
+      },
+      "gen": {
+        "duration_s": 1.2,
+        "prompt_influence": 0.45,
+        "takes": 3,
+        "prompt": "One-shot ghost duel clash: two blades collide with a huge metallic impact, a shockwave boom and a short spectral wail, sparks flying, metal ringing out. Aggressive, thrilling Halloween battle arena, loud, punchy, wide stereo."
+      },
+      "judge": {
+        "max_audible_s": 1.0,
+        "max_attack_ms": 10
+      }
+    },
+    {
+      "name": "wail",
+      "role": "A duel fighter is knocked out (the other one wins the round).",
+      "use": {
+        "vol": 0.55,
+        "rates": [
+          0.94,
+          1.06
+        ],
+        "frequency": "duels"
+      },
+      "gen": {
+        "duration_s": 2.4,
+        "prompt_influence": 0.5,
+        "takes": 2,
+        "prompt": "One-shot knockout: a heavy punchy hit, then a ghost's long descending wail fading away as it is banished. Dramatic and satisfying for the winner, Halloween battle, loud."
+      },
+      "judge": {
+        "max_audible_s": 2.3,
+        "max_attack_ms": 20
+      }
+    },
+    {
+      "name": "toll",
+      "role": "Deep bell toll. Also played an octave up (rate 2) under character wins and crate landings.",
+      "use": {
+        "vol": [
+          0.22,
+          0.7
+        ],
+        "rates": [
+          1,
+          2
+        ],
+        "frequency": "often"
+      },
+      "pitched": "A2 (110 Hz): retune the chosen take to exactly A2; reject takes more than 1 semitone off or with more than one strike",
+      "gen": {
+        "duration_s": 4.0,
+        "prompt_influence": 0.6,
+        "takes": 2,
+        "prompt": "A single deep haunted church bell toll, one strike only, note A2, long ringing decay with a dark cathedral reverb. Powerful, ominous, majestic, high-quality professional recording."
+      },
+      "judge": {
+        "max_audible_s": 3.6,
+        "single_hit": true,
+        "pitch_hz": 110
+      },
+      "keep": "ElevenLabs ignored the note (2 takes came out around E, 5 semitones off); the designed toll is exactly A2, which the game needs because it also plays it an octave up under wins."
+    },
+    {
+      "name": "sting",
+      "role": "Duel won by the pirate (tier 2 multipliers x20-x100): the music dips under it.",
+      "use": {
+        "vol": 0.6,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "duels"
+      },
+      "gen": {
+        "duration_s": 3.0,
+        "prompt_influence": 0.5,
+        "takes": 6,
+        "prompts": [
+          "Short victory fanfare: an instant brass hit and a bright rising arpeggio of bells into a triumphant major chord, with a sparkle and a coin jingle. Rewarding, exciting slot game win, loud, punchy.",
+          "Duel victory stinger: an instant ringing sword clash, then a triumphant ghost choir shout and a shower of coins and sparkles. Rewarding, exciting, Halloween casino, loud, punchy, wide stereo.",
+          "Win stinger for a slot game: an instant bright chime hit, a fast ascending bell arpeggio and a big major chord with a sparkle tail. Triumphant, rewarding, exciting, loud, punchy, clean."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 2.9,
+        "max_attack_ms": 20,
+        "tonal": "A major"
+      }
+    },
+    {
+      "name": "sting_devil",
+      "role": "The devil wins a duel (x150-x1000), the devil enters as challenger (rate 0.92), and the layer on top of the max win.",
+      "use": {
+        "vol": [
+          0.45,
+          0.7
+        ],
+        "rates": [
+          0.92,
+          1
+        ],
+        "frequency": "rare, biggest moments"
+      },
+      "gen": {
+        "duration_s": 4.5,
+        "prompt_influence": 0.5,
+        "takes": 6,
+        "prompt": "Starts with an instant massive demonic hit: a brass and choir braam slams at the very first moment, with a deep pipe organ pedal and a monstrous growl, then a ringing gong. Terrifying yet triumphant, epic Halloween jackpot moment, loud, wide stereo."
+      },
+      "judge": {
+        "max_audible_s": 4.3,
+        "max_attack_ms": 25
+      }
+    },
+    {
+      "name": "fanfare",
+      "role": "Free spins (Ghost Crates bonus) triggered: the music dips 3.2 s under it.",
+      "use": {
+        "vol": 0.75,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "bonus trigger"
+      },
+      "gen": {
+        "duration_s": 5.0,
+        "prompt_influence": 0.45,
+        "takes": 6,
+        "prompts": [
+          "Bonus unlocked jackpot stinger: an instant huge impact with a ringing jackpot bell, then a triumphant brass and choir chord, coins and sparkles exploding, and a rising magical whoosh at the end. Euphoric, epic slot game bonus, loud, wide stereo.",
+          "Free spins triggered: an instant thunder crack and a church bell strike, a ghostly choir shout, then rapid ringing bells and a cascade of coins and sparkles. Euphoric, exciting Halloween casino bonus, loud, punchy, wide stereo.",
+          "Epic bonus reveal: an instant cinematic braam hit, a magical sparkle explosion and a fast rising arpeggio of bells into a big triumphant chord. Euphoric, rewarding slot game, loud, wide stereo."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 4.8,
+        "max_attack_ms": 25,
+        "tonal": "A major"
+      },
+      "finish": {
+        "close_gaps_s": 0.15,
+        "_why": "the chosen take has half a second of silence between the explosion and the bells"
+      }
+    },
+    {
+      "name": "bigwin",
+      "role": "Big win (20x bet or more): a money payout. The max win adds sting_devil on top. The music dips 3-4 s.",
+      "use": {
+        "vol": 0.8,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "big wins"
+      },
+      "gen": {
+        "duration_s": 4.5,
+        "prompt_influence": 0.45,
+        "takes": 9,
+        "prompt": "BIG WIN money payout: starts instantly with a loud cash register cha-ching, then a huge cascade of gold coins pouring and clinking into a metal slot machine tray, jackpot bells ringing and sparkling chimes. Euphoric, rich, rewarding casino jackpot, loud, punchy, wide stereo."
+      },
+      "judge": {
+        "max_audible_s": 4.4,
+        "max_attack_ms": 25
+      }
+    },
+    {
+      "name": "heartbeat",
+      "role": "Bonus: a life is lost (a spin without a hit). A small setback, so dramatic but short, never sad.",
+      "use": {
+        "vol": 0.7,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "bonus"
+      },
+      "gen": {
+        "duration_s": 1.6,
+        "prompt_influence": 0.55,
+        "takes": 6,
+        "prompts": [
+          "One-shot life lost: a sharp glass crack and a heavy heartbeat thump, then a short descending ghostly whoosh. Tense, dramatic game sound effect, punchy, clear mid-range, not sad.",
+          "One-shot: two quick heartbeat thumps with a bright cracking sound on top and a short eerie whisper fading away. Tense, dramatic, Halloween game, punchy, clear on small speakers."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 1.5,
+        "max_attack_ms": 15
+      }
+    },
+    {
+      "name": "crumble",
+      "role": "Bonus end: runes without a crate crumble to dust. A small loss, so understated on purpose.",
+      "use": {
+        "vol": 0.5,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "bonus end"
+      },
+      "gen": {
+        "duration_s": 1.0,
+        "prompt_influence": 0.55,
+        "takes": 2,
+        "prompt": "Old stone runes crumbling to dust: a short dry grinding crumble with falling grit and a soft low thud. Quick, light, Halloween."
+      },
+      "judge": {
+        "max_audible_s": 0.9,
+        "max_attack_ms": 20
+      }
+    },
+    {
+      "name": "challenger",
+      "role": "The ghost pirate enters as challenger in a duel (the music dips 1.6 s).",
+      "use": {
+        "vol": 0.6,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "duels"
+      },
+      "gen": {
+        "duration_s": 3.0,
+        "prompt_influence": 0.5,
+        "takes": 5,
+        "prompt": "Ghost pirate challenger entrance that starts instantly with a cannon boom, then a deep ship horn blast, rattling chains, a dark organ chord and a ghostly pirate laugh. Menacing, exciting, Halloween, cinematic, loud, punchy."
+      },
+      "judge": {
+        "max_audible_s": 2.8,
+        "max_attack_ms": 40
+      }
+    },
+    {
+      "name": "banner",
+      "role": "A banner appears (round and feature announcements); the music dips 2 s.",
+      "use": {
+        "vol": 0.4,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "features"
+      },
+      "gen": {
+        "duration_s": 2.2,
+        "prompt_influence": 0.45,
+        "takes": 3,
+        "prompt": "Banner reveal: a fast rising spectral whoosh into a bright haunted bell hit with a sparkle burst. Exciting announcement, Halloween casino, A major, punchy, loud, wide stereo."
+      },
+      "judge": {
+        "max_audible_s": 2.0,
+        "tonal": "A major"
+      }
+    },
+    {
+      "name": "fs_land",
+      "role": "An FS (scatter) symbol lands; the loudest effect, each further FS in a spin 2 semitones higher (up to an octave).",
+      "use": {
+        "vol": 1.0,
+        "rates": [
+          1,
+          2
+        ],
+        "frequency": "scatters"
+      },
+      "note": "The current file is built from an ElevenLabs download (audio-src/Magical_scatter_symb_#4...mp3) and peaks at +0.8 dBFS (clips). Check under which plan it was generated.",
+      "gen": {
+        "duration_s": 1.6,
+        "prompt_influence": 0.5,
+        "takes": 6,
+        "prompts": [
+          "Slot scatter symbol landing: an instant heavy thud with a bright magical bell strike and a shimmering sparkle burst, short shiny tail. Exciting, rewarding, special, casino game, loud, punchy, clean.",
+          "Special symbol lands: an instant deep impact and a glowing magical chime chord with a quick rising shimmer. Exciting, mysterious, Halloween slot game, loud, punchy.",
+          "Bonus symbol landing: an instant punchy hit with a golden coin ring and a crystal sparkle, short and bright. Exciting, rewarding slot game, loud, clean."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 1.5,
+        "max_attack_ms": 12,
+        "note": "must still sound good an octave up: not too much extreme high end"
+      },
+      "finish": {
+        "high_shelf": [
+          7000,
+          -6
+        ],
+        "_why": "the game plays it up to an octave higher; the bright top would turn shrill"
+      }
+    },
+    {
+      "name": "edge",
+      "role": "Tease: one FS away, under each teasing reel (2.4 s body plus tail), a semitone higher per further reel; the music dips.",
+      "use": {
+        "vol": 0.8,
+        "rates": [
+          1,
+          1.26
+        ],
+        "frequency": "near a bonus"
+      },
+      "gen": {
+        "duration_s": 3.5,
+        "prompt_influence": 0.5,
+        "takes": 6,
+        "prompts": [
+          "Suspense riser for a slot game: quiet at first and growing louder and higher for two and a half seconds, a heartbeat speeding up, rising tremolo strings and a reverse cymbal swell, then a sudden stop and a short dark tail. Edge-of-your-seat anticipation.",
+          "Tension build-up: a fast ticking clock and a pulsing heartbeat speeding up over a rising synth drone and a reverse whoosh, getting louder until a sudden cut at two and a half seconds. Anticipation, casino game, Halloween."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 3.5,
+        "rising": true,
+        "peak_at_s": [
+          2.0,
+          2.6
+        ]
+      }
+    }
+  ]
+}
