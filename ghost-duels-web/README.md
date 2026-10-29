@@ -7,6 +7,7 @@ Static Stake Engine frontend for Ghost Duels (Geisterduell), built from `GhostDu
 | `index.html`, `style.css` | Page and styles |
 | `game.js` | Animations and round playback. Every outcome comes from the RGS book events |
 | `rgs.js` | Stake Engine RGS client: URL session, wallet calls, replay, money formatting |
+| `loader.js` | Studio intro (Maestro Studios logo), which is also the loading screen: a glint with a small synthesized sound, a thin line showing real progress, then it fades into the game as the music fades in |
 | `assets/`, `fonts/` | Images and bundled fonts (Creepster, Barlow Condensed, SIL OFL), so nothing loads from third parties |
 
 ## How a round works

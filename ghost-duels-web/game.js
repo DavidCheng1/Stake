@@ -1460,6 +1460,7 @@ const sound = (() => {
   const st = { music: 65, sfx: 80, muted: false }; // sliders 0–100
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
   let ctx, master, musicBus, sfxBus, duckBus, verb, seq, noise, started = false, loadSfx = () => {};
+  let hold = true; // the music stays silent while the studio logo is up (release() lets it in)
   // effects of the current sequence: dry to the effects bus, wet into the reverb; a skip fades this pair out (cut)
   const newSeq = () => { const dry = ctx.createGain(), wet = ctx.createGain(); dry.connect(sfxBus); wet.connect(verb); return { dry, wet }; };
   const file = fetch(MUSIC_SRC).then(r => { if (!r.ok) throw new Error("music " + r.status); return r.arrayBuffer(); });
@@ -1469,14 +1470,16 @@ const sound = (() => {
     if (!ctx) return;
     const t = ctx.currentTime, k = Math.max(sec / 3, .001);
     master.gain.setTargetAtTime(st.muted ? 0 : 1, t, k);
-    musicBus.gain.setTargetAtTime(level(st.music), t, k);
+    musicBus.gain.setTargetAtTime(hold ? 0 : level(st.music), t, k);
     sfxBus.gain.setTargetAtTime(level(st.sfx), t, k);
   }
   function start() {
     started = true;
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
-    ctx = new AC(); ctx.resume(); // created inside the gesture, so it may play
+    // created inside a gesture it may play; created without one (release() before any tap) the browser may keep it
+    // suspended until the first tap, which wake() then resumes
+    ctx = new AC(); Promise.resolve(ctx.resume()).catch(() => {});
     master = ctx.createGain(); master.connect(ctx.destination);
     duckBus = ctx.createGain(); duckBus.connect(master); // lowers the music under big moments (duck)
     musicBus = ctx.createGain(); musicBus.connect(duckBus);
@@ -1727,9 +1730,15 @@ const sound = (() => {
 
   return {
     ...fx, st, duck, cut,
+    // a tap or key during the studio logo: start the audio silently, so the music can play as soon as the game shows
+    unlock: wake,
+    // the game is on screen: fade the music in (it starts with the next tap if the browser still blocks sound)
+    release() { hold = false; if (!started) start(); else apply(1.2); },
     set(part) { Object.assign(st, part); try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} apply(); },
   };
 })();
+LOADER.onGesture(sound.unlock);
+LOADER.fading.then(sound.release);
 
 // ---- sound panel: Music and Effects sliders plus mute, opened from the speaker in the top-right corner
 const musicBtn = document.getElementById("musicBtn"), sndMenu = document.getElementById("sndMenu");
@@ -1786,7 +1795,8 @@ async function boot() {
   lock(true);
   say(i18n("Lädt…", "Loading…"));
   let s;
-  try { s = await RGS.init(); } catch (err) { console.error(err); say(RGS.errorText(err)); showError(RGS.errorText(err)); return; }
+  try { s = await RGS.init(); } catch (err) { console.error(err); say(RGS.errorText(err)); showError(RGS.errorText(err)); LOADER.ready(); return; }
+  LOADER.ready();
   try {
     balance = s.balance; BETS = s.betLevels;
     betIdx = Math.max(0, BETS.indexOf(s.defaultBet));
@@ -2336,7 +2346,7 @@ layout();
 addEventListener("resize", layout);
 
 // ---------- Intro: the three features, until the first click or key press (replays skip it) ----------
-// The click also counts as the gesture that starts the audio, so the music begins as the game appears.
+// The music already fades in as the game appears (sound.release); where the browser still blocks sound, this click starts it.
 const introDone = new Promise(resolve => {
   const el = document.getElementById("intro");
   if (RGS.replay) { el.remove(); resolve(); return; }
@@ -2358,7 +2368,8 @@ const introDone = new Promise(resolve => {
       i18n(`Gewinne bis zu ${MAX_WIN_X.toLocaleString("de")}× deinen Einsatz`, `Win up to ${MAX_WIN_X.toLocaleString("en")}× your bet`)));
   const go = div("intro-go"); go.id = "introGo"; go.textContent = i18n("Klicken zum Fortfahren", "Click to continue");
   el.append(logo, cards, go);
-  if (!RM) [...cards.children].forEach((c, i) => c.animate([{ opacity: 0, transform: "translateY(18%) scale(.9)" }, { opacity: 1 }], { duration: 520, delay: 120 + i * 140, easing: "cubic-bezier(.2,.9,.3,1.1)", fill: "backwards" }));
+  // the cards fly in as the loading screen fades away
+  if (!RM) LOADER.fading.then(() => [...cards.children].forEach((c, i) => c.animate([{ opacity: 0, transform: "translateY(18%) scale(.9)" }, { opacity: 1 }], { duration: 520, delay: 120 + i * 140, easing: "cubic-bezier(.2,.9,.3,1.1)", fill: "backwards" })));
   let closed = false;
   const close = () => {
     if (closed) return; closed = true;
@@ -2373,4 +2384,7 @@ const introDone = new Promise(resolve => {
   el.focus();
 });
 
+// the loading bar waits for the images of the first screen
+LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp",
+  RM ? "assets/lich-still.webp" : "assets/lich-idle.webp"]);
 boot();
