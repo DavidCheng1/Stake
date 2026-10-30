@@ -1416,28 +1416,49 @@ const buyCards = BUYS.map(b => {
   document.getElementById("buyOpts").appendChild(card);
   return { b, amount, times, go };
 });
-function updateBuy() { buyBtn.disabled = busy || autoOn || loading || RGS.replay; boostBtn.disabled = busy || autoOn || loading || RGS.replay; }
-
-// ---------- FS Boost switch: Off → 3× → 6× → Off. [31] a mode over 2× the bet is never one press away from a bet;
-// switching only changes the next spins, and the switch shows their real price ----------
+// ---------- FS Boost: chosen in the Bonus menu, Off / 3× / 6×. [31] a mode over 2× the bet is never one press away
+// from a bet; choosing only changes the next spins, each choice shows their real price, and Buy Bonus shows the state ----------
 let boost = null; // off on every visit, so nobody plays at 3× or 6× by accident
-const boostBtn = document.getElementById("boostBtn");
+const bbBoost = document.getElementById("bbBoost");
+const boostOpts = (() => {
+  const row = document.getElementById("buyBoost"), info = div("bst-info"), h = document.createElement("h3"), p = document.createElement("p"), seg = div("bst-seg");
+  h.textContent = BOOST_NAME;
+  p.textContent = i18n("FS-Symbole landen in jedem Spin öfter. Bleibt an, bis du ihn ausschaltest; Autoplay spielt mit ihm.",
+    "FS symbols land more often on every spin. Stays on until you switch it off; Autoplay uses it.");
+  seg.setAttribute("role", "group"); seg.setAttribute("aria-label", BOOST_NAME);
+  info.append(h, p); row.append(info, seg);
+  return [null, ...BOOSTS].map(b => {
+    const btn = document.createElement("button"), lv = document.createElement("span"), pr = document.createElement("span");
+    btn.type = "button"; btn.className = "bst-opt" + (b === BOOSTS[1] ? " six" : ""); lv.className = "bst-lv"; pr.className = "bst-pr";
+    btn.append(lv, pr); seg.appendChild(btn);
+    btn.addEventListener("click", () => {
+      if (btn.disabled || boost === b) return;
+      boost = b; showBoost(); sound.click();
+      say(boost ? i18n(`${boost.name} an · ${money(bet * boost.cost)} pro Spin`, `${boost.name} on · ${money(bet * boost.cost)} per spin`) : i18n("FS-Boost aus", "FS Boost off"));
+    });
+    return { b, btn, lv, pr };
+  });
+})();
 function showBoost() {
-  const price = money(bet * (boost ? boost.cost : 1)), state = boost ? boost.level : i18n("Aus", "Off");
-  boostBtn.classList.toggle("on", !!boost); boostBtn.classList.toggle("six", boost === BOOSTS[1]); boostBtn.setAttribute("aria-pressed", String(!!boost));
-  q(boostBtn, ".bo-top").textContent = BOOST_NAME;
-  q(boostBtn, ".bo-main").textContent = state;
-  q(boostBtn, ".bo-cost").textContent = `${price} ${i18n("pro Spin", "per spin")}`;
-  boostBtn.setAttribute("aria-label", `${BOOST_NAME}: ${state}, ${price} ${i18n("pro Spin", "per spin")}. ${i18n("Drücken wechselt Aus, 3×, 6×", "Press to switch Off, 3×, 6×")}`);
+  const perSpin = i18n("pro Spin", "per spin"), off = i18n("Aus", "Off");
+  for (const o of boostOpts) {
+    const on = o.b === boost;
+    o.btn.classList.toggle("on", on); o.btn.setAttribute("aria-pressed", String(on));
+    o.lv.textContent = o.b ? o.b.level : off;
+    o.pr.textContent = `${money(bet * (o.b ? o.b.cost : 1))} ${perSpin}`;
+  }
+  buyBtn.classList.toggle("boosted", !!boost); buyBtn.classList.toggle("six", boost === BOOSTS[1]);
+  bbBoost.textContent = `${BOOST_NAME} ${boost ? boost.level : off}`;
+  buyBtn.setAttribute("aria-label", i18n("Bonus kaufen", "Buy Bonus") + ` · ${BOOST_NAME}: ` + (boost ? `${boost.level}, ${money(bet * boost.cost)} ${perSpin}` : off));
 }
-boostBtn.addEventListener("click", () => {
-  if (boostBtn.disabled) return;
-  boost = boost === null ? BOOSTS[0] : boost === BOOSTS[0] ? BOOSTS[1] : null; showBoost(); sound.click();
-  say(boost ? i18n(`${boost.name} an · ${money(bet * boost.cost)} pro Spin`, `${boost.name} on · ${money(bet * boost.cost)} per spin`) : i18n("FS-Boost aus", "FS Boost off"));
-});
+function updateBuy() {
+  buyBtn.disabled = busy || autoOn || loading || RGS.replay;
+  for (const o of boostOpts) o.btn.disabled = buyBtn.disabled;
+}
 function openBuy(open) {
   buyDlg.hidden = !open;
   if (!open) return buyBtn.focus();
+  showBoost();
   for (const { b, amount, times, go } of buyCards) {
     const short = balance < bet * b.cost;
     amount.textContent = money(bet * b.cost);
@@ -2222,8 +2243,8 @@ rulesSection(i18n("Geisterkisten-Bonus", "Ghost Crates bonus"), [[
 ]]);
 rulesSection(BOOST_NAME, [
   BOOSTS.map(b => [`${b.name} (${num(b.cost)}× ${i18n("Einsatz", "bet")}):`, b.text]),
-  i18n("Der Schalter über „Bonus kaufen“ wechselt zwischen Aus, 3× und 6× und zeigt den Preis pro Spin für den aktuellen Einsatz. Der Boost bleibt an, bis du ihn ausschaltest; Autoplay spielt mit ihm.",
-    "The switch above Buy Bonus cycles Off, 3× and 6× and shows the price per spin at the current bet. The boost stays on until you switch it off; Autoplay uses it.")]);
+  i18n("Den FS-Boost wählst du im Bonusmenü („Bonus kaufen“): Aus, 3× oder 6×, jeweils mit dem Preis pro Spin für den aktuellen Einsatz. Der Knopf „Bonus kaufen“ zeigt, ob er an ist. Der Boost bleibt an, bis du ihn ausschaltest; Autoplay spielt mit ihm.",
+    "Choose the FS Boost in the Bonus menu (Buy Bonus): Off, 3× or 6×, each with its price per spin at the current bet. The Buy Bonus button shows whether it is on. The boost stays on until you switch it off; Autoplay uses it.")]);
 rulesSection(i18n("Bonuskauf", "Bonus buy"), [
   i18n("„Bonus kaufen“ öffnet ein Menü mit diesen Optionen und ihrem Preis für den aktuellen Einsatz. Gekauft wird erst, wenn du bei einer Option auf Kaufen drückst. Jede Runde beginnt auf einem normalen Spielfeld.",
     "Buy Bonus opens a menu with these options and their price at the current bet. Nothing is bought until you press Buy on an option. Every round starts on a normal board."),
@@ -2247,8 +2268,7 @@ rulesSection(i18n("Bedienung", "Controls"), [[
   [i18n("Einsatz − / +:", "Bet − / +:"), i18n("Senkt oder erhöht den Einsatz innerhalb der angebotenen Stufen.", "Lowers or raises the bet within the levels offered.")],
   [i18n("Autoplay:", "Autoplay:"), i18n("Wähle die Anzahl Spins und drücke Start. Erneut drücken stoppt. Reicht das Guthaben nicht, endet Autoplay.", "Choose the number of spins, then press Start. Press again to stop. Autoplay ends when the balance is too low.")],
   [i18n("Turbo:", "Turbo:"), i18n("Spielt Runden etwa doppelt so schnell. Erneut drücken schaltet ihn aus.", "Plays rounds about twice as fast. Press again to turn it off.")],
-  [`${BOOST_NAME}:`, i18n("Wechselt den FS-Boost für die nächsten Spins zwischen Aus, 3× und 6× (siehe oben).", "Switches the FS Boost for the next spins between Off, 3× and 6× (see above).")],
-  [i18n("Bonus kaufen:", "Buy Bonus:"), i18n("Öffnet den Bonuskauf mit seinem Preis (siehe oben).", "Opens the bonus buy with its price (see above).")],
+  [i18n("Bonus kaufen:", "Buy Bonus:"), i18n("Öffnet das Bonusmenü: oben der FS-Boost für die nächsten Spins (Aus, 3×, 6×), darunter die kaufbaren Boni mit ihrem Preis (siehe oben). Der Knopf zeigt, ob der FS-Boost an ist.", "Opens the Bonus menu: at the top the FS Boost for the next spins (Off, 3×, 6×), below it the bonuses to buy with their prices (see above). The button shows whether the FS Boost is on.")],
   [i18n("Ton (oben rechts):", "Sound (top right):"), i18n("Lautstärke für Musik und Effekte und Stummschalten aller Töne.", "Music and effects volume, and mute for all sound.")],
   [i18n("Info:", "Info:"), i18n("Öffnet diese Regeln.", "Opens these rules.")],
 ]]);
@@ -2325,7 +2345,7 @@ addEventListener("resize", () => FIT.forEach(fitVal));
 // The real controls and values move into the panel (listeners and ids stay), and menus and dialogs into a layer
 // sized for the phone; turning the phone back puts everything where it was.
 const PANEL = [["msg", "hMsg"], ["balVal", "hBal"], ["betMinus", "hBetM"], ["betVal", "hBetM"], ["betPlus", "hBetM"], ["winVal", "hWin"], ["multChip", "hWin"],
-  ["turboBtn", "hTurbo"], ["autoBtn", "hAuto"], ["spin", "hSpin"], ["infoBtn", "hInfo"], ["musicBtn", "hSound"], ["buyBtn", "hBuy"], ["boostBtn", "hBoost"]];
+  ["turboBtn", "hTurbo"], ["autoBtn", "hAuto"], ["spin", "hSpin"], ["infoBtn", "hInfo"], ["musicBtn", "hSound"], ["buyBtn", "hBuy"]];
 const LAYER = ["autoMenu", "sndMenu", "buyDlg", "rules", "replayBar", "replayDlg", "errDlg", "intro"];
 const homes = new Map(); // a comment marks each element's place in the landscape layout
 for (const id of [...PANEL.map(p => p[0]), ...LAYER]) { const el = document.getElementById(id), mark = document.createComment(id); el.before(mark); homes.set(id, mark); }

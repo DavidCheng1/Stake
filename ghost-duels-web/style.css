@@ -654,8 +654,8 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 @media (prefers-reduced-motion: reduce) { .intro-logo, .intro-go { animation: none !important; } }
 
 /* Bonus buy: a gold plaque docked on the dashboard's left wing, and its confirmation dialog */
-.buy-btn { all: unset; box-sizing: border-box; position: absolute; left: 8.6%; top: 71%; width: 15%; height: 10.2%; z-index: 12; cursor: pointer;
-  display: grid; grid-template-columns: auto 1fr; align-items: center; gap: .5cqw; padding: 0 .9cqw 0 .5cqw; border-radius: 1cqw;
+.buy-btn { all: unset; box-sizing: border-box; position: absolute; left: 8.6%; top: 60.6%; width: 15%; height: 20.6%; z-index: 12; cursor: pointer;
+  display: grid; grid-template-columns: 1fr; justify-items: center; align-content: center; gap: .45cqw; padding: .6cqw .5cqw; border-radius: 1cqw;
   background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border: .3cqw solid #c99a3e;
   box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .7), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 1.4cqw rgb(255 79 210 / .45);
   animation: buyGlow 2.2s ease-in-out infinite; transition: transform .1s, filter .2s; }
@@ -664,30 +664,18 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .buy-btn:active { transform: scale(.95); }
 .buy-btn:focus-visible { outline: .3cqw solid var(--ghost); outline-offset: .2cqw; }
 .buy-btn:disabled { cursor: default; filter: grayscale(.85) brightness(.7); animation: none; }
-/* FS Boost switch (a bet variant): above Buy Bonus; when on it glows green and shows the real price per spin */
-.boost-btn { all: unset; box-sizing: border-box; position: absolute; left: 8.6%; top: 60.6%; width: 15%; height: 9.4%; z-index: 12; cursor: pointer;
-  display: grid; justify-items: center; align-content: center; gap: .15cqw; border-radius: 1cqw;
-  background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border: .3cqw solid #6f7a6f;
-  box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .75), 0 .5cqw 1.2cqw rgb(0 0 0 / .6); transition: transform .1s, filter .2s, border-color .2s; }
-.boost-btn:hover { filter: brightness(1.15); }
-.boost-btn:active { transform: scale(.95); }
-.boost-btn:focus-visible { outline: .3cqw solid var(--ghost); outline-offset: .2cqw; }
-.boost-btn:disabled { cursor: default; filter: grayscale(.85) brightness(.7); }
-.bo-top { font: 800 1.05cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: #e9e2c8; text-shadow: 0 .1cqw 0 #000; }
-.bo-main { font: 400 2.1cqw/1 var(--display); letter-spacing: .04em; color: #9aa59c; -webkit-text-stroke: .08em #0c1210; paint-order: stroke fill; }
-.bo-cost { font: 700 .95cqw/1 var(--ui); color: #c9d4cb; text-shadow: 0 .1cqw 0 #000; font-variant-numeric: tabular-nums; }
-.boost-btn.on { border-color: #6dffb3; animation: boostGlow 1.6s ease-in-out infinite; }
-.boost-btn.on .bo-main { color: #b6ffd8; text-shadow: 0 0 .4em rgb(109 255 179 / .9); }
-.boost-btn.on .bo-cost { color: #fff; }
-.boost-btn.six { border-color: #ffb347; animation-name: boostGlow6; }
-.boost-btn.six .bo-main { color: #ffe0a8; text-shadow: 0 0 .4em rgb(255 150 50 / .95); }
-@keyframes boostGlow6 { 50% { box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .75), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 2.6cqw rgb(255 150 50 / .9); } }
-@keyframes boostGlow { 50% { box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .75), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 2.2cqw rgb(109 255 179 / .85); } }
-.bb-fs { width: 3.6cqw; aspect-ratio: 1; display: block; }
+/* FS Boost state on the plaque: grey when off, green at 3×, orange at 6× (chosen in the Bonus menu) */
+.bb-boost { font: 800 1.1cqw/1 var(--ui); letter-spacing: .12em; text-transform: uppercase; color: #9aa59c; white-space: nowrap;
+  padding: .35cqw .7cqw; border-radius: 1cqw; background: rgb(0 0 0 / .5); box-shadow: inset 0 0 0 .1cqw rgb(255 255 255 / .12); }
+.buy-btn.boosted { border-color: #6dffb3; }
+.buy-btn.boosted .bb-boost { color: #b6ffd8; background: rgb(6 40 26 / .75); box-shadow: inset 0 0 0 .1cqw #6dffb3, 0 0 .9cqw rgb(109 255 179 / .7); }
+.buy-btn.six { border-color: #ffb347; }
+.buy-btn.six .bb-boost { color: #ffe0a8; background: rgb(48 24 4 / .75); box-shadow: inset 0 0 0 .1cqw #ffb347, 0 0 .9cqw rgb(255 150 50 / .8); }
+.bb-fs { width: 5.6cqw; aspect-ratio: 1; display: block; }
 .bb-fs .sym { width: 100%; }
 .bb-txt { display: grid; justify-items: center; line-height: .9; }
-.bb-top { font: 800 1.15cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: #e9e2c8; text-shadow: 0 .1cqw 0 #000; }
-.bb-main { font: 400 2.5cqw/1 var(--display); letter-spacing: .03em; color: #ffd877; -webkit-text-stroke: .08em #2a1700; paint-order: stroke fill; text-shadow: 0 0 .3em rgb(255 200 80 / .7), 0 .1em 0 #1c0f00; }
+.bb-top { font: 800 1.3cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: #e9e2c8; text-shadow: 0 .1cqw 0 #000; }
+.bb-main { font: 400 3cqw/1 var(--display); letter-spacing: .03em; color: #ffd877; -webkit-text-stroke: .08em #2a1700; paint-order: stroke fill; text-shadow: 0 0 .3em rgb(255 200 80 / .7), 0 .1em 0 #1c0f00; }
 .buy-dlg { position: absolute; inset: 0; z-index: 55; display: grid; place-items: center; background: rgb(3 10 9 / .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .buy-price { display: grid; justify-items: center; gap: .2cqw; margin-top: .3cqw; }
 .buy-price span { font: 800 1.1cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
@@ -792,12 +780,9 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .portrait .hud #musicBtn { width: 12vw; height: 12vw; z-index: auto; }
 .portrait .hud .auto-left { font-size: 3vw; min-width: 6vw; padding: .4vw 1vw; border-radius: 3vw; }
 /* buy plaque */
-.h-buy, .h-boost { display: grid; }
-.portrait .hud .boost-btn { position: relative; left: auto; top: auto; width: 66vw; height: 11vw; margin: 0 auto; grid-template-columns: auto auto 1fr; align-items: center; justify-items: start; gap: 3vw; padding: 0 4vw; border-radius: 3vw; border-width: .8vw; }
-.portrait .hud .bo-top { font-size: 3.2vw; }
-.portrait .hud .bo-main { font-size: 6vw; }
-.portrait .hud .bo-cost { font-size: 3.2vw; justify-self: end; }
-.portrait .hud .buy-btn { position: relative; left: auto; top: auto; width: 66vw; height: 15vw; margin: 0 auto; gap: 2.4vw; padding: 0 4vw 0 2.4vw; border-radius: 3vw; border-width: .8vw; }
+.h-buy { display: grid; }
+.portrait .hud .buy-btn { position: relative; left: auto; top: auto; width: 76vw; height: 16vw; margin: 0 auto; grid-template-columns: auto auto 1fr; justify-items: start; align-items: center; gap: 2.4vw; padding: 0 3vw 0 2.4vw; border-radius: 3vw; border-width: .8vw; }
+.portrait .hud .bb-boost { justify-self: end; font-size: 2.9vw; padding: 1.3vw 2.2vw; border-radius: 3vw; }
 .portrait .hud .bb-fs { width: 10vw; }
 .portrait .hud .bb-top { font-size: 3.2vw; }
 .portrait .hud .bb-main { font-size: 7.4vw; }
@@ -847,13 +832,31 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .portrait .ui .intro-go { font-size: 4.4cqw; }
 
 /* Bonus menu: the buyable modes side by side (stacked in portrait), each with its price and button */
-.buy-menu { position: relative; width: min(92%, 96cqw); max-height: 92%; box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 1cqw;
+.buy-menu { position: relative; width: min(92%, 96cqw); max-height: 92%; box-sizing: border-box; display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 1cqw;
   padding: 1.3cqw 1.6cqw 1.6cqw; border-radius: 1.2cqw; cursor: default;
   background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border: .45cqw solid transparent; background-clip: padding-box;
   box-shadow: 0 0 0 .2cqw #15131a, inset 0 0 0 .2cqw #15131a, inset 0 0 2.4cqw rgb(0 0 0 / .7), 0 1.4cqw 3cqw rgb(0 0 0 / .75); }
 .buy-menu::before { content: ""; position: absolute; inset: -.45cqw; border-radius: 1.2cqw; padding: .45cqw; pointer-events: none;
   background: linear-gradient(160deg, #f6dd8f 0%, #c99a3e 22%, #8a6122 45%, #e2bb62 62%, #a77a2c 80%, #f0d184 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.buy-boost { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1.6cqw; margin: 0 1.3cqw; padding: .9cqw 1.3cqw;
+  border-radius: .9cqw; background: rgb(6 14 13 / .78); box-shadow: inset 0 0 0 .14cqw rgb(109 255 179 / .28), inset 0 0 1.6cqw rgb(0 0 0 / .6); }
+.bst-info h3 { margin: 0; font: 400 2.1cqw/1 var(--display); letter-spacing: .03em; color: #b6ffd8; -webkit-text-stroke: .08em #04120d; paint-order: stroke fill; text-shadow: 0 0 .3em rgb(109 255 179 / .6); }
+.bst-info p { margin: .4cqw 0 0; font: 600 1.15cqw/1.3 var(--ui); color: #e9e2c8; }
+.bst-seg { display: grid; grid-template-columns: repeat(3, 10cqw); gap: .7cqw; }
+.bst-opt { all: unset; box-sizing: border-box; cursor: pointer; display: grid; justify-items: center; gap: .35cqw; padding: .7cqw .4cqw; border-radius: .7cqw;
+  background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border: .22cqw solid #6f7a6f; box-shadow: inset 0 0 1cqw rgb(0 0 0 / .7); transition: transform .1s, filter .2s, border-color .2s; }
+.bst-opt:hover { filter: brightness(1.15); }
+.bst-opt:active { transform: scale(.95); }
+.bst-opt:focus-visible { outline: .25cqw solid var(--ghost); outline-offset: .15cqw; }
+.bst-opt:disabled { cursor: default; opacity: .45; }
+.bst-lv { font: 400 2cqw/1 var(--display); letter-spacing: .04em; color: #9aa59c; -webkit-text-stroke: .08em #0c1210; paint-order: stroke fill; }
+.bst-pr { font: 700 1cqw/1 var(--ui); color: #c9d4cb; text-shadow: 0 .1cqw 0 #000; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bst-opt.on { border-color: #6dffb3; box-shadow: inset 0 0 1cqw rgb(0 0 0 / .7), 0 0 1.3cqw rgb(109 255 179 / .65); }
+.bst-opt.on .bst-lv { color: #b6ffd8; text-shadow: 0 0 .4em rgb(109 255 179 / .9); }
+.bst-opt.on .bst-pr { color: #fff; }
+.bst-opt.six.on { border-color: #ffb347; box-shadow: inset 0 0 1cqw rgb(0 0 0 / .7), 0 0 1.3cqw rgb(255 150 50 / .75); }
+.bst-opt.six.on .bst-lv { color: #ffe0a8; text-shadow: 0 0 .4em rgb(255 150 50 / .95); }
 .buy-opts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.8cqw; overflow: hidden auto; overscroll-behavior: contain; padding: 1.3cqw; }
 .buy-opt { aspect-ratio: auto; grid-template-rows: 10cqw auto 1fr auto auto; padding: 1.1cqw 1cqw 1.2cqw; gap: .55cqw; }
 .buy-opt h2 { font-size: 2.2cqw; }
@@ -865,6 +868,13 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .portrait .ui .buy-menu { width: 94cqw; max-height: 94%; padding: 4cqw; gap: 3cqw; border-radius: 3cqw; border-width: 1.2cqw; }
 .portrait .ui .buy-menu::before { inset: -1.2cqw; padding: 1.2cqw; border-radius: 3cqw; }
 .portrait .ui .buy-opts { grid-template-columns: 1fr 1fr; gap: 4cqw; padding: 3cqw; }
+.portrait .ui .buy-boost { grid-template-columns: 1fr; gap: 2.4cqw; margin: 0 3cqw; padding: 3cqw; border-radius: 2.4cqw; }
+.portrait .ui .bst-info h3 { font-size: 5.4cqw; }
+.portrait .ui .bst-info p { font-size: 3.1cqw; margin-top: 1cqw; }
+.portrait .ui .bst-seg { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2cqw; }
+.portrait .ui .bst-opt { padding: 2cqw 1cqw; gap: 1cqw; border-radius: 2cqw; border-width: .6cqw; }
+.portrait .ui .bst-lv { font-size: 5.4cqw; }
+.portrait .ui .bst-pr { font-size: 2.8cqw; }
 .portrait .ui .buy-opt { grid-template-rows: 22cqw auto 1fr auto auto; padding: 3cqw; gap: 1.6cqw; }
 .portrait .ui .buy-opt h2 { font-size: 5.4cqw; }
 .portrait .ui .buy-opt p { font-size: 3.1cqw; }
