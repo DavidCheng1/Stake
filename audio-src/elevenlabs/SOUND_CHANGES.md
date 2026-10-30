@@ -22,7 +22,7 @@ An overview of every sound that was changed or added. The details are in [`READM
 | `banner` | A banner appears | Rising whoosh into a bell | Fast whoosh into a bright bell, more snap |
 | `bigwin` | Big win (20× bet or more) | Toll, choir, organ and a cascade of bells | **Money payout:** cash register "cha-ching" and a cascade of coins into the tray, with a ringing bell |
 | `fanfare` | Free spins triggered | Organ swell, church toll, choir and falling bells | Big explosion straight into a bright bell arpeggio (a silent gap between them was cut out) |
-| `fs_land` | A scatter (FS) symbol lands | Magical scatter sample, sharpened by hand | Punchy hit with a golden coin ring; highs softened so it stays smooth when the game raises it up to an octave |
+| `fs_land` | A scatter (FS) symbol lands | Magical scatter sample, sharpened by hand | **Reverted (2026-10-30):** the magical scatter sample is back, by request. The ElevenLabs take `fs_land_t3.mp3` stays in `takes/` |
 | `edge` | Tease when one FS is missing | Designed drone with a heartbeat | Builds steadily and peaks at 2.4 s, then stops, as the tease needs |
 | `crumble` | Bonus end: runes crumble | Grinding stone and falling grit | Short, dry stone crumble |
 

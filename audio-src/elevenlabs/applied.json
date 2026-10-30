@@ -261,25 +261,6 @@
       ]
     }
   },
-  "fs_land": {
-    "take": "fs_land_t3.mp3",
-    "version": 2,
-    "backup": "fs_land_old.mp3",
-    "date": "2026-10-29",
-    "source": {
-      "prompt": "Bonus symbol landing: an instant punchy hit with a golden coin ring and a crystal sparkle, short and bright. Exciting, rewarding slot game, loud, clean.",
-      "duration_s": 1.6,
-      "prompt_influence": 0.5,
-      "model_id": "eleven_text_to_sound_v2",
-      "output_format": "mp3_44100_128",
-      "generated": "2026-10-29T20:10:33",
-      "score": 80,
-      "notes": [
-        "14 clipped samples",
-        "harsh at the game's top pitch (x2)"
-      ]
-    }
-  },
   "edge": {
     "take": "edge_t5.mp3",
     "version": 2,
