@@ -49,6 +49,7 @@ Last updated: 2026-10-25. All work is on the `ghost-duels` branch, which is not 
 - [x] **25,000× max win in every mode** (SDK optimizer, see the table above).
 - [x] **`_UPLOAD_TO_STAKE` refreshed** (2026-10-25): the 96.00% math with all seven modes, and the frontend with the 6× boost and the new Lich King idle.
 - [x] **16:9 cover art:** `media/cover-16x9.png` (1920×1080), rendered from `media/cover-16x9.html`. The 3:4 game tile exists (kept outside the repo).
+- [ ] **Ghost Pirate idle: see-through gaps that shouldn't be there.** `skeleton_idle_transparent.gif` has transparent holes in the figure, e.g. inconsistent gaps in his cloak that differ from frame to frame. Fix them in the GIF, then rebuild `assets/pirate-idle.webp` and `pirate-still.webp` with `newCharacterGhostPirate/make_idle.py` (outside the repo; it prints the CSS placement).
 - [ ] **Ask Stake Engine (or check their docs):**
   - Do they accept a frontend that isn't built on their Svelte web-sdk?
   - What unit is `minimumRoundDuration`? The code assumes values under 100 are seconds and larger ones are milliseconds (`ghost-duels-web/rgs.js`).

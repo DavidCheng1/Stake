@@ -270,10 +270,10 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .hero { position: absolute; left: 66%; top: 28.5%; width: 35.5%; aspect-ratio: 870 / 1010; pointer-events: none; }
 /* the pirate's idle spans the same width as the Lich King before him, so the map stays off the reels, and stands on the
    same line, where the dashboard hides his feet (numbers printed by newCharacterGhostPirate/make_idle.py) */
-.hero-fig { position: absolute; left: 5.89%; top: 17.57%; width: 90.11%; aspect-ratio: 472 / 486; transform-origin: 56.36% 99.18%; }
+.hero-fig { position: absolute; left: 5.88%; top: 16.87%; width: 90.13%; aspect-ratio: 467 / 486; transform-origin: 56.96% 98.97%; }
 .hero-img { position: relative; width: 100%; height: 100%; display: block; }
 /* a green glow pulsing behind the map */
-.hero-lamp { position: absolute; left: 15.04%; top: 49.38%; width: 42.71%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+.hero-lamp { position: absolute; left: 15.2%; top: 49.38%; width: 43.17%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
   background: radial-gradient(closest-side, rgb(120 255 170 / .42), rgb(120 255 170 / .12) 60%, transparent); mix-blend-mode: screen;
   animation: heroLamp 1.7s ease-in-out infinite; }
 @keyframes heroLamp { 0%, 100% { scale: 1; filter: brightness(1); } 37% { scale: 1.05; filter: brightness(1.25); } 61% { scale: .97; filter: brightness(.9); } }

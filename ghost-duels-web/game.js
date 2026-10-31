@@ -1844,7 +1844,7 @@ async function boot() {
 }
 
 // ===== Ghost Pirate hero: his idle as an animated WebP (assets/pirate-idle.webp, 36 frames, a 3 s loop), made from
-// newCharacterGhostPirate/skeleton_idle_v3.gif by make_idle.py there. The browser plays it; reactions to the game (point,
+// newCharacterGhostPirate/skeleton_idle_transparent.gif by make_idle.py there. The browser plays it; reactions to the game (point,
 // cheer, laugh, gasp) lean, bounce, shake and light up the figure, and a green glow pulses behind his map. Reduced motion
 // shows the still first frame (assets/pirate-still.webp). =====
 function GhostKing(host) {
