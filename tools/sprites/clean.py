@@ -14,8 +14,9 @@
   name parts use them.
 - Smooths speckle out of the colours (edge-preserving), and recolours them with recolor.py rules when given
   (`--rig` lets rules name parts).
-- Redraws at `--scale`: the colours are upscaled without their outlines, then the outlines and the silhouette are drawn
-  on top as crisp, anti-aliased shapes. Cartoon art comes out much sharper than with plain resizing.
+- Redraws at `--scale`: the colours are upscaled without their outlines (with Real-ESRGAN from SPRITE_TOOLS when it is
+  installed, else a smooth resize; "esrgan": false in clean.json turns it off), then the outlines and the silhouette are
+  drawn on top as crisp, anti-aliased shapes. Cartoon art comes out much sharper than with plain resizing.
 """
 
 import argparse
@@ -89,6 +90,34 @@ def silhouette(rgb, a, dark=0.45, close=5, keep=(), glow=None, peel=12, black=0.
     return inside
 
 
+TOOLS = os.environ.get("SPRITE_TOOLS", r"D:\GhostDuels\sprite-tools")
+ESRGAN = os.path.join(TOOLS, "realesrgan", "realesrgan-ncnn-vulkan.exe")
+
+
+def esrgan_up(rgb):
+    """The colours 4x bigger with Real-ESRGAN (anime model): clean edges and shading instead of a blurred resize.
+    Returns None when the tool is missing or fails (then the caller resizes as before)."""
+    import subprocess
+    import tempfile
+    if not os.path.exists(ESRGAN):
+        return None
+    tmp = tempfile.mkdtemp(dir=os.environ.get("SPRITE_TMP"))
+    src, dst = os.path.join(tmp, "fill.png"), os.path.join(tmp, "fill-x4.png")
+    Image.fromarray((np.clip(rgb, 0, 1) * 255 + 0.5).astype(np.uint8)).save(src)
+    try:
+        subprocess.run([ESRGAN, "-i", src, "-o", dst, "-n", "realesrgan-x4plus-anime", "-f", "png"], check=True,
+                       capture_output=True, timeout=600)
+        return np.asarray(Image.open(dst).convert("RGB"), np.float32) / 255
+    except (OSError, subprocess.SubprocessError) as e:
+        print("Real-ESRGAN failed, colours resized instead:", e)
+        return None
+    finally:
+        for f in (src, dst):
+            if os.path.exists(f):
+                os.remove(f)
+        os.rmdir(tmp)
+
+
 def up(x, W, H, blur):
     """Smooth upscale of a field, blurred a little so diagonal steps become straight edges before thresholding."""
     x = cv2.resize(x, (W, H), interpolation=cv2.INTER_CUBIC)
@@ -126,7 +155,10 @@ def clean(img, scale=3, rules=None, owner=None, parts=None, cfg=None):
     h, w = a.shape
     W, H = round(w * scale), round(h * scale)
     soft = 0.3 * scale
-    big_fill = np.clip(cv2.resize(fill, (W, H), interpolation=cv2.INTER_CUBIC), 0, 1)
+    # the colours: Real-ESRGAN when installed (sharp shading and letters), else a smooth resize
+    x4 = esrgan_up(fill) if cfg.get("esrgan", True) else None
+    big_fill = np.clip(cv2.resize(x4, (W, H), interpolation=cv2.INTER_AREA) if x4 is not None
+                       else cv2.resize(fill, (W, H), interpolation=cv2.INTER_CUBIC), 0, 1)
     ink = smoothstep(0.36, 0.56, up(k, W, H, soft))
     alpha = smoothstep(0.42, 0.58, up(F, W, H, soft))
     # an even outline all round the silhouette, where the picture's own was cut off or thin

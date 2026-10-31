@@ -12,7 +12,7 @@
   /* cave: zoomed to the top of the art (the game's control bar is cropped off), softened so the heroes stand out */
   .bg { left: -10%; top: -6%; width: 120%; height: 150%; object-fit: cover; object-position: 50% 0;
         filter: brightness(.5) saturate(1.15) blur(4px); }
-  /* light: a green glow behind the duel, a cold beam falling on the Skull King */
+  /* light: a green glow behind the duel, a cold beam falling on the Ghost Pirate */
   .light { inset: 0; background:
       radial-gradient(38% 46% at 36% 64%, rgba(120, 255, 190, .30), transparent 70%),
       radial-gradient(30% 55% at 78% 40%, rgba(110, 255, 170, .26), transparent 72%),
@@ -29,13 +29,11 @@
       linear-gradient(0deg, rgba(2, 12, 10, .85), transparent 30%); }
 
   /* heroes */
-  /* the Skull King, his lantern and the fist over its ring: separate images, placed where the game puts them
-     (LICH_MESH in game.js: lamp x 32, y 200, 288x362; fist x 92, y 172, 110x98 on the 730x930 artwork) */
-  .kingbox { right: 20px; bottom: -70px; height: 1120px; aspect-ratio: 730 / 930; }
-  .lantern { left: 4.38%; top: 21.51%; width: 39.45%; filter: drop-shadow(0 0 40px rgba(110, 255, 160, .9)) drop-shadow(0 10px 20px rgba(0, 0, 0, .5)); }
-  .lanternglow { left: -14%; top: 20%; width: 70%; aspect-ratio: 1; border-radius: 50%; filter: blur(30px); mix-blend-mode: screen;
-    background: radial-gradient(circle, rgba(140, 255, 180, .75), rgba(90, 255, 150, .25) 45%, transparent 70%); }
-  .fist { left: 12.6%; top: 18.49%; width: 15.07%; }
+  /* the Ghost Pirate, the game's hero picture (made by newCharacterGhostPirate/make_hero.py), full length on the right;
+     sized so his map ends just right of the duel. A green glow behind the map (as .hero-lamp in the game) */
+  .kingbox { right: -29px; top: 86px; width: 963px; aspect-ratio: 2048 / 1938; }
+  .mapglow { left: 18.07%; top: 49.77%; width: 52%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; filter: blur(30px); mix-blend-mode: screen;
+    background: radial-gradient(circle, rgba(140, 255, 180, .7), rgba(90, 255, 150, .22) 45%, transparent 70%); }
   .king { left: 0; top: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 50px rgba(89, 255, 156, .45)) drop-shadow(0 30px 40px rgba(0, 0, 0, .6)); }
   .logo { left: 150px; top: 34px; width: 800px; filter: drop-shadow(0 0 40px rgba(89, 255, 200, .35)) drop-shadow(0 14px 30px rgba(0, 0, 0, .7)); }
 
@@ -54,7 +52,7 @@
     text-shadow: 0 0 30px rgba(255, 150, 40, .95), 0 0 70px rgba(255, 110, 20, .6), 0 8px 0 #3d1000; }
   .mult small { font-size: .62em; vertical-align: .2em; margin-right: 6px; }
 
-  /* light bursts: rays behind the VS and behind the Skull King */
+  /* light bursts: rays behind the VS and behind the Ghost Pirate */
   .burst { border-radius: 50%; mix-blend-mode: screen;
     -webkit-mask: radial-gradient(circle, #000 0 18%, transparent 68%); mask: radial-gradient(circle, #000 0 18%, transparent 68%); }
   .burst.duelb { left: 240px; top: 290px; width: 900px; height: 900px; opacity: 1;
@@ -82,10 +80,8 @@
   <div class="abs burst duelb"></div>
   <div class="abs core" style="left:520px;top:600px;width:340px;height:280px;background:rgba(170,230,255,.35)"></div>
   <div class="abs kingbox">
-    <div class="abs lanternglow"></div>
-    <img class="abs king" src="../ghost-duels-web/assets/img24.webp" alt="">
-    <img class="abs lantern" src="../ghost-duels-web/assets/img25.webp" alt="">
-    <img class="abs fist" src="../ghost-duels-web/assets/img26.webp" alt="">
+    <div class="abs mapglow"></div>
+    <img class="abs king" src="../ghost-duels-web/assets/pirate-aura.webp" alt="">
   </div>
   <div class="abs fog"></div>
   <div class="abs vignette"></div>

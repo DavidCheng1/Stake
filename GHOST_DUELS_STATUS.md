@@ -13,7 +13,7 @@ Last updated: 2026-10-25. All work is on the `ghost-duels` branch, which is not 
   - Covers wallet calls, resume after reload, replay links, bet levels and currency from Stake, and German/English text.
 - [x] **Local test server** `tools/mock_rgs.py`: stands in for Stake's server using the real simulated rounds.
 - [x] Tested in a browser: normal rounds, devil duel, 4+ VS reels side by side, bonus, resume, replay, and autoplay with low balance.
-- [x] **Presentation:** intro screen with the three features (click to continue); the VS reel lands small and bursts open into a framed reel with the Skull King and smoke; spooky multiplier lettering; connected groups light up as one glowing shape instead of lines; the big Skull King stands behind the dashboard.
+- [x] **Presentation:** intro screen with the three features (click to continue); the VS reel lands small and bursts open into a framed reel with the Ghost Pirate and smoke; spooky multiplier lettering; connected groups light up as one glowing shape instead of lines; the big Skull King stands behind the dashboard.
 - [x] **Turbo fixes:** win and rune counters no longer go negative, jump back and forth or show long decimals in turbo.
 - [x] **Turbo and skip:** the bolt button on the dashboard plays rounds about twice as fast; a click on the board or Spin (or Space) during a round skips only the sequence that is playing (the reels dropping in, a win, a tumble, a duel, a banner, the FS trigger, a bonus spin or the bonus finale); the next sequence plays at normal speed, and its sounds are not cut. Both respect Stake's `disabledTurbo` and `disabledSlamstop`.
 - [x] **English first:** the page is written in English; German is the translation for `lang=de`.

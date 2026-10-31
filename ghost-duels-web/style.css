@@ -266,14 +266,15 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .life-big .lbl2 { position: absolute; left: 50%; top: 108%; transform: translateX(-50%); white-space: nowrap; font: 800 2.4cqw/1 var(--ui); letter-spacing: .06em; color: #ffd6dc; text-shadow: 0 0 1cqw rgb(255 60 90 / .8), 0 .2cqw 0 #000; }
 @media (prefers-reduced-motion: reduce) { .cr-glow, .crate::after, .tease-mist, .tease-fire .tw, .tease-beam, .tease-streak, .rtok img, .cell.falling::before, .life::before, .life::after { animation: none !important; } }
 
-/* Ghost King hero (right) and logo (top left) */
+/* Ghost Pirate hero (right) and logo (top left) */
 .hero { position: absolute; left: 66%; top: 28.5%; width: 35.5%; aspect-ratio: 870 / 1010; pointer-events: none; }
-/* the idle frames (562x640 drawn units) placed so the feet stand where the dashboard hides them */
-.hero-fig { position: absolute; left: 3.79%; top: 6.93%; width: 92.27%; aspect-ratio: 562 / 640; transform-origin: 50% 99.4%; }
+/* the pirate's idle spans the same width as the Lich King before him, so the map stays off the reels, and stands on the
+   same line, where the dashboard hides his feet (numbers printed by newCharacterGhostPirate/make_idle.py) */
+.hero-fig { position: absolute; left: 5.89%; top: 17.57%; width: 90.11%; aspect-ratio: 472 / 486; transform-origin: 56.36% 99.18%; }
 .hero-img { position: relative; width: 100%; height: 100%; display: block; }
-/* lantern light on the cape behind the figure */
-.hero-lamp { position: absolute; left: 21%; top: 49.7%; width: 56%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(120 255 170 / .3), rgb(120 255 170 / .08) 60%, transparent); mix-blend-mode: screen;
+/* a green glow pulsing behind the map */
+.hero-lamp { position: absolute; left: 15.04%; top: 49.38%; width: 42.71%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(120 255 170 / .42), rgb(120 255 170 / .12) 60%, transparent); mix-blend-mode: screen;
   animation: heroLamp 1.7s ease-in-out infinite; }
 @keyframes heroLamp { 0%, 100% { scale: 1; filter: brightness(1); } 37% { scale: 1.05; filter: brightness(1.25); } 61% { scale: .97; filter: brightness(.9); } }
 @media (prefers-reduced-motion: reduce) { .hero-lamp { animation: none; } }
@@ -461,7 +462,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 /* Tall reel (VS / duel winner) */
 .tall { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; border-radius: 8px; }
 .tall .sym { width: 138%; max-width: none; z-index: 3; }
-/* VS reel: a small VS lands, then the frame bursts open (tallLanded). Layers: glow, backdrop with rays and rising smoke, gold frame, Skull King, VS crest, multiplier */
+/* VS reel: a small VS lands, then the frame bursts open (tallLanded). Layers: glow, backdrop with rays and rising smoke, gold frame, Ghost Pirate, VS crest, multiplier */
 .tall.vsx { --c: 109 255 179; }
 .vx-glow { position: absolute; inset: -2% -10%; border-radius: 14px; pointer-events: none; z-index: 0;
   background: radial-gradient(closest-side, rgb(var(--c) / .5), rgb(var(--c) / .12) 70%, transparent); filter: blur(.5cqw); animation: vxGlow 2.6s ease-in-out infinite; }
@@ -484,17 +485,14 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   background: linear-gradient(175deg, #f6dd8f 0%, #c99a3e 18%, #8a6122 40%, #e2bb62 58%, #a77a2c 78%, #f0d184 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
   filter: drop-shadow(0 0 .5cqw rgb(var(--c) / .8)); }
-/* the Skull King fills the reel between the VS crest and the multiplier, cropped to the frame's window */
+/* the Ghost Pirate fills the reel between the VS crest and the multiplier, cropped to the frame's window: his eyes sit
+   where the Skull King's were, at the same skull size (pirate-aura.webp: rows 110-2048 of the 2048 layers) */
 .vx-window { position: absolute; inset: .3cqw; border-radius: 6px; overflow: hidden; z-index: 1; pointer-events: none; }
-.vx-king { position: absolute; left: 50%; top: 20%; width: 245%; aspect-ratio: 730 / 930; translate: -50% 0;
+.vx-king { position: absolute; left: 50%; top: 20%; width: 338.62%; aspect-ratio: 2048 / 1938; translate: -50.29% -1.73%;
   filter: drop-shadow(0 0 .6cqw rgb(var(--c) / .55)) drop-shadow(0 .3cqw .3cqw rgb(0 0 0 / .6)); }
 .vk { position: absolute; inset: 0; transform-origin: 50% 92%; animation: vkBreathe 3.4s ease-in-out infinite; }
 .vk img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none; }
-/* inset first: it is a shorthand and would reset left/top if it came after them */
-.vk img.vk-lamp { inset: auto; left: 4.38%; top: 21.51%; width: 39.45%; height: 38.92%; animation: vkLamp 1.8s ease-in-out infinite; }
-.vk img.vk-fist { inset: auto; left: 12.6%; top: 18.49%; width: 15.07%; height: 10.54%; }
 @keyframes vkBreathe { 50% { transform: scale(1.025, 1.04) translateY(-1.5%); } }
-@keyframes vkLamp { 50% { filter: brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3); } }
 .vx-crest { position: absolute; left: 50%; top: .5%; width: 112%; translate: -50% 0; z-index: 4; filter: drop-shadow(0 .3cqw .4cqw rgb(0 0 0 / .6)); }
 .tall .vx-crest .sym { width: 100%; }
 .vx-mult { position: absolute; left: 50%; bottom: 3%; translate: -50% 0; z-index: 4; font-size: 2.8cqw; animation: vxAsk 1.8s ease-in-out infinite; }
@@ -561,9 +559,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   background: radial-gradient(ellipse 60% 55% at 50% 42%, rgb(8 44 37 / .6), rgb(3 10 9 / .9)); }
 .totalwin-box { position: relative; width: 62cqw; aspect-ratio: 640 / 320; margin-top: -2cqw; }
 .totalwin-art { position: absolute; inset: 0; }
-.totalwin-art canvas { display: block; width: 100%; height: 100%; animation: twAura 2.1s ease-in-out infinite alternate; }
-@keyframes twAura { from { filter: drop-shadow(0 0 .5cqw rgb(51 230 196 / .75)) drop-shadow(0 0 1.6cqw rgb(51 230 196 / .35)); }
-  to { filter: drop-shadow(0 0 .8cqw rgb(51 230 196 / .95)) drop-shadow(0 0 2.6cqw rgb(51 230 196 / .5)); } }
+.totalwin-art canvas { display: block; width: 100%; height: 100%; } /* the teal aura is drawn in the canvas (rig.json "aura") */
 .totalwin-rays { position: absolute; left: 50%; top: 50%; width: 120%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
   background: repeating-conic-gradient(rgb(233 196 106 / .38) 0 4deg, transparent 9deg 22.5deg);
   mask: radial-gradient(closest-side, #000 15%, rgb(0 0 0 / .6) 45%, transparent 100%); -webkit-mask: radial-gradient(closest-side, #000 15%, rgb(0 0 0 / .6) 45%, transparent 100%);
@@ -574,7 +570,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   filter: drop-shadow(0 .35cqw 0 #2a1902) drop-shadow(0 0 1.4cqw rgb(63 242 200 / .45)); }
 .totalwin-sub { position: relative; margin-top: 1.1cqw; font-size: 2.1cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #e6fff7;
   text-shadow: 0 .2cqw .5cqw #000, 0 0 1.2cqw rgb(63 242 200 / .4); }
-@media (prefers-reduced-motion: reduce) { .totalwin-art canvas, .totalwin-rays { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .totalwin-rays { animation: none; } }
 .fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
 
 .tests { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -648,7 +644,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .ic-mult { position: absolute; left: 50%; bottom: 4%; translate: -50% 0; z-index: 3; font-size: 2.6cqw; }
 .c-max .ic-art { --c: 255 216 119; }
 .c-max .vx-window { inset: 0; border-radius: 0; }
-.c-max .vx-king { top: 4%; width: 110%; }
+.c-max .vx-king { top: 4%; width: 152.04%; }
 .intro-go { font: 800 1.8cqw/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; color: #c9ffe6; text-shadow: 0 0 1cqw rgb(109 255 179 / .8), 0 .15cqw 0 #000; animation: goPulse 1.6s ease-in-out infinite; }
 @keyframes goPulse { 50% { opacity: .4; } }
 @media (prefers-reduced-motion: reduce) { .intro-logo, .intro-go { animation: none !important; } }

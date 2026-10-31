@@ -359,17 +359,17 @@ function clearBoard() {
   multChip.hidden = true; winVal.classList.remove("hit");
 }
 
-// ---------- VS reel: lands as a small VS, then bursts open into a framed, smoking reel with the Skull King ----------
+// ---------- VS reel: lands as a small VS, then bursts open into a framed, smoking reel with the Ghost Pirate ----------
 let vsReels = [];
 // backdrop shared by the VS reel and the duel winner: glow, smoke rising over light rays, gold frame
 const vxBack = () => {
   const bg = div("vx-bg"); bg.append(div("vx-rays"), div("vx-smoke"), div("vx-smoke b"), div("vx-fog"));
   return [div("vx-glow"), bg, div("vx-frame")];
 };
-function skullKing() {
-  const k = div("vx-king"), inner = div("vk"), body = new Image(), lamp = new Image(), fist = new Image();
-  body.src = "assets/img24.webp"; lamp.src = "assets/img25.webp"; fist.src = "assets/img26.webp"; body.alt = lamp.alt = fist.alt = ""; lamp.className = "vk-lamp"; fist.className = "vk-fist";
-  inner.append(body, lamp, fist); k.appendChild(inner); // the fist again on top holds the lantern's ring
+function skullKing() { // the Ghost Pirate, his map and telescope lens glowing (newCharacterGhostPirate/make_hero.py)
+  const k = div("vx-king"), inner = div("vk"), body = new Image();
+  body.src = "assets/pirate-aura.webp"; body.alt = "";
+  inner.append(body); k.appendChild(inner);
   const win = div("vx-window"); win.appendChild(k); return win; // the frame's inner window clips him like a portrait
 }
 function showTallVS(rl, small) {
@@ -423,7 +423,7 @@ setInterval(() => {
   }
 }, 170);
 
-// showcase board until the first round: a VS reel with the Skull King, a duel winner with its multiplier,
+// showcase board until the first round: a VS reel with the Ghost Pirate, a duel winner with its multiplier,
 // two free-spin symbols in different reels (three would look like a bonus trigger) and every pay symbol at least once
 (() => {
   const VS_COL = 2, WIN_COL = 5, open = [];
@@ -860,14 +860,14 @@ async function banner(title, sub, hold = 1700) {
   bannerEl.hidden = true;
 }
 
-// ---------- Total Win screen after the free spins: the emblem plays its intro once (100 frames at 30 fps), then its
-// loop, while the bonus win counts up under it. The animations download when a bonus starts; reduced motion shows
-// a still. Made with tools/sprites (examples/total-win). ----------
-// the emblem's parts move live (rigplayer.js), so it stays sharp at any size; exported by tools/sprites/rig.py export
+// ---------- Total Win screen after the free spins: the emblem plays its intro once, then its loop, while the bonus
+// win counts up under it. It loads when a bonus starts; reduced motion shows a still. ----------
+// the emblem is vector art (tools/sprites/total_win_svg.py) whose parts move live (rigplayer.js), rendered at the
+// screen's own resolution
 const TW_RIG = "assets/total-win";
 let twRig = null;
 function preloadTotalWin() {
-  twRig ??= RigPlayer.load(TW_RIG).catch(() => null);
+  twRig ??= RigPlayer.load(TW_RIG, { width: stage.getBoundingClientRect().width * .62 }).catch(() => null);
 }
 // returns false when the art is missing, then the caller shows the plain banner
 async function totalWinScreen(total, spins) {
@@ -1843,10 +1843,10 @@ async function boot() {
   }
 }
 
-// ===== Lich King hero: the hand-drawn idle as an animated WebP (assets/lich-idle.webp): the 24 drawn frames plus an
-// in-between for each pair and 8 frames morphing the last one back into the first, so it loops forwards at 24 fps.
-// The browser plays it; reactions to the game (point, cheer, laugh, gasp) lean, bounce, shake and light up the figure.
-// Reduced motion shows the still first frame (assets/lich-still.webp). =====
+// ===== Ghost Pirate hero: his idle as an animated WebP (assets/pirate-idle.webp, 36 frames, a 3 s loop), made from
+// newCharacterGhostPirate/skeleton_idle_v3.gif by make_idle.py there. The browser plays it; reactions to the game (point,
+// cheer, laugh, gasp) lean, bounce, shake and light up the figure, and a green glow pulses behind his map. Reduced motion
+// shows the still first frame (assets/pirate-still.webp). =====
 function GhostKing(host) {
   host.style.aspectRatio = "870 / 1010";
   const fig = div("hero-fig"), lamp = div("hero-lamp"), img = new Image();
@@ -1874,9 +1874,9 @@ function GhostKing(host) {
     raf = rest && target === POSES.idle ? 0 : requestAnimationFrame(frame);
   }
   return {
-    start() { img.src = "assets/lich-idle.webp"; },
-    stop() { img.src = "assets/lich-still.webp"; },
-    still() { img.src = "assets/lich-still.webp"; },
+    start() { img.src = "assets/pirate-idle.webp"; },
+    stop() { img.src = "assets/pirate-still.webp"; },
+    still() { img.src = "assets/pirate-still.webp"; },
     react(name, ms = 1400) {
       if (!POSES[name]) return;
       target = POSES[name]; until = performance.now() + ms;
@@ -2406,5 +2406,5 @@ const introDone = new Promise(resolve => {
 
 // the loading bar waits for the images of the first screen
 LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp",
-  RM ? "assets/lich-still.webp" : "assets/lich-idle.webp"]);
+  RM ? "assets/pirate-still.webp" : "assets/pirate-idle.webp"]);
 boot();

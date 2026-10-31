@@ -1,6 +1,8 @@
 "use strict";
 // Plays a rig exported by tools/sprites/rig.py export: the parts of a picture as separate images, moved live on a
 // canvas, so they stay sharp at any screen size. Same moves and eases as rig.py; times run 0..1 per intro or loop.
+// A rig with "svg" (tools/sprites/total_win_svg.py) is vector art: every part, its glow layers and its aura are
+// rendered from the SVG at the canvas's own resolution, and again when the canvas grows.
 const RigPlayer = (() => {
   const TAU = Math.PI * 2;
   const clamp = x => Math.min(Math.max(x, 0), 1);
@@ -61,10 +63,45 @@ const RigPlayer = (() => {
     else g.drawImage(p.img, x, y, w, h);
   }
 
-  async function load(dir) {
+  // one element of the SVG (by id) on a canvas at s px per unit, inside the aura filter when one is named
+  async function raster(rig, id, [x, y, w, h], s, filter) {
+    const cw = Math.max(1, Math.ceil(w * s)), ch = Math.max(1, Math.ceil(h * s));
+    const body = filter ? `<g filter="url(#${filter})"><use href="#${id}"/></g>` : `<use href="#${id}"/>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${cw / s} ${ch / s}" width="${cw}" height="${ch}">${rig.defs}${body}</svg>`;
+    const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+    try {
+      const im = await image(url), c = document.createElement("canvas");
+      c.width = cw; c.height = ch;
+      c.getContext("2d").drawImage(im, 0, 0, cw, ch);
+      return { img: c, box: [x, y, cw / s, ch / s] };
+    } finally { URL.revokeObjectURL(url); }
+  }
+  // renders every part, aura and glow layer at s px per unit, then swaps them in at once
+  async function vector(rig, s) {
+    const au = rig.aura, m = au?.margin ?? 0;
+    const jobs = rig.parts.map(async p => {
+      p.svgBox ??= p.box;
+      const [x, y, w, h] = p.svgBox;
+      const [r, a] = await Promise.all([raster(rig, p.name, p.svgBox, s), au && raster(rig, p.name, [x - m, y - m, w + 2 * m, h + 2 * m], s, au.filter)]);
+      return () => { p.img = r.img; p.box = r.box; if (a) { p.aura = a.img; p.auraBox = a.box; } };
+    }).concat(rig.effects.filter(e => e.svg).map(async e => {
+      e.svgBox ??= e.box;
+      const r = await raster(rig, e.svg, e.svgBox, s);
+      return () => { e.img = r.img; e.box = r.box; };
+    }));
+    for (const swap of await Promise.all(jobs)) swap();
+    rig.scale = s;
+  }
+  const pxPerUnit = (rig, cssWidth) => Math.min(window.devicePixelRatio || 1, 2) * cssWidth / (rig.w + 2 * rig.pad * Math.max(rig.w, rig.h));
+
+  // width: the canvas's expected CSS width, so a vector rig is rendered at the right size before it plays
+  async function load(dir, { width } = {}) {
     const rig = await (await fetch(dir + "/rig.json")).json();
     const all = [...rig.parts, ...rig.effects.filter(e => e.src || e.frame)];
-    if (rig.atlas) {
+    if (rig.svg) {
+      rig.defs = (await (await fetch(dir + "/" + rig.svg)).text()).match(/<defs>[\s\S]*<\/defs>/)[0];
+      await vector(rig, pxPerUnit(rig, width || window.innerWidth * .6));
+    } else if (rig.atlas) {
       const sheet = await image(dir + "/" + rig.atlas);
       for (const p of all) p.img = sheet;
     } else await Promise.all(all.map(async p => { p.img = await image(dir + "/" + p.src); }));
@@ -112,12 +149,28 @@ const RigPlayer = (() => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, cw, ch);
       ctx.imageSmoothingQuality = "high";
-      for (const p of rig.parts) {
-        const v = values(p, t, ti), a = v.alpha * fade;
-        if (a <= .001) continue;
-        const [px, py] = p.pivot, r = v.rotate * Math.PI / 180;
+      if (rig.defs && k > rig.scale * 1.1 && !rig.pending) // the canvas grew: render the vector art again, sharper
+        rig.pending = vector(rig, k).then(() => { if (still && !stopped) draw(performance.now()); }).finally(() => { rig.pending = null; });
+      // moves the canvas to where the part is now; returns its opacity
+      const place = p => {
+        const v = values(p, t, ti), [px, py] = p.pivot;
         ctx.setTransform(k, 0, 0, k, ox, oy);
-        ctx.translate(px + v.x, py + v.y); ctx.rotate(r); ctx.scale(v.scale * v.scalex, v.scale * v.scaley); ctx.translate(-px, -py);
+        ctx.translate(px + v.x, py + v.y); ctx.rotate(v.rotate * Math.PI / 180); ctx.scale(v.scale * v.scalex, v.scale * v.scaley); ctx.translate(-px, -py);
+        return v.alpha * fade;
+      };
+      const au = rig.aura;
+      if (au) { // a soft halo behind the whole emblem that follows every part
+        const w = (au.min ?? 0) + (1 - (au.min ?? 0)) * (.5 + .5 * Math.sin(TAU * (au.cycles ?? 1) * t));
+        for (const p of rig.parts) {
+          const a = place(p);
+          if (a <= .001 || !p.aura) continue;
+          ctx.globalAlpha = clamp(a * (au.amount ?? 1) * w);
+          ctx.drawImage(p.aura, ...p.auraBox);
+        }
+      }
+      for (const p of rig.parts) {
+        const a = place(p);
+        if (a <= .001) continue;
         ctx.globalAlpha = Math.min(a, 1);
         const [bx, by, bw, bh] = p.box;
         const sh = partFx(p.name).find(e => e.type === "shine");
