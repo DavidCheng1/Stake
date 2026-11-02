@@ -113,6 +113,22 @@ def group(name):
 num = lambda t: float(re.sub(r"[^\d.\-]", "", t.replace(",", "")) or "nan")
 
 
+def press_until_gone(b, sel, tries=6):
+    """Click a dialog button until it closes: a loading screen may still swallow clicks while it fades out."""
+    for _ in range(tries):
+        b.click(sel); b.pump(1)
+        if not b.ev(f"!!document.querySelector({json.dumps(sel)})?.offsetParent"):
+            return True
+    return False
+
+
+def on_top(sel):
+    """JS: the element is visible and nothing covers its centre (a loading screen can hide a dialog that is already open)."""
+    return (f"(() => {{ const e = document.querySelector({json.dumps(sel)}); if (!e || !e.offsetParent) return false;"
+            f" const k = e.getBoundingClientRect(), h = document.elementFromPoint(k.left + k.width / 2, k.top + k.height / 2);"
+            f" return !!h && e.contains(h); }})()")
+
+
 # ---------------------------------------------------------------- RGS requests and betting
 @group("basic")
 def basic(r):
@@ -221,6 +237,12 @@ def broke(r):
         for t in r.sel.get("toggles", []):
             b.ev(f"document.querySelector({json.dumps(t)})?.click()"); b.pump(0.3)
             b.click(r.sel["spin"]); b.pump(1)
+        if r.sel.get("modeSwitches"):  # switches inside a menu (a boost row in the buy dialog): pick the dearest, then spin
+            ms = json.dumps(r.sel["modeSwitches"])
+            b.ev(f"document.querySelector({json.dumps(r.sel['buy'])})?.click()"); b.pump(0.8)
+            b.ev(f"[...document.querySelectorAll({ms})].pop()?.click()"); b.pump(0.3)
+            b.ev(f"document.querySelector({json.dumps(r.sel['buyClose'])})?.click()"); b.pump(0.4)
+            b.click(r.sel["spin"]); b.pump(1)
         b.ev(f"document.querySelector({json.dumps(r.sel['buy'])})?.click()"); b.pump(1)
         disabled = b.ev(f"[...document.querySelectorAll({json.dumps(r.sel['buyOptions'])})].filter(x => !x.closest('[hidden]')).every(x => x.disabled || /close/i.test(x.id))")
         b.ev(f"[...document.querySelectorAll({json.dumps(r.sel['buyOptions'])})].forEach(x => x.click())"); b.pump(1)
@@ -243,8 +265,14 @@ def confirm(r):
         dlg = b.ev(f"!document.querySelector({json.dumps(r.sel['buyDialog'])}).hidden")
         cards = b.ev(f"[...document.querySelectorAll({json.dumps(r.sel['buyCards'])})].map(x => x.innerText.replace(/\\s+/g, ' ').trim())") or []
         b.shot("buy_dialog.png")
-        b.ev(f"document.querySelector({json.dumps(r.sel['buyClose'])})?.click()"); b.pump(0.4)
         toggles = []
+        if r.sel.get("modeSwitches"):  # each switch in the menu changes the next spins only and shows their price
+            ms = json.dumps(r.sel["modeSwitches"])
+            for i in range(b.ev(f"document.querySelectorAll({ms}).length") or 0):
+                b.ev(f"document.querySelectorAll({ms})[{i}].click()"); b.pump(0.4)
+                toggles.append(b.ev(f"document.querySelectorAll({ms})[{i}].innerText.replace(/\\s+/g, ' ')"))
+            b.ev(f"document.querySelectorAll({ms})[0]?.click()"); b.pump(0.3)
+        b.ev(f"document.querySelector({json.dumps(r.sel['buyClose'])})?.click()"); b.pump(0.4)
         for t in r.sel.get("toggles", []):
             b.click(t); b.pump(0.5)
             toggles.append(b.ev(f"document.querySelector({json.dumps(t)}).innerText.replace(/\\s+/g, ' ')"))
@@ -314,10 +342,9 @@ def social(r):
     mode = r.p.get("replayMode", "base")
     with r.browser("social_replay") as b:
         b.open(f"{r.host}/?replay=true&game={r.p['game']}&version=1&mode={mode}&event={r.modes[mode]['first']}&amount={API}&currency=XSC&lang=en&social=true&rgs_url={r.host}", 2)
-        b.wait_for(f"!!document.querySelector({json.dumps(r.sel['replayGo'])})?.offsetParent", 30)
+        b.wait_for(on_top(r.sel["replayGo"]), 30)
         t1 = b.ev("document.body.innerText") or ""
-        b.ev(f"document.querySelector({json.dumps(r.sel['replayGo'])})?.click()")
-        b.pump(1)
+        press_until_gone(b, r.sel["replayGo"])
         b.wait_for(f"!({r.p['busy']}) || !!document.querySelector({json.dumps(r.sel['replayGo'])})?.offsetParent", 300)
         words = restricted_in(t1 + "\n" + (b.ev("document.body.innerText") or ""))
         r.add(188, "Social replay: no restricted words", not words, f"found: {words}")
@@ -374,11 +401,10 @@ def replay(r):
     for (w, h), name in (((1280, 720), "replay"), ((400, 225), "replay_small")):
         with r.browser(name, w, h) as b:
             b.open(f"{r.host}/?replay=true&game={r.p['game']}&version=1&mode={mode}&event={m['first']}&amount={5 * API}&currency=EUR&lang=en&rgs_url={r.host}", 2)
-            b.wait_for(f"!!document.querySelector({json.dumps(r.sel['replayGo'])})?.offsetParent", 30)  # the round loads first
+            b.wait_for(on_top(r.sel["replayGo"]), 30)  # the round loads and any loading screen leaves first
             panel = r.text(b, r.sel["replayInfo"])
             go_ok = b.ev(f"(() => {{ const e = document.querySelector({json.dumps(r.sel['replayGo'])}); if (!e) return false; const k = e.getBoundingClientRect(); return k.width > 0 && k.bottom <= innerHeight && k.right <= innerWidth; }})()")
-            b.ev(f"document.querySelector({json.dumps(r.sel['replayGo'])}).click()")
-            b.pump(1)
+            press_until_gone(b, r.sel["replayGo"])
             b.wait_for(f"!({r.p['busy']}) || (document.querySelector({json.dumps(r.sel['replayGo'])})?.offsetParent && document.querySelector({json.dumps(r.sel['spin'])}).disabled)", 300)
             b.pump(1)
             again = r.text(b, r.sel["replayGo"])

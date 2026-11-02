@@ -24,7 +24,8 @@
     "buyOptions": "#buyOpts button",
     "buyCards": "#buyOpts > *",
     "buyClose": "#buyClose",
-    "toggles": ["#boostBtn"],
+    "toggles": [],
+    "modeSwitches": "#buyBoost .bst-opt",
     "info": "#infoBtn",
     "rules": "#rulesBody",
     "rulesClose": "#rulesClose",
@@ -44,13 +45,33 @@
     "autoBtn": "Autoplay",
     "turboBtn": "Turbo",
     "buyBtn": "Buy Bonus",
-    "boostBtn": "FS Boost",
     "infoBtn": "Info",
     "musicBtn": "Sound"
   },
   "rulesMustContain": {
-    "24": ["Devil", "Pirate Ghost", "Witch Ghost", "Little Ghost", "Spellbook", "Cursed Ring", "Skull Key", "Ghost Lantern", "Curse Potion", "runes", "9+"],
-    "26": ["4 or more", "touch", "drop in", "maximum win"],
-    "29": ["Trigger", "3 or more FS", "Re-triggers"]
+    "24": [
+      "Devil",
+      "Pirate Ghost",
+      "Witch Ghost",
+      "Little Ghost",
+      "Spellbook",
+      "Cursed Ring",
+      "Skull Key",
+      "Ghost Lantern",
+      "Curse Potion",
+      "runes",
+      "9+"
+    ],
+    "26": [
+      "4 or more",
+      "touch",
+      "drop in",
+      "maximum win"
+    ],
+    "29": [
+      "Trigger",
+      "3 or more FS",
+      "Re-triggers"
+    ]
   }
 }
