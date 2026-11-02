@@ -518,6 +518,8 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .vx-break { position: absolute; inset: -6% -230%; z-index: 7; pointer-events: none; }
 .vx-break svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
   filter: drop-shadow(0 0 .2cqw rgb(150 255 225)) drop-shadow(0 0 .7cqw rgb(60 255 180 / .8)); }
+/* with the clip playing in the reel: a hole over the reel window (the overlay reaches 2.3 reel widths each side) */
+.vx-break.out { clip-path: polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 41.4% 5.6%, 41.4% 94.4%, 58.6% 94.4%, 58.6% 5.6%, 41.4% 5.6%); }
 .vx-break path { fill: none; stroke: #e3fff6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; }
 .vx-orb, .vx-boom { position: absolute; left: 50%; top: 44%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; }
 .vx-orb { width: 150%; z-index: 7; opacity: 0; background: radial-gradient(closest-side, #fff, rgb(170 255 215 / .95) 22%, rgb(60 255 170 / .55) 50%, transparent); }

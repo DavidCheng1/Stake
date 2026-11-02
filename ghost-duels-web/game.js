@@ -367,10 +367,11 @@ const vxBack = () => {
   return [div("vx-glow"), bg, div("vx-frame")];
 };
 // the Ghost Pirate laughing in the reel: a 1.6 s loop cut from the inside of the reel frame of the Gemini clip
-// (0.62-2.17 s, 16 fps plus RIFE in-betweens, assets/vs-pirate.webp); reduced motion shows its first frame
-function skullKing() {
-  const k = div("vx-king vid"), inner = div("vk"), body = new Image();
-  body.src = RM ? "assets/vs-pirate-still.webp" : "assets/vs-pirate.webp"; body.alt = "";
+// (0.62-2.17 s, 16 fps plus RIFE in-betweens, assets/vs-pirate.webp); reduced motion shows its first frame.
+// The intro card keeps the painted pirate (old: his map and telescope lens glowing, pirate-aura.webp).
+function skullKing(old = false) {
+  const k = div(old ? "vx-king" : "vx-king vid"), inner = div("vk"), body = new Image();
+  body.src = old ? "assets/pirate-aura.webp" : RM ? "assets/vs-pirate-still.webp" : "assets/vs-pirate.webp"; body.alt = "";
   inner.append(body); k.appendChild(inner);
   const win = div("vx-window"); win.appendChild(k); return win; // the frame's inner window clips him like a portrait
 }
@@ -752,6 +753,11 @@ const DUEL_T3 = [[150, 35], [200, 25], [250, 15], [300, 10], [500, 8], [750, 5],
 // value pools above are only used for the rolling badge animation
 // Before a duel the Ghost Pirate breaks out of the VS reel: he slams his hands against the glass left and right, it
 // cracks into lightning that runs out over the board, he gathers the energy and the reel bursts in a green flash.
+// Played from the clip (assets/vs-break.webp) when it has arrived and turbo is off; otherwise the quick version.
+// The clip is fetched once after the intro; each duel plays it from a fresh object URL, since an animated image
+// only starts over under a new URL.
+let breakBlob = null;
+const vsBreakClip = () => breakBlob && URL.createObjectURL(breakBlob);
 async function breakOut(tall, vsSym) {
   tall.classList.add("dueling");
   const king = q(tall, ".vx-king"), br = div("vx-break"), orb = div("vx-orb"), boom = div("vx-boom");
@@ -786,21 +792,44 @@ async function breakOut(tall, vsSym) {
     fx.emit(cx - cw / 2 + cw * fx2, cy - ch / 2 + ch * fy2, { n: 18, kind: "spark", rgb: "150 255 225", scale: u / 110 });
     king.animate([{ transform: "scale(1.06)" }, { transform: `translateX(${side * 4}%) rotate(${side * 1.6}deg) scale(1.1)`, offset: .3 }, { transform: "scale(1.07)" }], { duration: 360, fill: "forwards" });
   };
-  king.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "scale(1.06)", filter: "brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3)" }], { duration: 200, fill: "forwards" });
-  await sleep(180);
-  impact(.1, .4, -1); await sleep(200);
-  impact(.9, .46, 1);
-  br.animate([{ opacity: 1 }, { opacity: .5 }, { opacity: 1 }, { opacity: .7 }, { opacity: 1 }], { duration: 240, iterations: Infinity });
-  await sleep(220);
-  // he gathers the lightning into a ball of ghost fire
-  sound.charge(); shake(5, 420);
-  orb.animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(.7)", opacity: .9, offset: .5 }, { transform: "scale(.6)", opacity: .8, offset: .7 }, { transform: "scale(1.15)", opacity: 1 }], { duration: 380, fill: "forwards", easing: "ease-in" });
-  king.animate([{ transform: "scale(1.07)" }, { transform: "translateX(-1%) scale(1.08)" }, { transform: "translateX(1%) scale(1.07)" }, { transform: "scale(1.09)" }], { duration: 120, iterations: 3, fill: "forwards" });
-  for (let i = 0; i < 3; i++) {
-    const out = [], [ox, oy] = [T.left - B.left + T.width / 2, T.top - B.top + T.height * .44];
+  const flicker = () => br.animate([{ opacity: 1 }, { opacity: .5 }, { opacity: 1 }, { opacity: .7 }, { opacity: 1 }], { duration: 240, iterations: Infinity });
+  // short bolts crackling round the ball of ghost fire at (fx, .44) of the reel
+  const arcs = fx2 => {
+    const out = [], ox = T.left - B.left + T.width * fx2, oy = T.top - B.top + T.height * .44;
     for (let k = 0; k < 4; k++) bolt(ox, oy, Math.random() * Math.PI * 2, u * (.5 + Math.random() * .4), .6, out);
     draw(out, 90).forEach(p => p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, delay: 90, fill: "forwards" }));
-    await sleep(125);
+  };
+  const grow = ms => orb.animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(.7)", opacity: .9, offset: .5 }, { transform: "scale(.6)", opacity: .8, offset: .7 }, { transform: "scale(1.15)", opacity: 1 }], { duration: ms, fill: "forwards", easing: "ease-in" });
+  const clip = turbo ? null : vsBreakClip();
+  if (clip) {
+    // the clip (2.75-8.96 s of the Gemini video at 1.6x) plays in the reel: his hands on the glass until 1.38 s, then
+    // lightning at his hands, from 2.2 s he turns and charges at the left edge, and it bursts at 3.72 s. The cracks
+    // and the ball of ghost fire outside the frame keep to those times.
+    const v = new Image(); v.alt = ""; v.src = clip;
+    await v.decode().catch(() => {});
+    q(king, "img").replaceWith(v);
+    br.classList.add("out"); // the clip is the show inside the frame: the lightning only runs outside it
+    qa(tall, ".vx-swirl").forEach(e => e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: "forwards" }));
+    king.animate([{ filter: "brightness(1.6)" }, { filter: "brightness(1)" }], { duration: 300 }); shake(4, 300);
+    await sleep(1360);
+    impact(0, .42, -1); await sleep(120);
+    impact(1, .46, 1); flicker();
+    await sleep(720);
+    sound.charge(); shake(4, 1500);
+    Object.assign(orb.style, { left: "-35%", width: "90%" }); grow(1500); // at his hands, just outside the frame
+    for (let i = 0; i < 11; i++) { arcs(-.35); await sleep(138); }
+    later(() => URL.revokeObjectURL(clip), 3000);
+  } else {
+    king.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "scale(1.06)", filter: "brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3)" }], { duration: 200, fill: "forwards" });
+    await sleep(180);
+    impact(.1, .4, -1); await sleep(200);
+    impact(.9, .46, 1); flicker();
+    await sleep(220);
+    // he gathers the lightning into a ball of ghost fire
+    sound.charge(); shake(5, 420);
+    grow(380);
+    king.animate([{ transform: "scale(1.07)" }, { transform: "translateX(-1%) scale(1.08)" }, { transform: "translateX(1%) scale(1.07)" }, { transform: "scale(1.09)" }], { duration: 120, iterations: 3, fill: "forwards" });
+    for (let i = 0; i < 3; i++) { arcs(.5); await sleep(125); }
   }
   // the reel bursts
   sound.burst(); shake(14, 650);
@@ -2468,7 +2497,7 @@ const introDone = new Promise(resolve => {
       i18n("3 FS-Symbole starten den Bonus: Kisten mit Multiplikatoren und 3 Leben", "Land 3 FS symbols to start the bonus: crates with multipliers and 3 lives")),
     card("c-vs mid", [sym("blue", "g1"), sym("witch", "g2"), sym("vs", "v"), mult], i18n("VS-Duelle", "VS Duels"),
       i18n("VS-Walzen sind wild. Jede verbundene Gruppe startet ein Duell um Multiplikatoren bis ×1000", "VS reels are wild. Every connected group starts a duel for multipliers up to ×1000")),
-    card("c-max", [skullKing()], "Max Win",
+    card("c-max", [skullKing(true)], "Max Win",
       i18n(`Gewinne bis zu ${MAX_WIN_X.toLocaleString("de")}× deinen Einsatz`, `Win up to ${MAX_WIN_X.toLocaleString("en")}× your bet`)));
   const go = div("intro-go"); go.id = "introGo"; go.textContent = i18n("Klicken zum Fortfahren", "Click to continue");
   el.append(logo, cards, go);
@@ -2487,6 +2516,8 @@ const introDone = new Promise(resolve => {
   el.addEventListener("click", close); addEventListener("keydown", onKey, true);
   el.focus();
 });
+// the VS break-out clip (1.8 MB) loads behind the intro, not in the loading bar
+if (!RM) introDone.then(() => fetch("assets/vs-break.webp").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
 
 // the loading bar waits for the images of the first screen
 LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp",
