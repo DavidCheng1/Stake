@@ -498,6 +498,33 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .vx-mult { position: absolute; left: 50%; bottom: 3%; translate: -50% 0; z-index: 4; font-size: 2.8cqw; animation: vxAsk 1.8s ease-in-out infinite; }
 @keyframes vxAsk { 50% { scale: 1.12; opacity: .75; } }
 .vx-flash { position: absolute; inset: -4% -10%; border-radius: 12px; z-index: 6; pointer-events: none; background: radial-gradient(closest-side, #fff, rgb(var(--c) / .8) 50%, transparent); }
+/* the laughing pirate loop: the clip's reel window rows 180-1150 of 1252, faded out where our crest and x? sit */
+.vx-window .vx-king.vid { left: 0; top: 14.4%; width: 100%; height: 77.5%; aspect-ratio: auto; translate: none;
+  -webkit-mask: linear-gradient(transparent, #000 9%, #000 88%, transparent); mask: linear-gradient(transparent, #000 9%, #000 88%, transparent); }
+.vx-king.vid .vk { animation: none; }
+.vx-king.vid .vk img { object-fit: cover; object-position: 50% 0; }
+/* ghost flames orbiting the pirate: the ring's back half behind him (under the window), its front half over him */
+.vx-swirl { position: absolute; left: -45%; width: 190%; top: 27%; height: 24%; overflow: visible; pointer-events: none; z-index: 1;
+  filter: drop-shadow(0 0 .35cqw rgb(89 255 156 / .9)); }
+.vx-swirl.back { clip-path: inset(-20% -10% 50% -10%); opacity: .7; }
+.vx-swirl.front { z-index: 3; clip-path: inset(50% -10% -20% -10%); }
+.vx-swirl path { fill: none; stroke-linecap: round; vector-effect: non-scaling-stroke; animation: vxSwirl 1.7s linear infinite; }
+.vx-swirl .glow { stroke: rgb(70 255 150 / .5); stroke-width: 3.4cqw; filter: blur(.45cqw); animation-name: vxSwirl, vxFlick; animation-duration: 1.7s, .23s; animation-timing-function: linear, ease-in-out; animation-direction: normal, alternate; }
+.vx-swirl .body { stroke: rgb(120 255 185 / .7); stroke-width: 1.2cqw; filter: blur(.08cqw); }
+.vx-swirl .core { stroke: #effff7; stroke-width: .35cqw; }
+@keyframes vxSwirl { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -1; } }
+@keyframes vxFlick { to { stroke-width: 2.4cqw; } }
+/* the pirate breaks out before a duel: the glass cracks into lightning over the board, a ball of ghost fire, the green burst */
+.vx-break { position: absolute; inset: -6% -230%; z-index: 7; pointer-events: none; }
+.vx-break svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
+  filter: drop-shadow(0 0 .2cqw rgb(150 255 225)) drop-shadow(0 0 .7cqw rgb(60 255 180 / .8)); }
+.vx-break path { fill: none; stroke: #e3fff6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; }
+.vx-orb, .vx-boom { position: absolute; left: 50%; top: 44%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; }
+.vx-orb { width: 150%; z-index: 7; opacity: 0; background: radial-gradient(closest-side, #fff, rgb(170 255 215 / .95) 22%, rgb(60 255 170 / .55) 50%, transparent); }
+.vx-boom { width: 700%; z-index: 8; opacity: 0;
+  background: radial-gradient(closest-side, #fff 6%, rgb(200 255 215 / .95) 18%, rgb(90 255 160 / .65) 40%, rgb(40 200 120 / .25) 68%, transparent),
+    repeating-conic-gradient(from 7deg, rgb(200 255 220 / .55) 0 2deg, transparent 2deg 11deg);
+  -webkit-mask: radial-gradient(closest-side, #000 45%, transparent); mask: radial-gradient(closest-side, #000 45%, transparent); }
 /* landing state: only the VS, cell sized, in the middle of the reel */
 .vsx.small > :not(.vx-crest) { visibility: hidden; }
 .vsx.small .vx-crest { top: 50%; width: 70%; translate: -50% -50%; }
@@ -613,7 +640,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 
 @media (prefers-reduced-motion: reduce) {
   .rig, .p-head, .p-tail, .p-hat, .p-jaw, .glow, .aura, .gloss, .tall.win::after, .lit,
-  .vx-glow, .vx-rays, .vx-smoke, .vx-fog, .vk, .vk img, .vx-mult, #turboBtn { animation: none !important; }
+  .vx-glow, .vx-rays, .vx-smoke, .vx-fog, .vk, .vk img, .vx-mult, .vx-swirl path, #turboBtn { animation: none !important; }
 }
 
 /* Intro: three feature cards in the menu frame (stone, gold rim, corner pieces); a click or key press continues */
