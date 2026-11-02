@@ -366,16 +366,32 @@ const vxBack = () => {
   const bg = div("vx-bg"); bg.append(div("vx-rays"), div("vx-smoke"), div("vx-smoke b"), div("vx-fog"));
   return [div("vx-glow"), bg, div("vx-frame")];
 };
-function skullKing() { // the Ghost Pirate, his map and telescope lens glowing (newCharacterGhostPirate/make_hero.py)
-  const k = div("vx-king"), inner = div("vk"), body = new Image();
-  body.src = "assets/pirate-aura.webp"; body.alt = "";
+// the Ghost Pirate laughing in the reel: a 1.6 s loop cut from the inside of the reel frame of the Gemini clip
+// (0.62-2.17 s, 16 fps plus RIFE in-betweens, assets/vs-pirate.webp); reduced motion shows its first frame
+function skullKing() {
+  const k = div("vx-king vid"), inner = div("vk"), body = new Image();
+  body.src = RM ? "assets/vs-pirate-still.webp" : "assets/vs-pirate.webp"; body.alt = "";
   inner.append(body); k.appendChild(inner);
   const win = div("vx-window"); win.appendChild(k); return win; // the frame's inner window clips him like a portrait
+}
+// two ghost flames orbit the pirate on a tilted ring: each flame is three stacked dashes (wide glow, body, white core)
+// whose heads line up, running round the ring; the back half of the ring is drawn behind him, the front half over him
+function vxSwirl(half) {
+  const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"), g = document.createElementNS(NS, "g");
+  svg.setAttribute("viewBox", "0 0 200 100"); svg.setAttribute("class", "vx-swirl " + half);
+  g.setAttribute("transform", "rotate(-10 100 50)"); svg.appendChild(g);
+  for (const [len, cls] of [[.34, "glow"], [.26, "body"], [.14, "core"]]) {
+    const p = document.createElementNS(NS, "path");
+    p.setAttribute("d", "M8 50 A92 26 0 1 1 192 50 A92 26 0 1 1 8 50"); p.setAttribute("pathLength", "1"); p.setAttribute("class", cls);
+    p.style.strokeDasharray = `${len} ${.5 - len}`; p.style.animationDelay = `${((len - .34) * 1.7).toFixed(3)}s, 0s`; // heads lined up: the shorter dashes run a little ahead
+    g.appendChild(p);
+  }
+  return svg;
 }
 function showTallVS(rl, small) {
   const t = rl.tall; t.hidden = false; t.className = "tall vsx" + (small ? " small" : ""); t.style.removeProperty("--c");
   const crest = div("vx-crest"), mult = div("vx-mult badge"); crest.appendChild(makeSym("vs")); mult.textContent = "×?";
-  t.replaceChildren(...vxBack(), skullKing(), crest, mult);
+  t.replaceChildren(...vxBack(), vxSwirl("back"), skullKing(), vxSwirl("front"), crest, mult);
   rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = "hidden"; });
 }
 // duel winner: the character in the frame with its multiplier at the bottom
@@ -734,6 +750,70 @@ const DUEL_T1 = [[2, 30], [3, 25], [4, 18], [5, 12], [6, 7], [8, 5], [10, 3]];
 const DUEL_T2 = [[20, 30], [25, 22], [30, 18], [40, 13], [50, 9], [75, 5], [100, 3]];
 const DUEL_T3 = [[150, 35], [200, 25], [250, 15], [300, 10], [500, 8], [750, 5], [1000, 2]];
 // value pools above are only used for the rolling badge animation
+// Before a duel the Ghost Pirate breaks out of the VS reel: he slams his hands against the glass left and right, it
+// cracks into lightning that runs out over the board, he gathers the energy and the reel bursts in a green flash.
+async function breakOut(tall, vsSym) {
+  tall.classList.add("dueling");
+  const king = q(tall, ".vx-king"), br = div("vx-break"), orb = div("vx-orb"), boom = div("vx-boom");
+  const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+  br.appendChild(svg); tall.append(br, orb, boom);
+  const B = br.getBoundingClientRect(), T = tall.getBoundingClientRect(), u = T.width;
+  svg.setAttribute("viewBox", `0 0 ${B.width} ${B.height}`);
+  const [cx, cy, cw, ch] = centerOf(tall);
+  // a jagged bolt from (x, y) heading ang, forking now and then; collected as [path, width]
+  const bolt = (x, y, ang, len, w, out) => {
+    let d = `M${x.toFixed(1)} ${y.toFixed(1)}`; const steps = 6 + rnd(4), seg = len / steps;
+    for (let i = 0; i < steps; i++) {
+      ang += (Math.random() - .5) * .9; x += Math.cos(ang) * seg; y += Math.sin(ang) * seg; d += ` L${x.toFixed(1)} ${y.toFixed(1)}`;
+      if (w > .5 && Math.random() < .22) bolt(x, y, ang + (Math.random() < .5 ? -1 : 1) * (.5 + Math.random() * .6), len * (.3 + Math.random() * .3), w * .55, out);
+    }
+    out.push([d, w]);
+  };
+  const web = (x, y, r) => { let d = ""; for (let i = 0; i <= 11; i++) { const a = i / 11 * Math.PI * 2, rr = r * (.75 + Math.random() * .5); d += (i ? " L" : "M") + (x + Math.cos(a) * rr).toFixed(1) + " " + (y + Math.sin(a) * rr).toFixed(1); } return d; };
+  const draw = (list, dur) => list.map(([d, w]) => {
+    const p = document.createElementNS(NS, "path"); p.setAttribute("d", d); p.setAttribute("pathLength", "1"); p.style.strokeWidth = (w * u * .04).toFixed(2); svg.appendChild(p);
+    p.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: dur, easing: "cubic-bezier(.2,.8,.3,1)" }); return p;
+  });
+  // a hand hits the glass at (fx, fy) of the reel: the cracks run furthest away from the reel, on the hand's side
+  const impact = (fx2, fy2, side) => {
+    const x = T.left - B.left + T.width * fx2, y = T.top - B.top + T.height * fy2, out = [], n = 9, out0 = side < 0 ? Math.PI : 0;
+    for (let i = 0; i < n; i++) {
+      const ang = i / n * Math.PI * 2 + Math.random() * .5, away = Math.cos(ang - out0) > .2;
+      bolt(x, y, ang, u * (away ? 1.5 + Math.random() * 1.2 : .5 + Math.random() * .5), 1, out);
+    }
+    out.push([web(x, y, u * .22), .7], [web(x, y, u * .45), .5]);
+    draw(out, 260); sound.crack(); shake(7, 260);
+    fx.emit(cx - cw / 2 + cw * fx2, cy - ch / 2 + ch * fy2, { n: 18, kind: "spark", rgb: "150 255 225", scale: u / 110 });
+    king.animate([{ transform: "scale(1.06)" }, { transform: `translateX(${side * 4}%) rotate(${side * 1.6}deg) scale(1.1)`, offset: .3 }, { transform: "scale(1.07)" }], { duration: 360, fill: "forwards" });
+  };
+  king.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "scale(1.06)", filter: "brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3)" }], { duration: 200, fill: "forwards" });
+  await sleep(180);
+  impact(.1, .4, -1); await sleep(200);
+  impact(.9, .46, 1);
+  br.animate([{ opacity: 1 }, { opacity: .5 }, { opacity: 1 }, { opacity: .7 }, { opacity: 1 }], { duration: 240, iterations: Infinity });
+  await sleep(220);
+  // he gathers the lightning into a ball of ghost fire
+  sound.charge(); shake(5, 420);
+  orb.animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(.7)", opacity: .9, offset: .5 }, { transform: "scale(.6)", opacity: .8, offset: .7 }, { transform: "scale(1.15)", opacity: 1 }], { duration: 380, fill: "forwards", easing: "ease-in" });
+  king.animate([{ transform: "scale(1.07)" }, { transform: "translateX(-1%) scale(1.08)" }, { transform: "translateX(1%) scale(1.07)" }, { transform: "scale(1.09)" }], { duration: 120, iterations: 3, fill: "forwards" });
+  for (let i = 0; i < 3; i++) {
+    const out = [], [ox, oy] = [T.left - B.left + T.width / 2, T.top - B.top + T.height * .44];
+    for (let k = 0; k < 4; k++) bolt(ox, oy, Math.random() * Math.PI * 2, u * (.5 + Math.random() * .4), .6, out);
+    draw(out, 90).forEach(p => p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, delay: 90, fill: "forwards" }));
+    await sleep(125);
+  }
+  // the reel bursts
+  sound.burst(); shake(14, 650);
+  boom.animate([{ transform: "scale(.15)", opacity: 1 }, { transform: "scale(1)", opacity: .95, offset: .35 }, { transform: "scale(1.5)", opacity: 0 }], { duration: 750, easing: "ease-out", fill: "forwards" })
+    .finished.then(() => boom.remove());
+  [orb, br].forEach(e => e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }));
+  qa(tall, ".vx-king, .vx-mult, .vx-swirl").forEach(e => e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" }));
+  vsSym.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(.4) rotate(20deg)", opacity: 0 }], { duration: 300, fill: "forwards" });
+  fx.emit(cx, cy - ch * .06, { n: 50, kind: "spark", rgb: "120 255 170", scale: u / 70 });
+  for (let i = 0; i < 12; i++) fx.emit(cx, cy - ch * .06, { kind: "smoke", n: 1, rgb: "150 255 200", scale: u / 60, ang: Math.random() * Math.PI * 2, sp: 3 });
+  await sleep(240);
+  br.remove(); orb.remove();
+}
 // The vsDuel event decides everything shown here; challengers that lose are only for tension.
 async function reelDuel(d) {
   nextSequence();
@@ -770,10 +850,8 @@ async function reelDuel(d) {
   let top = fighter("top", ghostTop), bot = fighter("bot", ghostBot);
   mid.appendChild(makeSym("vs"));
   arena.append(top.el, bot.el, mid, fl);
-  vsSym.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(.4) rotate(20deg)", opacity: 0 }], { duration: 350, fill: "forwards" });
-  qa(tall, ".vx-king, .vx-mult").forEach(e => e.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.7)" }], { duration: 350, fill: "forwards" }));
-  await sleep(250);
-  tall.classList.add("dueling"); tall.appendChild(arena);
+  await breakOut(tall, vsSym);
+  tall.appendChild(arena);
   const [cx, cy, cw] = centerOf(tall);
   const enter = (f, fromTop, delay = 0) => f.el.animate([{ transform: `translateY(${fromTop ? -120 : 120}%) scale(.6)`, opacity: 0 }, { transform: `translateY(${fromTop ? 6 : -6}%) scale(1.05)`, opacity: 1, offset: .7 }, { transform: "none", opacity: 1 }], { duration: 520, delay, easing: "ease-out", fill: "backwards" }).finished;
   const slamVs = async () => {
@@ -1603,6 +1681,12 @@ const sound = (() => {
       const t = at(); if (t == null) return;
       tone(t, { f: 95, f2: 30, a: .004, d: .65, vol: .55 }); tone(t, { type: "sawtooth", f: 180, f2: 60, a: .004, d: .3, vol: .06 });
       hiss(t, { f: 3200, f2: 350, q: .7, a: .01, d: .7, vol: .3 }); tone(t + .05, { type: "triangle", f: 1320, d: .5, vol: .03 });
+    },
+    // the VS glass cracks under the pirate's hand: a sharp crack, glassy ticks and a low thud
+    crack() {
+      const t = at(); if (t == null) return;
+      hiss(t, { f: 5200, q: .9, a: .002, d: .09, vol: .3 }); tone(t, { f: 110, f2: 50, a: .003, d: .18, vol: .35 });
+      for (let i = 0; i < 5; i++) tone(t + .01 + i * .022, { type: "triangle", f: 2400 + Math.random() * 2600, d: .06, vol: .03 });
     },
     // a winning group: haunted bells climbing the scale; bigger groups and better symbols ring higher and longer
     win(size = 4, tier = "obj") {
