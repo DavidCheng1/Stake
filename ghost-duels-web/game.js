@@ -284,11 +284,27 @@ const fx = (() => {
     if (ready) SPR.set(key, sp);
     return sp;
   }
+  // a gold coin, face on (the back a shade darker), drawn once
+  function coinSprite(back) {
+    const key = back ? "coin-b" : "coin"; let sp = SPR.get(key); if (sp) return sp;
+    sp = document.createElement("canvas"); sp.width = sp.height = 48; const c = sp.getContext("2d");
+    const g = c.createRadialGradient(18, 16, 2, 24, 24, 24);
+    g.addColorStop(0, back ? "#ffe9a0" : "#fff6c8"); g.addColorStop(.45, back ? "#d99a1c" : "#f2c341"); g.addColorStop(1, "#8a5206");
+    c.fillStyle = g; c.beginPath(); c.arc(24, 24, 23, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = "rgba(120,70,4,.9)"; c.lineWidth = 2.5; c.beginPath(); c.arc(24, 24, 16, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = "rgba(255,246,200,.75)"; c.lineWidth = 1.5; c.beginPath(); c.arc(24, 24, 21.5, Math.PI * 1.1, Math.PI * 1.7); c.stroke();
+    SPR.set(key, sp);
+    return sp;
+  }
   function emit(x, y, o = {}) {
     if (RM) return;
     x += OX; y += OY;
     const n = o.n ?? 20, s = o.scale ?? 1, kind = o.kind ?? "wisp", rgb = (o.rgb ?? "89 255 156").split(" ").join(",");
     for (let i = 0; i < n; i++) {
+      if (kind === "coin") { // a gold coin thrown up, spinning as it falls
+        parts.push({ x: x + (Math.random() - .5) * (o.spread ?? 0), y, vx: (Math.random() - .5) * 7 * s, vy: -(5 + Math.random() * 7) * s, g: .32 * s, life: 1, r: (6 + Math.random() * 5) * s, kind, spin: Math.random() * 6.3, vs: .12 + Math.random() * .18 });
+        continue;
+      }
       if (kind === "smoke") { // slow, growing puff; o.ang / o.sp aim it
         const ang = (o.ang ?? Math.random() * Math.PI * 2) + (Math.random() - .5) * .5, sp = (o.sp ?? 1) * (.6 + Math.random() * .8) * s;
         parts.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 1, r: (5 + Math.random() * 5) * s, kind, rgb, rot: Math.random() * 6.3, vr: (Math.random() - .5) * .03 });
@@ -313,6 +329,11 @@ const fx = (() => {
         p.x += p.vx; p.y += p.vy; p.vx *= .975; p.vy = p.vy * .975 - .01; p.r *= 1.011; p.rot += p.vr; p.life -= .0085;
         ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = Math.max(0, p.life) * Math.min(1, (1 - p.life) * 8) * .6;
         ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.drawImage(smokeSprite(p.rgb), -p.r * 2, -p.r * 2, p.r * 4, p.r * 4); ctx.restore();
+      } else if (p.kind === "coin") {
+        p.x += p.vx; p.y += p.vy; p.vy += p.g; p.vx *= .99; p.spin += p.vs; p.life -= p.y > H ? 1 : .006;
+        const face = Math.cos(p.spin);
+        ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = Math.min(1, p.life * 3);
+        ctx.translate(p.x, p.y); ctx.scale(Math.max(.12, Math.abs(face)), 1); ctx.drawImage(coinSprite(face < 0), -p.r, -p.r, p.r * 2, p.r * 2); ctx.restore();
       } else if (p.kind === "bubble") {
         p.wob += .12; p.x += p.vx * .4 + Math.sin(p.wob) * .5; p.y += p.vy * .7; p.life -= .014;
         ctx.strokeStyle = `rgba(${p.rgb},${p.life})`; ctx.lineWidth = 1.5;
@@ -967,6 +988,89 @@ async function banner(title, sub, hold = 1700) {
   bannerEl.hidden = true;
 }
 
+// ---------- Win tiers after the free spins, before the Total Win: the bonus win counts up while the title steps up
+// through BIG, SUPER, MEGA and EPIC WIN as it passes each tier (x: times the bet), each title bigger than the one
+// before. The titles are rigs put together by tools/sprites/win_tiers_assets.py; they load when a bonus starts. ----------
+const WIN_TIERS = [
+  { key: "big", x: 20, rgb: "211 107 255" },
+  { key: "super", x: 50, rgb: "63 242 220" },
+  { key: "mega", x: 150, rgb: "255 122 42" },
+  { key: "epic", x: 500, rgb: "93 255 143" },
+];
+const tierRigs = {};
+function preloadWinTiers() {
+  const width = stage.getBoundingClientRect().width * .7;
+  for (const t of WIN_TIERS) tierRigs[t.key] ??= RigPlayer.load("assets/win-tiers/" + t.key, { width }).catch(() => null);
+}
+// returns false when the win is below the first tier or the art is missing (then the Total Win counts it up itself)
+async function winTierScreen(total) {
+  const top = WIN_TIERS.findLastIndex(t => total >= t.x * bet);
+  if (top < 0) return false;
+  preloadWinTiers();
+  const rigs = await Promise.all(WIN_TIERS.slice(0, top + 1).map(t => tierRigs[t.key]));
+  if (rigs.some(r => !r)) return false;
+  nextSequence();
+  const el = document.getElementById("winTier"), box = document.getElementById("wtArt"), amtEl = document.getElementById("wtAmount"), flash = document.getElementById("wtFlash");
+  const center = () => { const b = box.getBoundingClientRect(), s = stage.getBoundingClientRect(); return [b.left - s.left + b.width / 2, b.top - s.top + b.height / 2, b.width]; };
+  let anim = null, rain = 0, lvl = 0;
+  // a title lands: the last one flies off, a flash, a shake, coins and sparks, and a higher sound for each tier
+  const enter = i => {
+    const t = WIN_TIERS[i], cv = document.createElement("canvas"), old = box.lastElementChild, oldAnim = anim;
+    el.dataset.tier = t.key; lvl = i;
+    box.append(cv);
+    anim = RigPlayer.play(cv, rigs[i], { intro: !RM, still: RM });
+    if (old) old.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(1.4)" }], { duration: 300, easing: "ease-in", fill: "forwards" })
+      .finished.then(() => { oldAnim?.stop(); old.remove(); });
+    sound.tierUp(i); hero.react("cheer", 2600);
+    if (RM) return;
+    flash.animate([{ opacity: 0 }, { opacity: .55 + i * .1, offset: .25 }, { opacity: 0 }], { duration: 500, easing: "ease-out" });
+    shake(5 + i * 3, 380 + i * 80);
+    later(() => { // when the title lands
+      const [x, y, w] = center();
+      fx.emit(x, y + w * .12, { n: 14 + i * 10, kind: "coin", spread: w * .5, scale: w / 700 });
+      fx.emit(x, y, { n: 30 + i * 12, kind: "spark", rgb: t.rgb, scale: w / 420 });
+    }, 330);
+  };
+  // coins keep raining, more for each tier, while it counts
+  const coins = () => {
+    if (el.hidden || RM) return;
+    const [x, y, w] = center();
+    fx.emit(x, y + w * .1, { n: 1 + Math.floor(lvl / 2), kind: "coin", spread: w * .9, scale: w / 800 });
+    rain = setTimeout(coins, 160 - lvl * 25);
+  };
+  // counts from a to b: an even pace into the next tier, slowing down into the total; it follows the pace, so a skip
+  // finishes it at once
+  const count = (a, b, last) => new Promise(res => {
+    const dur = last ? 2600 : 1900;
+    let k = 0, prev = performance.now(), tick = 0;
+    (function step(t) {
+      k = Math.min(1, k + Math.max(0, t - prev) * pace() / dur); prev = Math.max(prev, t);
+      const e = last ? 1 - Math.pow(1 - k, 3) : k;
+      amtEl.textContent = money(k < 1 ? RGS.roundMoney(a + (b - a) * e) : b);
+      if (k < 1 && t - tick > 85) { tick = t; sound.tick(); }
+      if (k < 1) requestAnimationFrame(step); else res();
+    })(prev);
+  });
+  box.replaceChildren(); amtEl.textContent = money(0); el.hidden = false;
+  el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
+  // each tier counts up to where the next one starts; the top one up to the total
+  const ends = WIN_TIERS.slice(1, top + 1).map(t => t.x * bet).concat(total);
+  let from = 0;
+  for (let i = RM ? top : 0; i <= top; i++) {
+    enter(i);
+    if (i === 0) coins();
+    await count(from, RM ? total : ends[i], i === top);
+    from = ends[i];
+    if (slam) anim.skipIntro();
+  }
+  if (!RM) amtEl.animate([{ transform: "scale(1)" }, { transform: "scale(1.2)" }, { transform: "scale(1)" }], { duration: 420, easing: "ease-out" });
+  await sleep(1400);
+  clearTimeout(rain);
+  await el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).finished;
+  el.hidden = true; anim.stop(); box.replaceChildren();
+  return true;
+}
+
 // ---------- Total Win screen after the free spins: the emblem plays its intro once, then its loop, while the bonus
 // win counts up under it. It loads when a bonus starts; reduced motion shows a still. ----------
 // the emblem's parts move live (rigplayer.js), with their lights; put together from the asset sheet by
@@ -976,8 +1080,9 @@ let twRig = null;
 function preloadTotalWin() {
   twRig ??= RigPlayer.load(TW_RIG, { width: stage.getBoundingClientRect().width * .62 }).catch(() => null);
 }
-// returns false when the art is missing, then the caller shows the plain banner
-async function totalWinScreen(total, spins) {
+// returns false when the art is missing, then the caller shows the plain banner. counted: the win tiers counted it
+// up already, so it shows at once
+async function totalWinScreen(total, spins, counted = false) {
   nextSequence();
   preloadTotalWin();
   const intro = !RM && !turbo; // turbo starts on the loop
@@ -987,7 +1092,7 @@ async function totalWinScreen(total, spins) {
   const x = (Math.round(total / bet * 100) / 100).toLocaleString(RGS.lang, { maximumFractionDigits: 2 });
   document.getElementById("twSub").textContent = i18n(`${spins} Freispiele gespielt · ${x}× Einsatz`, `${spins} free spins played · ${x}× bet`);
   const cv = document.createElement("canvas");
-  box.replaceChildren(cv); amtEl.textContent = money(0); el.hidden = false;
+  box.replaceChildren(cv); amtEl.textContent = money(counted ? total : 0); el.hidden = false;
   const anim = RigPlayer.play(cv, rig, { intro, still: RM });
   hero.react("cheer", 4000); sound.fanfare();
   el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
@@ -1001,8 +1106,8 @@ async function totalWinScreen(total, spins) {
   };
   ember();
   // the amount counts up while the emblem arrives; it follows the pace, so a skip finishes it at once
-  let k = 0, last = performance.now(), lastTick = 0;
-  const counted = new Promise(res => (function step(t) {
+  let k = counted ? 1 : 0, last = performance.now(), lastTick = 0;
+  const done = new Promise(res => (function step(t) {
     k = Math.min(1, k + Math.max(0, t - last) * pace() / 2400); last = Math.max(last, t);
     amtEl.textContent = money(k < 1 ? RGS.roundMoney(total * (1 - Math.pow(1 - k, 3))) : total);
     if (k < 1 && t - lastTick > 85) { lastTick = t; sound.tick(); }
@@ -1012,7 +1117,7 @@ async function totalWinScreen(total, spins) {
     while (!anim.introDone && !slam) await new Promise(r => setTimeout(r, 40));
     anim.skipIntro();
   }
-  await counted;
+  await done;
   if (!RM) amtEl.animate([{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }], { duration: 420, easing: "ease-out" });
   await sleep(2200);
   await el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).finished;
@@ -1041,8 +1146,14 @@ function makeCrate(id, mult) {
 function makeRune(v, id) {
   const el = div("rtok"); el.style.setProperty("--c", SYM[id].rgb);
   const img = new Image(); img.src = IMG[id]; img.alt = ""; img.draggable = false;
-  const t = document.createElement("span"); t.className = "rv"; t.textContent = fmtV(v * bet);
+  const t = document.createElement("span"); t.className = "rv"; setRv(t, fmtV(v * bet));
   el.append(img, t); return el;
+}
+// a rune's value: up to 6 characters at full size, longer amounts (high bets, multiplied wins) smaller, so they stay
+// inside the rune
+function setRv(t, text) {
+  t.textContent = text;
+  t.style.setProperty("--fit", Math.min(1, 6.5 / text.length).toFixed(3));
 }
 function dropIn(el, heavy) {
   if (RM) return;
@@ -1186,7 +1297,7 @@ async function harvest(start, spinEvents, end) {
   const fsCells = start.crates.map(k => [k.reel, k.row]), n = Math.min(7, fsCells.length);
   say(`${n} FS · ${i18n("Freispiele!", "Free Spins!")}`);
   stage.classList.add("bonus");
-  preloadTotalWin();
+  preloadTotalWin(); preloadWinTiers();
   await banner(n === 3 ? i18n("Geisterkisten", "Ghost Crates") : `${n} ${i18n("Geisterkisten", "Ghost Crates")}`, i18n(`3 Leben · Nur Runen in ${MIN_LINK}er-Gruppen an einer Kiste zählen`, `3 lives · Only groups of ${MIN_LINK}+ runes touching a crate count`), 2100);
   K = reels.map(() => Array(ROWS).fill(null));
   reels.forEach(rl => { rl.tall.hidden = true; rl.tall.replaceChildren(); rl.cells.forEach(c => c.style.visibility = ""); });
@@ -1245,7 +1356,7 @@ async function harvest(start, spinEvents, end) {
     await sleep(500);
     await Promise.all(g.cells.map(([c, r], i) => sleep(i * 40).then(() => {
       const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v * bet, to = from * g.mult, t0 = performance.now();
-      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); t.textContent = fmtV(k < 1 ? RGS.roundMoney(from + (to - from) * k) : to); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
+      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtV(k < 1 ? RGS.roundMoney(from + (to - from) * k) : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
     })));
     shake(6, 300);
     await sleep(450);
@@ -1272,7 +1383,8 @@ async function harvest(start, spinEvents, end) {
   }
   await countTo(total, 400);
   livesEl.hidden = true;
-  if (!(total > 0 && await totalWinScreen(total, spinEvents.length)))
+  const tiered = total > 0 && await winTierScreen(total);
+  if (!(total > 0 && await totalWinScreen(total, spinEvents.length, tiered)))
     await banner(total >= 50 * bet ? i18n("Riesige Beute!", "Huge Haul!") : i18n("Freispiele vorbei", "Free Spins over"), i18n(money(total) + " gewonnen", money(total) + " won"), 2200);
   say(i18n(`Geisterkisten · ${money(total)} gewonnen`, `Ghost Crates · ${money(total)} won`));
   stage.classList.remove("bonus");
@@ -1381,7 +1493,9 @@ async function playRound(events, resumed) {
         while (events[i + 1].type === "bonusSpin") spins.push(events[++i]);
         const end = events[++i];
         if (start.type !== "bonusStart" || end.type !== "bonusEnd") throw new Error("malformed bonus events");
-        won += await harvest(start, spins, end);
+        const bonusWin = await harvest(start, spins, end);
+        won += bonusWin;
+        if (bonusWin >= WIN_TIERS[0].x * bet) bigPlayed = true; // the win tiers and the Total Win celebrated it already
         RGS.saveEvent(end.index);
         break;
       }
@@ -1790,6 +1904,12 @@ const sound = (() => {
       [12, 15, 19, 22, 24, 27, 31].forEach((n, i) => bell(t + .2 + i * .08, NOTE(n), .07, 1.6));
       if (max) growl(t, 1.6, .09);
     },
+    // a win tier lands (0 BIG ... 3 EPIC): a hit and a bright major run of bells, two semitones higher for each tier
+    tierUp(level = 0) {
+      const t = at(); if (t == null) return; duck(2.6);
+      tone(t, { f: 95, f2: 38, a: .004, d: .5, vol: .5, rev: .3 }); hiss(t, { f: 3000, f2: 500, q: .7, a: .01, d: .3, vol: .16, rev: .3 });
+      [12, 16, 19, 24, 28].forEach((n, i) => bell(t + .06 + i * .065, NOTE(n + level * 2), .08, 1.5));
+    },
     // an FS symbol lands: a heavy hit and a bright bell, a step higher for each FS already in this spin
     fsLand(nth = 1) { const t = at(); if (t == null) return; const up = 2 ** ((Math.min(nth, 7) - 1) * 2 / 12); tone(t, { f: 95, f2: 32, a: .003, d: .5, vol: .55 }); bell(t, NOTE(0) * up, .2, 1.8, .6); bell(t + .03, NOTE(7) * up, .1, 1.4, .6); },
     // one free-spin symbol away (2.4 s per teasing reel): synth fallback for the designed edging music
@@ -1860,6 +1980,16 @@ const sound = (() => {
   // edging music under each teasing reel (the music dips from the tease itself); each further reel starts a semitone higher
   use("edge", 0, (t, d, nth = 1) => smp("edge", t, .8, 2 ** ((Math.min(nth, 5) - 1) / 12)));
   use("fsLand", null, (t, nth = 1) => { duck(1.2); return smp("fs_land", t, 1, 2 ** ((Math.min(nth, 7) - 1) * 2 / 12)); });
+  // a win tier: the VS burst as its hit, coins pouring with the first one, and a major run of chimes that climbs with
+  // every tier
+  use("tierUp", null, (t, level = 0) => {
+    if (!buf.burst || !buf.chime) return false;
+    duck(2.6);
+    smp("burst", t, .55, 1 + level * .06);
+    if (level === 0) smp("bigwin", t + .04, .5);
+    [0, 4, 7, 12, 16].slice(0, 3 + Math.min(level, 2)).forEach((n, i) => smp("chime", t + .07 + i * .065, .3, pitch(12 + n + level * 2)));
+    return true;
+  });
   use("bigWin", null, (t, max = false) => { duck(max ? 4 : 3); if (!smp("bigwin", t, .8)) return false; if (max) smp("sting_devil", t + .3, .45); return true; });
 
   return {

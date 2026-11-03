@@ -28,6 +28,7 @@ const RigPlayer = (() => {
     if (tr.wave === "flap") return tr.amount * Math.sin(th + .45 * Math.sin(th));
     if (tr.wave === "bounce") return tr.amount * Math.abs(Math.sin(th / 2));
     if (tr.wave === "flicker") return tr.amount * (.6 * Math.sin(th) + .4 * Math.sin(3 * th + 1.7));
+    if (tr.wave === "strike") return tr.amount * Math.max(0, Math.sin(th)) ** 14 * (.6 + .4 * Math.sin(9 * th)); // a short flash, flickering
     return tr.amount * Math.sin(th);
   }
   function keyed(keys, t) {
@@ -182,7 +183,8 @@ const RigPlayer = (() => {
           // "loop": false shows only in the intro; "flash" keys scale it during the intro
           if (e.loop === false && ti == null) continue;
           const base = e.min ?? 0;
-          let w = e.loop === false ? 1 : e.wave === "flicker" ? clamp(.5 + .5 * wave({ ...e, amount: 1 }, t)) : base + (1 - base) * (.5 + .5 * Math.sin(TAU * ((e.cycles ?? 1) * t + (e.phase ?? 0))));
+          let w = e.loop === false ? 1 : e.wave === "flicker" ? clamp(.5 + .5 * wave({ ...e, amount: 1 }, t)) : e.wave === "strike" ? clamp(wave({ ...e, amount: 1 }, t))
+            : base + (1 - base) * (.5 + .5 * Math.sin(TAU * ((e.cycles ?? 1) * t + (e.phase ?? 0))));
           if (e.flash && ti != null) w *= keyed(e.flash, ti);
           ctx.globalAlpha = clamp(a * (e.amount ?? .6) * w);
           if (ctx.globalAlpha > .003) blit(ctx, e, ...e.box);
