@@ -969,8 +969,8 @@ async function banner(title, sub, hold = 1700) {
 
 // ---------- Total Win screen after the free spins: the emblem plays its intro once, then its loop, while the bonus
 // win counts up under it. It loads when a bonus starts; reduced motion shows a still. ----------
-// the emblem is vector art (tools/sprites/total_win_svg.py) whose parts move live (rigplayer.js), rendered at the
-// screen's own resolution
+// the emblem's parts move live (rigplayer.js), with their lights; put together from the asset sheet by
+// tools/sprites/total_win_assets.py
 const TW_RIG = "assets/total-win";
 let twRig = null;
 function preloadTotalWin() {

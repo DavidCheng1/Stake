@@ -166,8 +166,9 @@
         "prompt_influence": 0.6,
         "takes": 6,
         "prompts": [
-          "Reverse cymbal swell: a reversed crash cymbal and a reversed magic whoosh, quiet at first and growing louder and louder for one second, ending abruptly at its loudest point. Electric green energy crackle, tension, Halloween.",
-          "Fast energy charge-up riser: a reversed sparkle shimmer and a crackling electric hum swelling from silence to a loud peak, rising in pitch, cut off sharply at the end. Power about to explode, game sound effect."
+          "Versus showdown wind-up: a fast taiko drum roll and a rising string tremolo swelling from quiet to loud over one second, crackling green electricity on top, ending abruptly at its loudest. Tense, epic, fighting game, Halloween.",
+          "Fighting game VS build-up: a reversed ghostly whoosh pulled in from both sides, a tightening electric hum rising in pitch and an accelerating heartbeat drum, louder and louder, cut off sharply at the peak. Dark, tense, exciting.",
+          "Reversed cymbal and reversed ghost shriek swelling from silence to a loud peak in one second, with rising crackles of green lightning, ending abruptly at its loudest. Dramatic versus screen build-up, Halloween slot game."
         ]
       },
       "judge": {
@@ -188,13 +189,13 @@
         "frequency": "every VS reel and duel"
       },
       "gen": {
-        "duration_s": 2.0,
-        "prompt_influence": 0.5,
+        "duration_s": 1.6,
+        "prompt_influence": 0.55,
         "takes": 6,
         "prompts": [
-          "Instant cinematic impact hit: a huge punchy boom with a bright glass shatter and an explosion of magic sparkles, short deep tail. Epic, exciting feature reveal for a slot game, loud, wide stereo.",
-          "Instant explosion: a massive punchy boom and a crack of green lightning, flying debris and a short rumbling tail. Powerful, exciting game sound effect, loud, punchy.",
-          "Wild reel unlocked: an instant heavy metal gate slam and a magical burst of energy with a bright sparkle shimmer, short tail. Exciting, powerful, casino game, loud, punchy."
+          "Fighting game VS slam: two sword blades clash with a bright metallic shing at the very same instant as a huge taiko and bass boom, a crack of green lightning and a short ghostly roar, short tail. Epic versus reveal, punchy, loud.",
+          "Versus title impact: an instant double hit, a deep orchestral brass stab with a giant taiko drum and a sharp metal clang, an electric zap and scattering sparks, short rumbling tail. Epic duel begins, Halloween, loud, punchy.",
+          "Two ghosts collide head-on: an instant thunderous boom and a bright metallic shing, a burst of crackling green energy and a short spectral howl fading out. Epic showdown reveal, game sound effect, loud, punchy, wide stereo."
         ]
       },
       "judge": {
@@ -331,7 +332,7 @@
     },
     {
       "name": "fanfare",
-      "role": "Free spins (Ghost Crates bonus) triggered: the music dips 3.2 s under it.",
+      "role": "Free spins (Ghost Crates bonus) triggered, and the Total Win screen after the bonus: the music dips 3.2 s under it.",
       "use": {
         "vol": 0.75,
         "rates": [
@@ -341,13 +342,13 @@
         "frequency": "bonus trigger"
       },
       "gen": {
-        "duration_s": 5.0,
-        "prompt_influence": 0.45,
+        "duration_s": 4.5,
+        "prompt_influence": 0.55,
         "takes": 6,
         "prompts": [
-          "Bonus unlocked jackpot stinger: an instant huge impact with a ringing jackpot bell, then a triumphant brass and choir chord, coins and sparkles exploding, and a rising magical whoosh at the end. Euphoric, epic slot game bonus, loud, wide stereo.",
-          "Free spins triggered: an instant thunder crack and a church bell strike, a ghostly choir shout, then rapid ringing bells and a cascade of coins and sparkles. Euphoric, exciting Halloween casino bonus, loud, punchy, wide stereo.",
-          "Epic bonus reveal: an instant cinematic braam hit, a magical sparkle explosion and a fast rising arpeggio of bells into a big triumphant chord. Euphoric, rewarding slot game, loud, wide stereo."
+          "Slot machine win celebration: an instant bright brass fanfare in A major with a sparkling cymbal swell, a cheerful choir 'ahh' and glittering bells, gold coins showering, ending on a big happy major chord. Joyful, triumphant, rewarding, bright, loud, wide stereo.",
+          "Casino victory jingle: an instant shiny bell glissando rising into a triumphant trumpet fanfare and a warm major chord, coins jingling and magical sparkles all around. Happy, celebratory, bright, rewarding, loud, wide stereo.",
+          "Bonus win celebration: an instant bright orchestral hit with glockenspiel and chimes, a fast rising harp and bell arpeggio into a joyful brass and choir major chord, a sparkling shower of coins. Euphoric, cheerful, magical, rewarding, loud."
         ]
       },
       "judge": {
@@ -486,13 +487,13 @@
       },
       "note": "The current file is built from an ElevenLabs download (audio-src/Magical_scatter_symb_#4...mp3) and peaks at +0.8 dBFS (clips). Check under which plan it was generated.",
       "gen": {
-        "duration_s": 1.6,
-        "prompt_influence": 0.5,
+        "duration_s": 1.4,
+        "prompt_influence": 0.55,
         "takes": 6,
         "prompts": [
-          "Slot scatter symbol landing: an instant heavy thud with a bright magical bell strike and a shimmering sparkle burst, short shiny tail. Exciting, rewarding, special, casino game, loud, punchy, clean.",
-          "Special symbol lands: an instant deep impact and a glowing magical chime chord with a quick rising shimmer. Exciting, mysterious, Halloween slot game, loud, punchy.",
-          "Bonus symbol landing: an instant punchy hit with a golden coin ring and a crystal sparkle, short and bright. Exciting, rewarding slot game, loud, clean."
+          "Slot scatter symbol lands: an instant soft thump with one clear magical bell note, celesta and glockenspiel on the same pitch, a quick upward sparkle and a short ringing tail. Bright, rewarding, anticipation, Halloween slot game, musical, clean.",
+          "Special bonus symbol appears: an instant music box and harp pluck on one note over a deep soft boom, a ghostly choir 'ah' blooming for half a second and a glitter sparkle, short tail. Magical, mysterious, rewarding, musical, clean.",
+          "Magical scatter symbol landing: an instant crystal bell strike on a single clear note with a low sub thump and a rising fairy-dust shimmer, then a short glowing ring-out. Exciting, special, casino game, clean, one note."
         ]
       },
       "judge": {

@@ -12,8 +12,8 @@ An overview of every sound that was changed or added. The details are in [`READM
 | `spin` | Spin pressed (every round) | Ghostly gust, low whoomp and a faint "ooh" | Instant hard hit with a bone rattle; shorter, so it never drags |
 | `land` | A reel stops (7 per spin) | Low coffin-lid knock | Sharp single knock with more mid-range, so it carries on phone speakers |
 | `land_heavy` | A VS reel or crate slams down | Stone slab with rattling chains | Tight heavy boom that hits at once |
-| `charge` | The small VS charges up | Eerie theremin rise over a hiss | Rising energy sweep that grows louder and cuts off at its peak, into the burst |
-| `burst` | The VS reel bursts open; also the duel slam | Thunder, smoke blast and a ringing shard | Full-bodied boom with a lightning crack, instant |
+| `charge` | The small VS charges up | Eerie theremin rise over a hiss | **New VS wind-up (2026-10-31):** a ghostly whoosh pulled in from both sides, a tightening electric hum and a quickening heartbeat drum, rising for 0.4 s and cut off at its peak, right as the burst hits (the 10-29 energy sweep is `charge_old2.mp3`) |
+| `burst` | The VS reel bursts open; also the duel slam | Thunder, smoke blast and a ringing shard | **New VS reveal (2026-10-31),** like a fighting game's versus screen: an instant boom with a bright metallic shing, crackling energy and a short spectral howl (the 10-29 boom is `burst_old2.mp3`) |
 | `clash` | Duel fighters collide | Crossing blades and metallic ringing | Heavier metal impact with ringing |
 | `wail` | A fighter is knocked out | Descending ghost "oooh" | Punchy hit, then a long falling ghost wail |
 | `challenger` | The ghost pirate enters a duel | Low ship's horn over a dark organ | Cannon boom, then horn, chains and organ |
@@ -21,8 +21,8 @@ An overview of every sound that was changed or added. The details are in [`READM
 | `sting_devil` | The devil wins a duel or enters; on top of the max win | Tritone choir, organ pedal and a growl | Massive demonic hit that lands at once and rings long |
 | `banner` | A banner appears | Rising whoosh into a bell | Fast whoosh into a bright bell, more snap |
 | `bigwin` | Big win (20× bet or more) | Toll, choir, organ and a cascade of bells | **Money payout:** cash register "cha-ching" and a cascade of coins into the tray, with a ringing bell |
-| `fanfare` | Free spins triggered | Organ swell, church toll, choir and falling bells | Big explosion straight into a bright bell arpeggio (a silent gap between them was cut out) |
-| `fs_land` | A scatter (FS) symbol lands | Magical scatter sample, sharpened by hand | **Reverted (2026-10-30):** the magical scatter sample is back, by request. The ElevenLabs take `fs_land_t3.mp3` stays in `takes/` |
+| `fanfare` | Free spins triggered and the Total Win screen | Organ swell, church toll, choir and falling bells | **Happier (2026-10-31):** bright bells rising into a trumpet fanfare and a warm major chord, coins and sparkles, no dark low drone (the 10-29 take opened with a menacing cinematic braam; kept as `fanfare_old2.mp3`) |
+| `fs_land` | A scatter (FS) symbol lands | Magical scatter sample, sharpened by hand | **New scatter sound (2026-10-31):** one clear magical bell note on E (the fifth of A minor) over a soft thump with a sparkle; each further scatter is a whole tone higher, so they climb like a scale. The magical scatter sample is `fs_land_old.mp3`. (Earlier: an ElevenLabs take on 10-29, reverted to the sample on 10-30.) |
 | `edge` | Tease when one FS is missing | Designed drone with a heartbeat | Builds steadily and peaks at 2.4 s, then stops, as the tease needs |
 | `crumble` | Bonus end: runes crumble | Grinding stone and falling grit | Short, dry stone crumble |
 

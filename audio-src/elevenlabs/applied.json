@@ -191,38 +191,16 @@
     }
   },
   "charge": {
-    "take": "charge_t6.mp3",
-    "version": 2,
+    "take": "charge_t2.mp3",
+    "version": 3,
     "backup": "charge_old.mp3",
-    "date": "2026-10-29",
-    "source": {
-      "prompt": "Fast energy charge-up riser: a reversed sparkle shimmer and a crackling electric hum swelling from silence to a loud peak, rising in pitch, cut off sharply at the end. Power about to explode, game sound effect.",
-      "duration_s": 1.0,
-      "prompt_influence": 0.6,
-      "model_id": "eleven_text_to_sound_v2",
-      "output_format": "mp3_44100_128",
-      "generated": "2026-10-29T20:09:37",
-      "score": 100,
-      "notes": []
-    }
+    "date": "2026-10-31"
   },
   "burst": {
-    "take": "burst_t2.mp3",
-    "version": 2,
+    "take": "burst_t6.mp3",
+    "version": 3,
     "backup": "burst_old.mp3",
-    "date": "2026-10-29",
-    "source": {
-      "prompt": "Instant explosion: a massive punchy boom and a crack of green lightning, flying debris and a short rumbling tail. Powerful, exciting game sound effect, loud, punchy.",
-      "duration_s": 2.0,
-      "prompt_influence": 0.5,
-      "model_id": "eleven_text_to_sound_v2",
-      "output_format": "mp3_44100_128",
-      "generated": "2026-10-29T20:09:40",
-      "score": 90,
-      "notes": [
-        "16 clipped samples"
-      ]
-    }
+    "date": "2026-10-31"
   },
   "sting": {
     "take": "sting_t3.mp3",
@@ -243,23 +221,10 @@
     }
   },
   "fanfare": {
-    "take": "fanfare_t6.mp3",
-    "version": 2,
+    "take": "fanfare_t5.mp3",
+    "version": 3,
     "backup": "fanfare_old.mp3",
-    "date": "2026-10-29",
-    "source": {
-      "prompt": "Epic bonus reveal: an instant cinematic braam hit, a magical sparkle explosion and a fast rising arpeggio of bells into a big triumphant chord. Euphoric, rewarding slot game, loud, wide stereo.",
-      "duration_s": 5.0,
-      "prompt_influence": 0.45,
-      "model_id": "eleven_text_to_sound_v2",
-      "output_format": "mp3_44100_128",
-      "generated": "2026-10-29T20:10:16",
-      "score": 65,
-      "notes": [
-        "slow attack 72 ms (max 25)",
-        "156 clipped samples"
-      ]
-    }
+    "date": "2026-10-31"
   },
   "edge": {
     "take": "edge_t5.mp3",
@@ -278,5 +243,11 @@
         "865 ms silence before it (trimmed when applied)"
       ]
     }
+  },
+  "fs_land": {
+    "take": "fs_land_t4.mp3",
+    "version": 2,
+    "backup": "fs_land_old.mp3",
+    "date": "2026-10-31"
   }
 }
