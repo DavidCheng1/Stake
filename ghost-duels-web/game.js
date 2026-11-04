@@ -2573,10 +2573,9 @@ if (RGS.social) {
 
 // ---------- Value fields: long amounts (CA$, MX$, big balances) shrink to fit their painted box instead of being cut off ----------
 const FIT = ["balVal", "betVal", "winVal"].map(id => document.getElementById(id));
-// Only the landscape layout's painted boxes have a fixed width; the phone panel sizes the fields to their text.
+// The painted boxes (landscape) and the panel's three columns (portrait) both have a fixed width.
 function fitVal(el) {
   el.style.setProperty("--fit", 1);
-  if (document.documentElement.classList.contains("portrait")) return;
   const room = el.clientWidth, need = el.scrollWidth;
   if (room > 20 && need > room) el.style.setProperty("--fit", Math.max(.5, room / need * .96).toFixed(3));
 }
@@ -2587,7 +2586,7 @@ addEventListener("resize", () => FIT.forEach(fitVal));
 // ---------- Portrait (phones held upright): reels on top, cropped from the art; a touch panel below ----------
 // The real controls and values move into the panel (listeners and ids stay), and menus and dialogs into a layer
 // sized for the phone; turning the phone back puts everything where it was.
-const PANEL = [["msg", "hMsg"], ["balVal", "hBal"], ["betMinus", "hBetM"], ["betVal", "hBetM"], ["betPlus", "hBetM"], ["winVal", "hWin"], ["multChip", "hWin"],
+const PANEL = [["msg", "hMsg"], ["balVal", "hBal"], ["betMinus", "hBetL"], ["betVal", "hBet"], ["betPlus", "hBetR"], ["winVal", "hWin"], ["multChip", "hWin"],
   ["turboBtn", "hTurbo"], ["autoBtn", "hAuto"], ["spin", "hSpin"], ["infoBtn", "hInfo"], ["musicBtn", "hSound"], ["buyBtn", "hBuy"]];
 const LAYER = ["autoMenu", "sndMenu", "buyDlg", "rules", "replayBar", "replayDlg", "errDlg", "intro"];
 const homes = new Map(); // a comment marks each element's place in the landscape layout
@@ -2650,6 +2649,6 @@ const introDone = new Promise(resolve => {
 if (!RM) introDone.then(() => fetch("assets/vs-break.webp").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
 
 // the loading bar waits for the images of the first screen
-LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp",
+LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp", "assets/hud-bg.webp", "assets/bb-logo.webp",
   RM ? "assets/pirate-still.webp" : "assets/pirate-idle.webp"]);
 boot();

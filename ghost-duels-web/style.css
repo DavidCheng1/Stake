@@ -794,48 +794,85 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .portrait .ui { display: block; position: fixed; inset: 0; z-index: 100; pointer-events: none; container-type: inline-size; }
 .portrait .ui > * { pointer-events: auto; }
 .portrait .hud { display: grid; position: absolute; left: 0; right: 0; top: calc(100vw / .56 * 572 / 1024 * .8); bottom: 0; z-index: 20;
-  grid-template-rows: auto auto 1fr auto; align-content: start; gap: 3.2vw; padding: 3vw 4vw calc(4vw + env(safe-area-inset-bottom, 0px));
-  background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border-top: .9vw solid #c99a3e;
-  box-shadow: 0 -.4vw 0 #15131a, inset 0 2vw 5vw rgb(0 0 0 / .55), 0 -3vw 6vw rgb(0 0 0 / .6); font-family: var(--ui); }
-/* message bar and lives */
-.portrait .hud .msg { position: static; width: auto; height: auto; min-height: 9vw; padding: 1.5vw 3vw; box-sizing: border-box; border-radius: 2.4vw;
-  font-size: 4.1vw; gap: 2vw; background: rgb(6 14 12 / .82); border: .5vw solid #c99a3e; white-space: normal; text-align: center; }
+  grid-template-rows: auto minmax(0, 1fr) auto; padding: 2.6vw 3vw calc(2.6vw + env(safe-area-inset-bottom, 0px));
+  /* the crypt goes on below the reels: shade under the frame's ledge, the scene's wings, darker towards the values */
+  background: linear-gradient(rgb(3 9 8 / .78), rgb(3 9 8 / 0) 10vw), linear-gradient(rgb(3 8 7 / 0) 50%, rgb(3 8 7 / .55) 74%, rgb(2 6 5 / .92) 100%),
+    linear-gradient(rgb(4 12 10 / .28), rgb(4 12 10 / .28)), url(assets/hud-bg.webp) 50% 0 / cover, #0b1714;
+  box-shadow: 0 -.5vw 0 #0c0a10; font-family: var(--ui); overflow: hidden; }
+/* drifting mist low over the floor */
+.portrait .hud::before { content: ""; position: absolute; left: -20%; right: -20%; bottom: 14%; height: 34%; pointer-events: none; z-index: 0;
+  background: radial-gradient(50% 45% at 30% 60%, rgb(120 220 190 / .16), transparent), radial-gradient(45% 40% at 72% 50%, rgb(120 220 190 / .12), transparent);
+  animation: hudMist 14s ease-in-out infinite alternate; }
+@keyframes hudMist { to { translate: 12% 0; } }
+.portrait .hud > * { position: relative; z-index: 1; }
+/* message: a small stone tablet under the reels, the lives inside */
+.portrait .hud .msg { position: static; width: auto; height: auto; min-height: 8.6vw; max-width: 80vw; margin: 0 auto; padding: 1.3vw 4.5vw; box-sizing: border-box; border-radius: 1.6vw;
+  font-size: 4vw; gap: 2vw; white-space: normal; text-align: center;
+  background: linear-gradient(rgb(255 255 255 / .05), rgb(0 0 0 / .35)), url(assets/img0.webp) 40% 30% / 260% auto, #1d2427;
+  border: .6vw solid #b8893a; box-shadow: 0 0 0 .35vw #0c0a10, inset 0 0 0 .3vw #0c0a10, inset 0 0 3vw rgb(0 0 0 / .75), 0 1.4vw 2.6vw rgb(0 0 0 / .6); }
 .portrait .hud .lives { gap: 1.4vw; }
 .portrait .hud .life { width: 3.4vw; height: 4.8vw; }
-/* balance, bet, win */
-.h-vals { display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 2.2vw; }
-.h-box { display: grid; justify-items: center; align-content: center; gap: 1vw; padding: 1.8vw 1.2vw; border-radius: 2.6vw; min-width: 0;
-  background: linear-gradient(#25222f, #14111a); border: .6vw solid #d0a54c; box-shadow: 0 0 0 .3vw #15131a, inset 0 .8vw 1.6vw rgb(0 0 0 / .7); }
-.h-lbl { font: 800 2.9vw/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; color: #e9e2c8; }
-.h-slot { display: grid; grid-auto-flow: column; align-items: center; justify-content: center; gap: 1.6vw; min-width: 0; position: relative; }
-.portrait .hud .val { position: static; width: auto; height: auto; font-size: calc(4.6vw * var(--fit, 1)); text-shadow: 0 .3vw 0 #000; overflow: visible; }
-.portrait .hud .mult { position: absolute; left: auto; right: -2vw; top: -9vw; font-size: 5.4vw; }
-.portrait .hud :is(#betMinus, #betPlus) { position: relative; left: auto; top: auto; width: 8vw; height: 8vw; border-radius: 50%; display: grid; place-items: center;
-  background: radial-gradient(circle at 50% 35%, #2e4a43, #12221e 75%); box-shadow: inset 0 0 0 .5vw #c99a3e; color: #f3ead2; font: 800 5.4vw/1 var(--ui); }
-.portrait .hud #betMinus::before { content: "\2212"; }
-.portrait .hud #betPlus::before { content: "+"; }
-.portrait .hud #betMinus:disabled, .portrait .hud #betPlus:disabled { opacity: .4; }
-/* controls row: turbo, autoplay, spin, info, sound */
-.h-ctrls { display: grid; grid-template-columns: 1fr 1fr 1.7fr 1fr 1fr; align-items: center; justify-items: center; }
-.h-c { display: grid; justify-items: center; gap: 1.2vw; }
-.h-c > .hot { order: -1; }
-.h-cap { font: 800 2.9vw/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: #e9e2c8; text-shadow: 0 .3vw 0 #000; }
+/* the deck: buy seal left, bet arrows around the big spin, info and sound right, turbo and autoplay under the spin */
+.h-deck { align-self: end; display: grid; grid-template-columns: minmax(0, 1fr) 9vw 28vw 9vw minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; justify-items: center; row-gap: 3vw; }
+.h-buy { grid-column: 1; grid-row: 1 / 3; align-self: end; justify-self: start; display: grid; padding: 0 0 3vw 1.5vw; }
+.h-arrow { grid-row: 1; display: grid; }
+#hBetL { grid-column: 2; } #hSpin { grid-column: 3; grid-row: 1; display: grid; } #hBetR { grid-column: 4; }
+.h-side { grid-column: 5; grid-row: 1 / 3; align-self: end; justify-self: end; display: grid; gap: 4vw; padding: 0 2vw 1.6vw 0; }
+.h-small { grid-column: 2 / 5; grid-row: 2; display: flex; gap: 7vw; }
+.h-c { display: grid; justify-items: center; }
 /* ids, so these beat the landscape positions set per button id */
-.portrait .hud :is(#autoBtn, #spin, #infoBtn, #musicBtn, #turboBtn) { position: relative; left: auto; top: auto; width: 13vw; height: 13vw; aspect-ratio: auto; border-radius: 50%; }
-.portrait .hud .hot.round, .portrait .hud #infoBtn { background: radial-gradient(circle at 50% 35%, #24443c, #0b1714 75%); box-shadow: 0 0 0 .9vw #c99a3e, 0 0 0 1.4vw #15131a, 0 1vw 2vw rgb(0 0 0 / .6); }
-.portrait .hud #spin { width: 22vw; height: 22vw; box-shadow: 0 0 0 1.3vw #c99a3e, 0 0 0 2vw #15131a, 0 0 5vw rgb(109 255 179 / .45); }
-.portrait .hud #infoBtn::before { content: "i"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 7.6vw/1 Georgia, serif; color: #e9f6f1; text-shadow: 0 0 2vw rgb(109 255 179 / .6); }
-.portrait .hud #turboBtn { border-radius: 2.6vw; width: 12vw; height: 12vw; }
-.portrait .hud #turboBtn .tb-lbl { font-size: 2.9vw; translate: -50% 1.2vw; }
-.portrait .hud #musicBtn { width: 12vw; height: 12vw; z-index: auto; }
-.portrait .hud .auto-left { font-size: 3vw; min-width: 6vw; padding: .4vw 1vw; border-radius: 3vw; }
-/* buy plaque */
-.h-buy { display: grid; }
-.portrait .hud .buy-btn { position: relative; left: auto; top: auto; width: 76vw; height: 16vw; margin: 0 auto; grid-template-columns: auto auto 1fr; justify-items: start; align-items: center; gap: 2.4vw; padding: 0 3vw 0 2.4vw; border-radius: 3vw; border-width: .8vw; }
-.portrait .hud .bb-boost { justify-self: end; font-size: 2.9vw; padding: 1.3vw 2.2vw; border-radius: 3vw; }
-.portrait .hud .bb-fs { width: 10vw; }
-.portrait .hud .bb-top { font-size: 3.2vw; }
-.portrait .hud .bb-main { font-size: 7.4vw; }
+.portrait .hud :is(#autoBtn, #spin, #infoBtn, #musicBtn, #turboBtn) { position: relative; left: auto; top: auto; width: 11.5vw; height: 11.5vw; aspect-ratio: auto; border-radius: 50%; z-index: auto; }
+/* gold-rimmed crypt seals, like the painted buttons on the landscape console */
+.portrait .hud :is(#autoBtn, #infoBtn, #musicBtn, #turboBtn) {
+  background: radial-gradient(circle at 50% 32%, #2a5246, #0e211c 62%, #07110e 100%);
+  box-shadow: inset 0 0 0 .5vw #0c0a10, inset 0 .8vw 1.4vw rgb(150 255 210 / .12), inset 0 -1vw 1.6vw rgb(0 0 0 / .6),
+    0 0 0 .8vw #c99a3e, 0 0 0 1vw #8a6122, 0 0 0 1.4vw #0c0a10, 0 1.2vw 2vw rgb(0 0 0 / .7); }
+.portrait .hud #spin { width: 28vw; height: 28vw; background: radial-gradient(circle, #0c201a 58%, #07110e 70%);
+  box-shadow: 0 0 0 1.3vw #d9ab4c, 0 0 0 1.7vw #8a6122, 0 0 0 2.3vw #0c0a10, 0 0 0 3.1vw rgb(201 154 62 / .35), 0 0 7vw rgb(109 255 179 / .55), 0 2vw 3vw rgb(0 0 0 / .7); }
+.portrait .hud #spin .disc { inset: 4%; width: 92%; height: 92%; }
+.portrait .hud #infoBtn::before { content: "i"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 6.6vw/1 Georgia, serif; color: #e9f6f1; text-shadow: 0 0 2vw rgb(109 255 179 / .7), 0 .3vw 0 #000; }
+.portrait .hud #turboBtn svg { width: 58%; height: 58%; }
+.portrait .hud #turboBtn .tb-lbl { display: none; }
+.portrait .hud #turboBtn[aria-pressed="true"] { background: radial-gradient(circle at 50% 35%, #4d9c63, #163a26 75%);
+  box-shadow: inset 0 0 0 .5vw #0c0a10, 0 0 0 .8vw #d8ff7a, 0 0 0 1.4vw #0c0a10, 0 0 4vw rgb(190 255 110 / .8); animation: none; }
+.portrait .hud #autoBtn .disc { inset: 10%; width: 80%; height: 80%; }
+.portrait .hud .auto-left { font-size: 3vw; min-width: 6vw; padding: .4vw 1vw; border-radius: 3vw; right: -30%; top: -25%; }
+.portrait .hud .hot:active { transform: scale(.92); }
+/* bet arrows: gold chevrons either side of the spin */
+.portrait .hud :is(#betMinus, #betPlus) { position: relative; left: auto; top: auto; width: 9vw; height: 14vw; border-radius: 2vw; filter: drop-shadow(0 .5vw .6vw rgb(0 0 0 / .8)); }
+.portrait .hud :is(#betMinus, #betPlus)::before { content: ""; position: absolute; inset: 14% 18%; background: linear-gradient(#ffe7a3, #d9ab4c 45%, #8a6122);
+  clip-path: polygon(78% 0, 100% 14%, 42% 50%, 100% 86%, 78% 100%, 0 50%); }
+.portrait .hud #betPlus::before { scale: -1 1; }
+.portrait .hud :is(#betMinus, #betPlus):disabled { opacity: .35; }
+/* Buy Bonus: the Maestro Studios seal, with a ribbon */
+.portrait .hud .buy-btn { position: relative; left: auto; top: auto; width: 25vw; height: 25vw; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; gap: 0;
+  background: radial-gradient(circle at 50% 38%, #2d3b44, #12181d 62%, #07090c 100%);
+  box-shadow: inset 0 0 0 .5vw #0c0a10, inset 0 0 3vw rgb(0 0 0 / .8), 0 0 0 1vw #d9ab4c, 0 0 0 1.3vw #8a6122, 0 0 0 1.8vw #0c0a10, 0 0 5vw rgb(255 79 210 / .5), 0 1.6vw 2.6vw rgb(0 0 0 / .7);
+  animation: buyGlowP 2.2s ease-in-out infinite; }
+@keyframes buyGlowP { 50% { box-shadow: inset 0 0 0 .5vw #0c0a10, inset 0 0 3vw rgb(0 0 0 / .8), 0 0 0 1vw #d9ab4c, 0 0 0 1.3vw #8a6122, 0 0 0 1.8vw #0c0a10, 0 0 8vw rgb(255 79 210 / .85), 0 1.6vw 2.6vw rgb(0 0 0 / .7); } }
+.bb-logo { display: none; }
+.portrait .hud .bb-logo { display: block; width: 84%; translate: 0 -6%; filter: drop-shadow(0 0 1.2vw rgb(109 255 179 / .55)) drop-shadow(0 .4vw 0 #000); pointer-events: none; }
+.portrait .hud .bb-fs { display: none; }
+.portrait .hud .bb-txt { position: absolute; left: 50%; bottom: -3.2vw; translate: -50% 0; grid-auto-flow: column; gap: 1vw; align-items: baseline; padding: 1vw 3vw; border-radius: 1vw; white-space: nowrap;
+  background: linear-gradient(#7d1f5c, #4a0f36); border: .45vw solid #d9ab4c; box-shadow: 0 0 0 .3vw #0c0a10, 0 .8vw 1.2vw rgb(0 0 0 / .6); }
+.portrait .hud .bb-top { font-size: 2.8vw; color: #f3ead2; }
+.portrait .hud .bb-main { font-size: 4.6vw; }
+.portrait .hud .bb-boost { display: none; position: absolute; left: 50%; top: -3vw; translate: -50% 0; font-size: 2.6vw; padding: .9vw 1.8vw; border-radius: 3vw; }
+.portrait .hud .buy-btn:is(.boosted, .six) .bb-boost { display: block; }
+.portrait .hud .buy-btn.boosted { box-shadow: inset 0 0 0 .5vw #0c0a10, inset 0 0 3vw rgb(0 0 0 / .8), 0 0 0 1vw #6dffb3, 0 0 0 1.8vw #0c0a10, 0 0 6vw rgb(109 255 179 / .7); animation: none; }
+.portrait .hud .buy-btn.six { box-shadow: inset 0 0 0 .5vw #0c0a10, inset 0 0 3vw rgb(0 0 0 / .8), 0 0 0 1vw #ffb347, 0 0 0 1.8vw #0c0a10, 0 0 6vw rgb(255 150 50 / .75); }
+/* balance, win, bet: lettering straight on the floor, no boxes */
+.h-vals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2vw; margin-top: 4.4vw; padding: 0 1vw; }
+.h-box { display: grid; gap: .6vw; min-width: 0; justify-items: center; }
+.h-bal { justify-items: start; } .h-bet { justify-items: end; }
+.h-lbl { font: 800 3.4vw/1 var(--ui); letter-spacing: .1em; text-transform: uppercase; color: #8dffc4; -webkit-text-stroke: .5vw #04120d; paint-order: stroke fill;
+  text-shadow: 0 0 2vw rgb(109 255 179 / .55); }
+.h-slot { display: grid; width: 100%; min-width: 0; position: relative; }
+.portrait .hud :is(#balVal, #winVal, #betVal) { position: static; width: 100%; height: auto; left: auto; top: auto; font-size: calc(6vw * var(--fit, 1)); color: #fbf5e4; -webkit-text-stroke: .7vw #0a0d0c; paint-order: stroke fill;
+  text-shadow: 0 .5vw 0 #000, 0 0 2vw rgb(0 0 0 / .8); overflow: hidden; place-items: center; }
+.portrait .hud #balVal { place-items: center start; } .portrait .hud #betVal { place-items: center end; }
+.portrait .hud #winVal { color: var(--gold); }
+.portrait .hud .mult { position: absolute; left: 50%; right: auto; top: -10vw; translate: -50% 0; font-size: 6vw; }
 /* menus and dialogs in the phone layer (cqw = % of the screen width there) */
 .portrait .ui .auto-menu { left: 50%; top: 50%; right: auto; bottom: auto; translate: -50% -50%; width: 84cqw; padding: 6cqw 5cqw 5cqw; gap: 3.5cqw; border-radius: 3cqw; border-width: 1.2cqw; }
 .portrait .ui .auto-menu::before { inset: -1.2cqw; padding: 1.2cqw; border-radius: 3cqw; }
