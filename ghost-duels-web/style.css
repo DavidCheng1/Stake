@@ -181,8 +181,11 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 @media (prefers-reduced-motion: reduce) { .ambient *, .pglow, .rays { animation: none !important; } }
 
 /* Geisterkisten bonus */
-.stage.bonus::before { content: ""; position: absolute; inset: -1%; background: radial-gradient(ellipse at 50% 45%, rgb(4 16 13 / .5), rgb(3 10 9 / .82)); border-radius: 6px; animation: bonusIn .6s ease-out; }
-@keyframes bonusIn { from { opacity: 0; } }
+/* the board goes dark for the bonus: a layer under the Ghost Pirate (his map reaches over the last reel and stays lit),
+   the same size as the stage; the symbols are drawn above both */
+.bonus-dim { position: absolute; left: 28.37%; top: 21.9%; width: 43.18%; height: 57.86%; pointer-events: none; opacity: 0; transition: opacity .6s ease-out; }
+.bonus-dim::before { content: ""; position: absolute; inset: -1%; background: radial-gradient(ellipse at 50% 45%, rgb(4 16 13 / .5), rgb(3 10 9 / .82)); border-radius: 6px; }
+.game.bonus .bonus-dim { opacity: 1; }
 .reels { clip-path: inset(-.5% -4% -1% -4%); }
 .stage.hurt::after { content: ""; position: absolute; inset: -2%; pointer-events: none; z-index: 7; border-radius: 8px; box-shadow: inset 0 0 6cqw rgb(180 20 40 / .75); animation: hurt 1s ease-out forwards; }
 @keyframes hurt { from { opacity: 1; } to { opacity: 0; } }
@@ -876,7 +879,7 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .portrait .hud #winVal { color: var(--gold); }
 .portrait .hud #betVal.boosted { color: #b6ffd8; text-shadow: 0 .5vw 0 #000, 0 0 3vw rgb(109 255 179 / .9); }
 .portrait .hud #betVal.six { color: #ffe0a8; text-shadow: 0 .5vw 0 #000, 0 0 3vw rgb(255 150 50 / .9); }
-.portrait .hud .mult { position: absolute; left: 50%; right: auto; top: -10vw; translate: -50% 0; font-size: 6vw; }
+.portrait .hud .mult { position: absolute; left: auto; right: 0; top: -6.6vw; translate: none; font-size: 5.4vw; } /* beside the WIN label */
 /* menus and dialogs in the phone layer (cqw = % of the screen width there) */
 .portrait .ui .auto-menu { left: 50%; top: 50%; right: auto; bottom: auto; translate: -50% -50%; width: 84cqw; padding: 6cqw 5cqw 5cqw; gap: 3.5cqw; border-radius: 3cqw; border-width: 1.2cqw; }
 .portrait .ui .auto-menu::before { inset: -1.2cqw; padding: 1.2cqw; border-radius: 3cqw; }

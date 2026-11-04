@@ -1304,7 +1304,7 @@ async function harvest(start, spinEvents, end) {
   runeStep = 0;
   const fsCells = start.crates.map(k => [k.reel, k.row]), n = Math.min(7, fsCells.length);
   say(`${n} FS · ${i18n("Freispiele!", "Free Spins!")}`);
-  stage.classList.add("bonus");
+  stage.classList.add("bonus"); game.classList.add("bonus");
   preloadTotalWin(); preloadWinTiers();
   await banner(n === 3 ? i18n("Geisterkisten", "Ghost Crates") : `${n} ${i18n("Geisterkisten", "Ghost Crates")}`, i18n(`3 Leben · Nur Runen in ${MIN_LINK}er-Gruppen an einer Kiste zählen`, `3 lives · Only groups of ${MIN_LINK}+ runes touching a crate count`), 2100);
   K = reels.map(() => Array(ROWS).fill(null));
@@ -1395,7 +1395,7 @@ async function harvest(start, spinEvents, end) {
   if (!(total > 0 && await totalWinScreen(total, spinEvents.length, tiered)))
     await banner(total >= 50 * bet ? i18n("Riesige Beute!", "Huge Haul!") : i18n("Freispiele vorbei", "Free Spins over"), i18n(money(total) + " gewonnen", money(total) + " won"), 2200);
   say(i18n(`Geisterkisten · ${money(total)} gewonnen`, `Ghost Crates · ${money(total)} won`));
-  stage.classList.remove("bonus");
+  stage.classList.remove("bonus"); game.classList.remove("bonus");
   G = reels.map(() => Array.from({ length: ROWS }, () => { let id; do { id = randSym(); } while (id === "fs" || id === "vs"); return id; }));
   reels.forEach((rl, c) => rl.cells.forEach((cell, r) => { const s2 = makeSym(G[c][r]); cell.replaceChildren(s2); land(s2); }));
   return total;
