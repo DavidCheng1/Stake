@@ -367,11 +367,11 @@
       "gen": {
         "duration_s": 4.5,
         "prompt_influence": 0.55,
-        "takes": 6,
+        "takes": 12,
         "prompts": [
-          "Spooky cartoon fanfare: an instant playful pipe organ flourish in A minor with a bouncy tuba, a skeleton xylophone rattling up the scale and a cheeky ghost 'wooo-hoo', ending on a big creepy-fun organ chord with a cackle. Halloween comedy, mischievous, rewarding, loud, wide stereo.",
-          "Haunted house celebration: an instant harpsichord and theremin jingle, tiptoeing pizzicato strings creeping up, a goofy ghost choir 'ooh-ahh' and a gong, ending on a dramatic spooky chord with a witch's giggle. Comic, creepy-fun, Halloween, loud.",
-          "Monster party sting: an instant thunder clap and a mischievous minor-key organ riff, a bony xylophone run, a bouncing bassoon and haunted bells, ghosts cheering, ending on a big Halloween chord. Funny, spooky, triumphant, loud, wide stereo."
+          "Haunted bonus reveal: an instant deep thunder crack and a church bell toll, then a dark pipe organ rising in A minor with an eerie ghost choir swelling, howling wind and rattling chains, ending on a huge ominous organ chord with a distant ghostly laugh. Spooky, dark, powerful, rewarding, loud, wide stereo.",
+          "Spirits awaken: an instant heavy crypt door slam, a creepy music-box melody in A minor over a low cello tremolo, whispering ghost voices rising into a haunting choir and a shower of haunted bells, ending on a dark dramatic chord. Eerie, chilling, triumphant, loud.",
+          "Gothic horror win: an instant thunder boom, a sinister harpsichord and pipe organ riff in A minor, a wailing theremin, a spectral choir and tolling bells, ending with an evil cackle echoing in a crypt. Spooky, dramatic, rewarding, loud, wide stereo."
         ]
       },
       "judge": {

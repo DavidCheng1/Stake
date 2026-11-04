@@ -209,8 +209,8 @@
     }
   },
   "fanfare": {
-    "take": "fanfare_t6.mp3",
-    "version": 4,
+    "take": "fanfare_t12.mp3",
+    "version": 5,
     "backup": "fanfare_old.mp3",
     "date": "2026-11-04"
   },
