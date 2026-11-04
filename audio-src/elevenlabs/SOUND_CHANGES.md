@@ -12,15 +12,16 @@ An overview of every sound that was changed or added. The details are in [`READM
 | `spin` | Spin pressed (every round) | Ghostly gust, low whoomp and a faint "ooh" | Instant hard hit with a bone rattle; shorter, so it never drags |
 | `land` | A reel stops (7 per spin) | Low coffin-lid knock | Sharp single knock with more mid-range, so it carries on phone speakers |
 | `land_heavy` | A VS reel or crate slams down | Stone slab with rattling chains | Tight heavy boom that hits at once |
-| `charge` | The small VS charges up | Eerie theremin rise over a hiss | **New VS wind-up (2026-10-31):** a ghostly whoosh pulled in from both sides, a tightening electric hum and a quickening heartbeat drum, rising for 0.4 s and cut off at its peak, right as the burst hits (the 10-29 energy sweep is `charge_old2.mp3`) |
-| `burst` | The VS reel bursts open; also the duel slam | Thunder, smoke blast and a ringing shard | **New VS reveal (2026-10-31),** like a fighting game's versus screen: an instant boom with a bright metallic shing, crackling energy and a short spectral howl (the 10-29 boom is `burst_old2.mp3`) |
+| `charge` | The small VS charges up | Eerie theremin rise over a hiss | **Spooky VS wind-up (2026-11-04):** a reversed ghost choir and haunted bell swelling for 0.4 s and cut off at its peak, right as the burst hits (the 10-29 energy sweep is `charge_old2.mp3`, the 10-31 fighting-game wind-up `charge_old3.mp3`) |
+| `burst` | The VS reel bursts open; also the duel slam | Thunder, smoke blast and a ringing shard | **Spooky VS reveal (2026-11-04):** a deep thunder boom, a shattering tombstone and a gust of howling ghost wind (the 10-29 boom is `burst_old2.mp3`, the 10-31 fighting-game reveal `burst_old3.mp3`) |
 | `clash` | Duel fighters collide | Crossing blades and metallic ringing | Heavier metal impact with ringing |
 | `wail` | A fighter is knocked out | Descending ghost "oooh" | Punchy hit, then a long falling ghost wail |
 | `challenger` | The ghost pirate enters a duel | Low ship's horn over a dark organ | Cannon boom, then horn, chains and organ |
 | `sting` | The pirate wins a duel | Choir "aah" chord with a bell | Instant bell hit and arpeggio into a chord |
 | `sting_devil` | The devil wins a duel or enters; on top of the max win | Tritone choir, organ pedal and a growl | Massive demonic hit that lands at once and rings long |
 | `banner` | A banner appears | Rising whoosh into a bell | Fast whoosh into a bright bell, more snap |
-| `bigwin` | Big win (20× bet or more) | Toll, choir, organ and a cascade of bells | **Money payout:** cash register "cha-ching" and a cascade of coins into the tray, with a ringing bell |
+| `bigwin` | Big win (20× bet or more) | Toll, choir, organ and a cascade of bells | **Spooky jackpot (2026-11-04):** a thunder crack, a pipe organ fanfare and haunted bells with spilling coins (the 10-29 cash-register payout is `bigwin_old2.mp3`) |
+| `chime` | Every win (the game plays it as a rising melody) | Designed bell | **Cursed music-box bell (2026-11-04):** one ElevenLabs bell note, retuned to exactly A5 so the win melodies stay in key (the designed bell is `chime_old.mp3`) |
 | `fanfare` | Free spins triggered and the Total Win screen | Organ swell, church toll, choir and falling bells | **Happier (2026-10-31):** bright bells rising into a trumpet fanfare and a warm major chord, coins and sparkles, no dark low drone (the 10-29 take opened with a menacing cinematic braam; kept as `fanfare_old2.mp3`) |
 | `fs_land` | A scatter (FS) symbol lands | Magical scatter sample, sharpened by hand | **New scatter sound (2026-10-31):** one clear magical bell note on E (the fifth of A minor) over a soft thump with a sparkle; each further scatter is a whole tone higher, so they climb like a scale. The magical scatter sample is `fs_land_old.mp3`. (Earlier: an ElevenLabs take on 10-29, reverted to the sample on 10-30.) |
 | `edge` | Tease when one FS is missing | Designed drone with a heartbeat | Builds steadily and peaks at 2.4 s, then stops, as the tease needs |
@@ -44,7 +45,7 @@ An overview of every sound that was changed or added. The details are in [`READM
 
 | Sound | Why |
 | --- | --- |
-| `chime`, `crystal` | The game builds win melodies from them, so they need an exact single A5 |
+| `crystal` | The game builds rune melodies from it, so it needs an exact single A5 |
 | `toll` | The game needs exactly A2 (it also plays it an octave up); ElevenLabs ignored the note |
 | `tumble` | 11 takes in 3 rounds: all thin high hiss or a tiny blip; it plays on every win |
 | `heartbeat` | 11 takes in 3 rounds: mostly deep bass, weaker on phones than the current one |

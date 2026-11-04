@@ -261,9 +261,9 @@ def measure(x, sound):
     if j.get("pitch_hz"):
         p = low_pitch(m, on, *j.get("pitch_range", (70, 300)))
         r["pitch_hz"] = round(p, 1) if p else None
-        if p:  # distance to the nearest A, in semitones (an octave off is fine)
+        if p:  # distance to the nearest A, in semitones (an octave off is fine; pitch_exact: to pitch_hz itself)
             semis = 12 * np.log2(p / j["pitch_hz"])
-            r["pitch_off_semis"] = round(float(semis - 12 * round(semis / 12)), 2)
+            r["pitch_off_semis"] = round(float(semis if j.get("pitch_exact") else semis - 12 * round(semis / 12)), 2)
     return r
 
 

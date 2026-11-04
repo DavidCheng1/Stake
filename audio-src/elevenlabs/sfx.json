@@ -130,8 +130,9 @@
         "pitch_hz": 880,
         "pitch_range": [
           600,
-          1300
-        ]
+          2000
+        ],
+        "pitch_exact": true
       }
     },
     {

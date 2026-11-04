@@ -139,22 +139,10 @@
     }
   },
   "bigwin": {
-    "take": "bigwin_t4.mp3",
-    "version": 3,
+    "take": "bigwin_t5.mp3",
+    "version": 4,
     "backup": "bigwin_old.mp3",
-    "date": "2026-10-29",
-    "source": {
-      "prompt": "BIG WIN money payout: starts instantly with a loud cash register cha-ching, then a huge cascade of gold coins pouring and clinking into a metal slot machine tray, jackpot bells ringing and sparkling chimes. Euphoric, rich, rewarding casino jackpot, loud, punchy, wide stereo.",
-      "duration_s": 4.5,
-      "prompt_influence": 0.45,
-      "model_id": "eleven_text_to_sound_v2",
-      "output_format": "mp3_44100_128",
-      "generated": "2026-10-29T19:41:23",
-      "score": 90,
-      "notes": [
-        "123 clipped samples"
-      ]
-    }
+    "date": "2026-11-04"
   },
   "sting_devil": {
     "take": "sting_devil_t6.mp3",
@@ -191,16 +179,16 @@
     }
   },
   "charge": {
-    "take": "charge_t2.mp3",
-    "version": 3,
+    "take": "charge_t5.mp3",
+    "version": 4,
     "backup": "charge_old.mp3",
-    "date": "2026-10-31"
+    "date": "2026-11-04"
   },
   "burst": {
     "take": "burst_t6.mp3",
-    "version": 3,
+    "version": 4,
     "backup": "burst_old.mp3",
-    "date": "2026-10-31"
+    "date": "2026-11-04"
   },
   "sting": {
     "take": "sting_t3.mp3",
@@ -249,5 +237,11 @@
     "version": 2,
     "backup": "fs_land_old.mp3",
     "date": "2026-10-31"
+  },
+  "chime": {
+    "take": "chime_t2.mp3",
+    "version": 2,
+    "backup": "chime_old.mp3",
+    "date": "2026-11-04"
   }
 }
