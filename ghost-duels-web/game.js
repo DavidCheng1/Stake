@@ -1620,7 +1620,6 @@ showTurbo();
 
 // ---------- Bonus menu: every buyable mode with its price at the current bet; an option's button plays it ----------
 const buyBtn = document.getElementById("buyBtn"), buyDlg = document.getElementById("buyDlg");
-q(buyBtn, ".bb-fs").appendChild(makeSym("fs", { lite: true }));
 // card art: n FS symbols fanned out, or two ghosts facing off over a VS
 function buyArt(b) {
   const art = div("ic-art"), place = (s2, left, top, width, rot, z) => { Object.assign(s2.style, { left: left + "%", top: top + "%", width: width + "%", rotate: rot + "deg", zIndex: z }); art.appendChild(s2); };
