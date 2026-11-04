@@ -209,10 +209,10 @@
     }
   },
   "fanfare": {
-    "take": "fanfare_t5.mp3",
-    "version": 3,
+    "take": "fanfare_t6.mp3",
+    "version": 4,
     "backup": "fanfare_old.mp3",
-    "date": "2026-10-31"
+    "date": "2026-11-04"
   },
   "edge": {
     "take": "edge_t5.mp3",

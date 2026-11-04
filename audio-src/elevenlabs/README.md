@@ -125,6 +125,7 @@ ElevenLabs gives a different result every time, so a deleted take can't be made 
 | `burst` | v4 | `burst_t6.mp3` (0.99 s): "Instant dark magic burst: a deep thunder boom, a shattering tombstone and a gust of howlin…" | (score 70: slow attack 80 ms (max 15)) | `audio-src/sfx-old/burst_old3.mp3` (David's VS sound) |
 | `bigwin` | v4 | `bigwin_t5.mp3` (2.99 s): "Spooky jackpot: an instant thunder crack and a big pipe organ fanfare in A major, haunted …" | (score 100, fits its job) | `audio-src/sfx-old/bigwin_old2.mp3` |
 | `chime` | v2 | `chime_t2.mp3` (1.54 s): "One single note on an old cursed music box: a pure ringing bell tone with a faint ghostly …" | (score 75: +8.9 semitones from A (retune would change its character)) | `audio-src/sfx-old/chime_old.mp3` |
+| `fanfare` | v4 | `fanfare_t6.mp3` (4.39 s): "Monster party sting: an instant thunder clap and a mischievous minor-key organ riff, a bon…" | (score 100, fits its job) | `audio-src/sfx-old/fanfare_old3.mp3` |
 
 v1 is the original designed sound (`tools/sound_design.py`; `fs_land` is an ElevenLabs sample processed there). v2 is the first ElevenLabs replacement.
 
