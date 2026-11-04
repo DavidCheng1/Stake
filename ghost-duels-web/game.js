@@ -1515,8 +1515,8 @@ async function playRound(events, resumed) {
 
 function updateBal() { balVal.textContent = RGS.replay ? "–" : money(balance); } // replays have no wallet
 function updateBet() {
-  bet = BETS[betIdx]; betVal.textContent = fmtV(bet);
-  refreshPays(); showBoost();
+  bet = BETS[betIdx];
+  refreshPays(); showBoost(); // showBoost writes the bet field: with FS Boost on it shows what a spin costs
   document.getElementById("betMinus").disabled = busy || RGS.replay || betIdx === 0;
   document.getElementById("betPlus").disabled = busy || RGS.replay || betIdx === BETS.length - 1;
 }
@@ -1669,6 +1669,9 @@ function showBoost() {
     o.pr.textContent = `${money(bet * (o.b ? o.b.cost : 1))} ${perSpin}`;
   }
   buyBtn.classList.toggle("boosted", !!boost); buyBtn.classList.toggle("six", boost === BOOSTS[1]);
+  // the bet field shows what the next spin costs: the bet times the boost (3× or 6×)
+  betVal.textContent = fmtV(bet * (boost ? boost.cost : 1));
+  betVal.classList.toggle("boosted", !!boost); betVal.classList.toggle("six", boost === BOOSTS[1]);
   bbBoost.textContent = `${BOOST_NAME} ${boost ? boost.level : off}`;
   buyBtn.setAttribute("aria-label", i18n("Bonus kaufen", "Buy Bonus") + ` · ${BOOST_NAME}: ` + (boost ? `${boost.level}, ${money(bet * boost.cost)} ${perSpin}` : off));
 }
