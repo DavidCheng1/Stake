@@ -7,11 +7,13 @@ const money = v => RGS.formatMoney(v);
 // German for lang=de, English for every other language
 // social mode (Stake.us) is English only, with restricted gambling words replaced
 const i18n = (de, en) => RGS.lang === "de" && !RGS.social ? de : RGS.socialText(en);
-// ---------- Pace: turbo plays a round faster; a click during a round (slam stop) hurries the sequence that is playing ----------
+// ---------- Pace: rounds play NORMAL times faster than their authored timings, TURBO with turbo on; a click during a
+// round (slam stop) hurries the sequence that is playing. The VS duel keeps its own, gentler pace so it stays readable
+// (its break-out clip, assets/vs-break.webp, is retimed to VS_NORMAL by tools/retime_webp.py).
 // Every wait (sleep, later) and every scripted animation runs at pace(); the idle CSS loops keep their own speed.
-const TURBO = 2, SLAM = 6;
-let turbo = false, slam = false;
-const pace = () => (turbo ? TURBO : 1) * (slam ? SLAM : 1);
+const NORMAL = 2, TURBO = 3.5, VS_NORMAL = 1.8, VS_TURBO = 2.5, SLAM = 6;
+let turbo = false, slam = false, dueling = false;
+const pace = () => (dueling ? (turbo ? VS_TURBO : VS_NORMAL) : (turbo ? TURBO : NORMAL)) * (slam ? SLAM : 1);
 // Each sequence of a round (reels, a win, a tumble, a duel, a banner, a bonus spin...) calls this when it starts,
 // so a skip hurries only the sequence it was pressed in and the next one plays at normal speed again.
 function nextSequence() { slam = false; }
@@ -774,7 +776,7 @@ const DUEL_T3 = [[150, 35], [200, 25], [250, 15], [300, 10], [500, 8], [750, 5],
 // value pools above are only used for the rolling badge animation
 // Before a duel the Ghost Pirate breaks out of the VS reel: he slams his hands against the glass left and right, it
 // cracks into lightning that runs out over the board, he gathers the energy and the reel bursts in a green flash.
-// Played from the clip (assets/vs-break.webp) when it has arrived and turbo is off; otherwise the quick version.
+// Played from the clip (assets/vs-break.webp, retimed to VS_NORMAL) when it has arrived and turbo is off; otherwise the quick version.
 // The clip is fetched once after the intro; each duel plays it from a fresh object URL, since an animated image
 // only starts over under a new URL.
 let breakBlob = null;
@@ -823,7 +825,8 @@ async function breakOut(tall, vsSym) {
   const grow = ms => orb.animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(.7)", opacity: .9, offset: .5 }, { transform: "scale(.6)", opacity: .8, offset: .7 }, { transform: "scale(1.15)", opacity: 1 }], { duration: ms, fill: "forwards", easing: "ease-in" });
   const clip = turbo ? null : vsBreakClip();
   if (clip) {
-    // the clip (2.75-8.96 s of the Gemini video at 1.6x) plays in the reel: his hands on the glass until 1.38 s, then
+    // the clip (2.75-8.96 s of the Gemini video at 1.6x, then 1.8x faster for VS_NORMAL) plays in the reel; the times here
+    // are at 1x and sleep() divides them by the pace: his hands on the glass until 1.38 s, then
     // lightning at his hands, from 2.2 s he turns and charges at the left edge, and it bursts at 3.72 s. The cracks
     // and the ball of ghost fire outside the frame keep to those times.
     const v = new Image(); v.alt = ""; v.src = clip;
@@ -865,7 +868,12 @@ async function breakOut(tall, vsSym) {
   br.remove(); orb.remove();
 }
 // The vsDuel event decides everything shown here; challengers that lose are only for tension.
+// It plays at the duel's pace (VS_NORMAL / VS_TURBO), the rest of the round at the faster one.
 async function reelDuel(d) {
+  dueling = true;
+  try { return await duelShow(d); } finally { dueling = false; }
+}
+async function duelShow(d) {
   nextSequence();
   const reelIdx = d.reel, rl = reels[reelIdx], tall = rl.tall;
   const tier = d.tier, m1 = d.top.mult, m1b = d.bottom.mult;
@@ -1599,7 +1607,7 @@ document.getElementById("infoBtn").addEventListener("click", () => openRules(tru
 document.getElementById("spin").addEventListener("click", () => busy ? skip() : play());
 addEventListener("keydown", e => { if (e.code === "Space" && e.target === document.body && !RGS.jurisdiction.disabledSpacebar) { e.preventDefault(); busy ? skip() : play(); } });
 game.addEventListener("pointerdown", e => { if (busy && !e.target.closest("button, .auto-menu, #intro, #rules")) skip(); });
-// turbo: every round plays TURBO times faster; remembered between visits
+// turbo: rounds play at TURBO instead of NORMAL pace (the duel at VS_TURBO); remembered between visits
 const turboBtn = document.getElementById("turboBtn");
 try { turbo = localStorage.getItem("ghostDuels.turbo") === "on"; } catch {}
 const showTurbo = () => turboBtn.setAttribute("aria-pressed", String(turbo));
