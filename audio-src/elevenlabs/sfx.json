@@ -355,7 +355,7 @@
     },
     {
       "name": "fanfare",
-      "role": "Free spins (Ghost Crates bonus) triggered, and the Total Win screen after the bonus: the music dips 3.2 s under it.",
+      "role": "Free spins (Ghost Crates bonus) triggered, and the Total Win screen after the bonus: the music dips 2.2 s under it.",
       "use": {
         "vol": 0.75,
         "rates": [
@@ -365,17 +365,17 @@
         "frequency": "bonus trigger"
       },
       "gen": {
-        "duration_s": 4.5,
+        "duration_s": 2.5,
         "prompt_influence": 0.55,
-        "takes": 12,
+        "takes": 18,
         "prompts": [
-          "Haunted bonus reveal: an instant deep thunder crack and a church bell toll, then a dark pipe organ rising in A minor with an eerie ghost choir swelling, howling wind and rattling chains, ending on a huge ominous organ chord with a distant ghostly laugh. Spooky, dark, powerful, rewarding, loud, wide stereo.",
-          "Spirits awaken: an instant heavy crypt door slam, a creepy music-box melody in A minor over a low cello tremolo, whispering ghost voices rising into a haunting choir and a shower of haunted bells, ending on a dark dramatic chord. Eerie, chilling, triumphant, loud.",
-          "Gothic horror win: an instant thunder boom, a sinister harpsichord and pipe organ riff in A minor, a wailing theremin, a spectral choir and tolling bells, ending with an evil cackle echoing in a crypt. Spooky, dramatic, rewarding, loud, wide stereo."
+          "Spooky ghost sting: an instant deep thunder crack, a chilling ghost wail sweeping overhead, a single heavy church bell toll and eerie spectral whispers fading into the crypt. Haunted, dark, short, loud, wide stereo.",
+          "Haunted reveal: an instant crypt door slam, a howling gust of ghostly wind, rattling chains and a spine-chilling ghost choir 'ooooh' rising, ending on a low ominous bell. Spooky, eerie, short, loud.",
+          "Ghost burst: an instant spectral boom, a swirl of screaming ghosts flying past, a creepy music-box chime and an evil cackle echoing in the dark. Spooky, haunted, short, punchy, loud, wide stereo."
         ]
       },
       "judge": {
-        "max_audible_s": 4.8,
+        "max_audible_s": 2.5,
         "max_attack_ms": 25,
         "tonal": "A minor"
       },

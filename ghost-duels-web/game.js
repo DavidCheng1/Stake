@@ -1968,7 +1968,7 @@ const sound = (() => {
     [0, 3, 7].forEach((n, i) => smp("chime", t + i * .07, .3, pitch(n)));
     return true;
   });
-  use("fanfare", null, t => { duck(3.2); return smp("fanfare", t, .75); });
+  use("fanfare", null, t => { duck(2.2); return smp("fanfare", t, .75); }); // a 2 s ghost sting: the music comes back right after it
   use("toll", null, t => smp("toll", t, .7));
   use("rune", null, (t, step = 0) => smp("crystal", t, .32, pitch(SCALE[(step % 8) + 4])));
   use("collect", null, (t, step = 0) => smp("crystal", t, .2, pitch(SCALE[(step % 8) + 4])));

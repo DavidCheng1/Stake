@@ -127,6 +127,7 @@ ElevenLabs gives a different result every time, so a deleted take can't be made 
 | `chime` | v2 | `chime_t2.mp3` (1.54 s): "One single note on an old cursed music box: a pure ringing bell tone with a faint ghostly …" | (score 75: +8.9 semitones from A (retune would change its character)) | `audio-src/sfx-old/chime_old.mp3` |
 | `fanfare` | v4 | `fanfare_t6.mp3` (4.39 s): "Monster party sting: an instant thunder clap and a mischievous minor-key organ riff, a bon…" | (score 100, fits its job) | `audio-src/sfx-old/fanfare_old3.mp3` |
 | `fanfare` | v5 | `fanfare_t12.mp3` (4.28 s): "Gothic horror win: an instant thunder boom, a sinister harpsichord and pipe organ riff in …" | (score ?, fits its job) | `audio-src/sfx-old/fanfare_old4.mp3` |
+| `fanfare` | v6 | `fanfare_t16.mp3` (2.0 s): "Spooky ghost sting: an instant deep thunder crack, a chilling ghost wail sweeping overhead…" | (score ?, fits its job) | `audio-src/sfx-old/fanfare_old5.mp3` |
 
 v1 is the original designed sound (`tools/sound_design.py`; `fs_land` is an ElevenLabs sample processed there). v2 is the first ElevenLabs replacement.
 
