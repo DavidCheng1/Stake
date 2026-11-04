@@ -199,15 +199,15 @@ def chroma_key(m):
     return {"A major": float(np.corrcoef(c, maj)[0, 1]), "A minor": float(np.corrcoef(c, mnr)[0, 1]), "best": best[1], "best_r": float(best[0])}
 
 
-def low_pitch(m, onset):
-    """Strongest partial between 70 and 300 Hz while a bell rings (0.3-2.3 s after the strike), in Hz."""
+def low_pitch(m, onset, lo=70, hi=300):
+    """Strongest partial between lo and hi Hz (default 70-300) while a bell rings (0.3-2.3 s after the strike), in Hz."""
     seg = m[onset + int(.3 * SR): onset + int(2.3 * SR)]
     if len(seg) < SR // 2:
         return None
     n = 1 << 17
     spec_ = np.abs(np.fft.rfft(seg * np.hanning(len(seg)), n))
     f = np.fft.rfftfreq(n, 1 / SR)
-    ok = (f > 70) & (f < 300)
+    ok = (f > lo) & (f < hi)
     return float(f[ok][np.argmax(spec_[ok])])
 
 
@@ -259,7 +259,7 @@ def measure(x, sound):
     if j.get("tonal"):
         r["key"] = {k: round(v, 2) if isinstance(v, float) else v for k, v in chroma_key(m[on:]).items()}
     if j.get("pitch_hz"):
-        p = low_pitch(m, on)
+        p = low_pitch(m, on, *j.get("pitch_range", (70, 300)))
         r["pitch_hz"] = round(p, 1) if p else None
         if p:  # distance to the nearest A, in semitones (an octave off is fine)
             semis = 12 * np.log2(p / j["pitch_hz"])

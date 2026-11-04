@@ -100,15 +100,38 @@
     },
     {
       "name": "chime",
-      "keep": "Pitched note source: the game plays it as A5 and transposes it into the win arpeggios (2-5 notes, scale steps) and the small duel sting. A generated sound has no exact pitch and usually more than one note; keep the designed bell. Possible later: generate one bell strike and retune it to exactly 880 Hz.",
       "role": "Win arpeggios, small duel win.",
       "use": {
         "vol": [
           0.22,
           0.32
         ],
-        "rates": "scale steps from A5",
+        "rates": [
+          0.5,
+          1.8
+        ],
         "frequency": "every win"
+      },
+      "note": "Pitched note source: the game plays it as A5 and transposes it into the win arpeggios (2-5 notes, scale steps) and the small duel sting. apply retunes the take to the nearest A, so it must be one clear note.",
+      "gen": {
+        "duration_s": 1.6,
+        "prompt_influence": 0.6,
+        "takes": 6,
+        "prompts": [
+          "A single haunted bell strike: one clear high glass bell note ringing out with an eerie ghostly shimmer and a cold crypt reverb. One note only, no melody. Spooky, magical, clean.",
+          "One single note on an old cursed music box: a pure ringing bell tone with a faint ghostly whisper in the tail. One note only, no melody. Eerie, delicate, clean.",
+          "A single strike on a haunted glass harmonica: one pure, hollow, ringing note with a wavering ghostly tail. One note only, no melody. Spooky, clean."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 1.5,
+        "max_attack_ms": 15,
+        "single_hit": true,
+        "pitch_hz": 880,
+        "pitch_range": [
+          600,
+          1300
+        ]
       }
     },
     {
@@ -166,9 +189,8 @@
         "prompt_influence": 0.6,
         "takes": 6,
         "prompts": [
-          "Versus showdown wind-up: a fast taiko drum roll and a rising string tremolo swelling from quiet to loud over one second, crackling green electricity on top, ending abruptly at its loudest. Tense, epic, fighting game, Halloween.",
-          "Fighting game VS build-up: a reversed ghostly whoosh pulled in from both sides, a tightening electric hum rising in pitch and an accelerating heartbeat drum, louder and louder, cut off sharply at the peak. Dark, tense, exciting.",
-          "Reversed cymbal and reversed ghost shriek swelling from silence to a loud peak in one second, with rising crackles of green lightning, ending abruptly at its loudest. Dramatic versus screen build-up, Halloween slot game."
+          "Ghostly charge-up: a reversed ghost choir and a reversed haunted bell swelling from silence to a loud peak in one second, green spectral energy crackling and rising in pitch, cut off sharply at its loudest. Creepy, tense, Halloween.",
+          "Spirits gathering: whispering ghost voices and a hollow crypt wind rushing in, rising in pitch and getting louder and louder for one second, a crackle of green ghost fire, ending abruptly at the peak. Eerie, tense, haunted."
         ]
       },
       "judge": {
@@ -189,13 +211,13 @@
         "frequency": "every VS reel and duel"
       },
       "gen": {
-        "duration_s": 1.6,
-        "prompt_influence": 0.55,
+        "duration_s": 2.0,
+        "prompt_influence": 0.5,
         "takes": 6,
         "prompts": [
-          "Fighting game VS slam: two sword blades clash with a bright metallic shing at the very same instant as a huge taiko and bass boom, a crack of green lightning and a short ghostly roar, short tail. Epic versus reveal, punchy, loud.",
-          "Versus title impact: an instant double hit, a deep orchestral brass stab with a giant taiko drum and a sharp metal clang, an electric zap and scattering sparks, short rumbling tail. Epic duel begins, Halloween, loud, punchy.",
-          "Two ghosts collide head-on: an instant thunderous boom and a bright metallic shing, a burst of crackling green energy and a short spectral howl fading out. Epic showdown reveal, game sound effect, loud, punchy, wide stereo."
+          "Instant haunted explosion: a coffin lid bursting open with a huge deep boom, a shriek of ghost wind and a short ghost choir hit, rumbling crypt tail. Spooky, powerful, Halloween slot game, loud, punchy.",
+          "Instant impact: a heavy crypt door blasting open, a crack of green spectral lightning and a screaming ghost rushing past, short dark reverb tail. Eerie, powerful, loud, punchy.",
+          "Instant dark magic burst: a deep thunder boom, a shattering tombstone and a gust of howling ghost wind with a low haunted bell, short tail. Spooky, epic, loud, punchy, wide stereo."
         ]
       },
       "judge": {
@@ -375,8 +397,12 @@
       "gen": {
         "duration_s": 4.5,
         "prompt_influence": 0.45,
-        "takes": 9,
-        "prompt": "BIG WIN money payout: starts instantly with a loud cash register cha-ching, then a huge cascade of gold coins pouring and clinking into a metal slot machine tray, jackpot bells ringing and sparkling chimes. Euphoric, rich, rewarding casino jackpot, loud, punchy, wide stereo."
+        "takes": 6,
+        "prompts": [
+          "BIG WIN in a haunted casino: starts instantly with a loud church bell toll and a dark pipe organ chord, then a ghost choir rising in triumph and a cascade of gold coins pouring onto crypt stone. Euphoric but spooky, Halloween, loud, wide stereo.",
+          "Spooky jackpot: an instant thunder crack and a big pipe organ fanfare in A major, haunted bells ringing, gold coins spilling and ghosts cheering with eerie wails. Triumphant, creepy, rewarding, loud, wide stereo.",
+          "Haunted treasure payout: an instant heavy chest lid flung open, a shower of gold coins clinking on stone, a ghost choir swelling and haunted bells chiming, a ghostly pirate laugh at the end. Spooky, rewarding, epic, loud."
+        ]
       },
       "judge": {
         "max_audible_s": 4.4,
