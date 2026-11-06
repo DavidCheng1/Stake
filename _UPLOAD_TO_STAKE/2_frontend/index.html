@@ -22,6 +22,7 @@
 <section class="game" id="game" aria-label="Slot">
     <img class="bg" src="assets/bg.webp" alt="" draggable="false">
     <div class="ambient" id="ambient" aria-hidden="true"><canvas id="amb"></canvas></div>
+    <div class="bonus-dim" aria-hidden="true"></div>
     <div class="hero" id="hero" aria-hidden="true"></div>
     <img class="console-over" src="assets/bg.webp" alt="" draggable="false">
     <img class="console-front" src="assets/console-front.webp" alt="" draggable="false">
@@ -33,7 +34,7 @@
     </div>
     <div class="at msg" id="msg" aria-live="polite"><span class="lives" id="lives" hidden><i class="life"></i><i class="life"></i><i class="life"></i></span><span id="msgText">Press Spin</span></div>
     <button type="button" class="hot turbo" id="turboBtn" aria-label="Turbo" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2 5 13.5h6L9.5 22 19 9.5h-6.2z"/></svg><span class="tb-lbl">Turbo</span></button>
-    <button type="button" class="buy-btn" id="buyBtn"><span class="bb-fs" aria-hidden="true"></span><span class="bb-txt"><span class="bb-top">Buy</span><span class="bb-main">Bonus</span></span><span class="bb-boost" id="bbBoost"></span></button>
+    <button type="button" class="buy-btn" id="buyBtn"><img class="bb-logo" src="assets/bb-logo.webp" alt="" draggable="false"><span class="bb-txt"><span class="bb-top">Buy</span><span class="bb-main">Bonus</span></span><span class="bb-boost" id="bbBoost"></span></button>
     <div class="at val" id="balVal">1.000,00 €</div>
     <button type="button" class="hot" id="betMinus" aria-label="Decrease bet"></button>
     <div class="at val" id="betVal">1,00</div>
@@ -62,6 +63,7 @@
     </div>
     <div class="duel" id="duel" hidden></div>
     <div class="banner" id="banner" hidden><h3 id="bTitle"></h3><p id="bSub"></p></div>
+    <div class="wintier" id="winTier" hidden><div class="wintier-box"><div class="wintier-rays"></div><div class="wintier-art" id="wtArt"></div></div><div class="totalwin-amount wintier-amount" id="wtAmount"></div><div class="wintier-flash" id="wtFlash"></div></div>
     <div class="totalwin" id="totalWin" hidden><div class="totalwin-box"><div class="totalwin-rays"></div><div class="totalwin-art" id="twArt"></div></div><div class="totalwin-amount" id="twAmount"></div><div class="totalwin-sub" id="twSub"></div></div>
     <canvas class="fx" id="fx"></canvas>
     <canvas class="motes" id="motes" aria-hidden="true"></canvas>
@@ -103,22 +105,22 @@
   </section>
 
 <!-- Portrait (phones held upright): the game's own controls and values move into this panel below the reels,
-     and its menus and dialogs into the layer after it, sized for the phone. Empty in landscape. -->
+     over the crypt scene, and its menus and dialogs into the layer after it, sized for the phone. Empty in landscape. -->
 <div class="hud" id="hud" aria-label="Controls">
   <div class="h-msg" id="hMsg"></div>
+  <div class="h-deck">
+    <div class="h-buy" id="hBuy"></div>
+    <div class="h-arrow" id="hBetL"></div>
+    <div class="h-spin" id="hSpin"></div>
+    <div class="h-arrow" id="hBetR"></div>
+    <div class="h-side"><div class="h-c" id="hInfo"></div><div class="h-c" id="hSound"></div></div>
+    <div class="h-small"><div class="h-c" id="hTurbo"></div><div class="h-c" id="hAuto"></div></div>
+  </div>
   <div class="h-vals">
-    <div class="h-box"><span class="h-lbl" id="hBalLbl">Balance</span><div class="h-slot" id="hBal"></div></div>
-    <div class="h-box"><span class="h-lbl" id="hBetLbl">Bet</span><div class="h-slot h-bet" id="hBetM"></div></div>
-    <div class="h-box"><span class="h-lbl" id="hWinLbl">Win</span><div class="h-slot" id="hWin"></div></div>
+    <div class="h-box h-bal"><span class="h-lbl" id="hBalLbl">Balance</span><div class="h-slot" id="hBal"></div></div>
+    <div class="h-box h-win"><span class="h-lbl" id="hWinLbl">Win</span><div class="h-slot" id="hWin"></div></div>
+    <div class="h-box h-bet"><span class="h-lbl" id="hBetLbl">Bet</span><div class="h-slot" id="hBet"></div></div>
   </div>
-  <div class="h-ctrls">
-    <div class="h-c" id="hTurbo"></div>
-    <div class="h-c" id="hAuto"><span class="h-cap">Autoplay</span></div>
-    <div class="h-c h-spin" id="hSpin"></div>
-    <div class="h-c" id="hInfo"><span class="h-cap">Info</span></div>
-    <div class="h-c" id="hSound"><span class="h-cap" id="hSoundCap">Sound</span></div>
-  </div>
-  <div class="h-buy" id="hBuy"></div>
 </div>
 <div class="ui" id="ui"></div>
 <script src="rgs.js"></script>

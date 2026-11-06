@@ -83,8 +83,9 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .gridlines i { position: absolute; background: rgb(130 255 195 / .32); }
 .gridlines i.v { top: 0; bottom: 0; width: 1.5px; transform: translateX(-50%); }
 .gridlines i.h { left: 0; right: 0; height: 1.5px; transform: translateY(-50%); }
-.reel { position: relative; display: grid; grid-template-rows: repeat(7, minmax(0, 1fr)); }
-.cell { position: relative; display: grid; place-items: center; min-height: 0; border-radius: 6px; }
+/* a cell never grows past its reel, whatever it holds (a long rune value would otherwise widen the whole reel) */
+.reel { position: relative; display: grid; grid-template-rows: repeat(7, minmax(0, 1fr)); grid-template-columns: minmax(0, 1fr); }
+.cell { position: relative; display: grid; place-items: center; min-height: 0; min-width: 0; border-radius: 6px; }
 .cell > .sym { width: auto; height: 94%; }
 /* Tease (2 FS on the board): the column turns dark teal, neon green beams run along its edges with thinner streaks inside,
    green ghost-fire rises through it, and a strip of symbols rolls slowly to a stop on the reel's real result. */
@@ -180,8 +181,11 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 @media (prefers-reduced-motion: reduce) { .ambient *, .pglow, .rays { animation: none !important; } }
 
 /* Geisterkisten bonus */
-.stage.bonus::before { content: ""; position: absolute; inset: -1%; background: radial-gradient(ellipse at 50% 45%, rgb(4 16 13 / .5), rgb(3 10 9 / .82)); border-radius: 6px; animation: bonusIn .6s ease-out; }
-@keyframes bonusIn { from { opacity: 0; } }
+/* the board goes dark for the bonus: a layer under the Ghost Pirate (his map reaches over the last reel and stays lit),
+   the same size as the stage; the symbols are drawn above both */
+.bonus-dim { position: absolute; left: 28.37%; top: 21.9%; width: 43.18%; height: 57.86%; pointer-events: none; opacity: 0; transition: opacity .6s ease-out; }
+.bonus-dim::before { content: ""; position: absolute; inset: -1%; background: radial-gradient(ellipse at 50% 45%, rgb(4 16 13 / .5), rgb(3 10 9 / .82)); border-radius: 6px; }
+.game.bonus .bonus-dim { opacity: 1; }
 .reels { clip-path: inset(-.5% -4% -1% -4%); }
 .stage.hurt::after { content: ""; position: absolute; inset: -2%; pointer-events: none; z-index: 7; border-radius: 8px; box-shadow: inset 0 0 6cqw rgb(180 20 40 / .75); animation: hurt 1s ease-out forwards; }
 @keyframes hurt { from { opacity: 1; } to { opacity: 0; } }
@@ -229,9 +233,10 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 /* Rune tokens */
 .rtok { position: relative; height: 92%; aspect-ratio: 1; max-width: 100%; display: grid; place-items: center; --c: 109 255 179; }
 .rtok img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 .4cqw rgb(var(--c) / .6)); animation: runeFloat 3s ease-in-out infinite; }
-/* rune values in the spooky lettering of the multipliers: dark outline, glow in the rune's colour */
-.rtok .rv { position: relative; z-index: 3; margin-top: 56%; font: 400 1.45cqw/1 var(--display); letter-spacing: .04em; color: #f2fff8;
-  padding: .12cqw .4cqw .02cqw; border-radius: .45cqw; background: rgb(4 8 8 / .72); border: .1cqw solid rgb(var(--c) / .55);
+/* rune values in the spooky lettering of the multipliers: dark outline, glow in the rune's colour. --fit (set with the
+   value, game.js setRv) makes long amounts smaller, so they stay inside the rune at any bet */
+.rtok .rv { position: relative; z-index: 3; margin-top: 56%; font: 400 calc(1.45cqw * var(--fit, 1))/1 var(--display); letter-spacing: .04em; color: #f2fff8;
+  padding: .12cqw calc(.4cqw * var(--fit, 1)) .02cqw; border-radius: .45cqw; background: rgb(4 8 8 / .72); border: .1cqw solid rgb(var(--c) / .55);
   -webkit-text-stroke: .1cqw #04100c; paint-order: stroke fill;
   text-shadow: 0 0 .5cqw rgb(var(--c)), 0 0 1cqw rgb(var(--c) / .6); font-variant-numeric: tabular-nums; white-space: nowrap; transition: background .3s, box-shadow .3s; }
 .rtok:not(.linked) .rv { opacity: .7; }
@@ -303,6 +308,8 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 #balVal { left: 20.9%; top: 92.66%; width: 10.55%; height: 4.55%; }
 #betVal { left: 39.94%; top: 92.66%; width: 5.27%; height: 4.55%; }
 #winVal { left: 51.66%; top: 92.66%; width: 11.62%; height: 4.55%; color: var(--gold); }
+#betVal.boosted { color: #b6ffd8; text-shadow: 0 0 1cqw rgb(109 255 179 / .8), 0 .15cqw 0 #000; } /* FS Boost on: the bet shows the boosted price */
+#betVal.six { color: #ffe0a8; text-shadow: 0 0 1cqw rgb(255 150 50 / .85), 0 .15cqw 0 #000; }
 #winVal.hit { text-shadow: 0 0 1.2cqw rgb(233 196 106 / .8), 0 .15cqw 0 #000; }
 .msg { left: 36.33%; top: 82.7%; width: 26.95%; height: 4%; display: grid; place-items: center; font-size: 1.4cqw; font-weight: 700; letter-spacing: .06em;
   color: #c9ffe6; text-shadow: 0 0 .8cqw rgb(109 255 179 / .6), 0 .12cqw 0 #000; white-space: nowrap; overflow: hidden; }
@@ -333,6 +340,9 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 #autoBtn .disc { inset: 12%; width: 76%; height: 76%; }
 .auto-left { position: absolute; right: -14%; top: -10%; z-index: 2; min-width: 2.4cqw; padding: .15cqw .4cqw; border-radius: 1cqw; font: 800 1.15cqw/1.2 var(--ui); color: #f3e3b4;
   background: linear-gradient(#2b2735, #17141f); border: .15cqw solid #c9a35a; box-shadow: 0 0 .6cqw rgb(109 255 179 / .6); text-align: center; font-variant-numeric: tabular-nums; }
+/* paused autoplay: the counter (with a pause mark) glows amber, the disc rests dimmed */
+#autoBtn.paused .auto-left { color: #ffd98a; border-color: #f0b445; box-shadow: 0 0 .7cqw rgb(255 190 70 / .75); white-space: nowrap; }
+#autoBtn.paused .disc { filter: brightness(.8) saturate(.7); }
 /* Autoplay menu in the style of the stone console: slate panel, gold rim, dark inset boxes, cream lettering */
 .auto-menu { position: absolute; z-index: 40; right: 26.5%; bottom: 14.5%; width: 23%; padding: 1.6cqw 1.5cqw 1.3cqw; border-radius: 1cqw;
   background: url(assets/img0.webp) 40% 30% / cover, #2e363a;
@@ -586,7 +596,8 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
    animation), with the soft parts drawn here: turning gold rays and a pulsing teal aura; the amount in gold */
 .totalwin { position: absolute; inset: 0; z-index: 9; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
   background: radial-gradient(ellipse 60% 55% at 50% 42%, rgb(8 44 37 / .6), rgb(3 10 9 / .9)); }
-.totalwin-box { position: relative; width: 62cqw; aspect-ratio: 640 / 320; margin-top: -2cqw; }
+.totalwin-box { position: relative; width: 68cqw; aspect-ratio: 640 / 320; margin-top: -2cqw; }
+.portrait .totalwin-box { width: 57cqw; } /* a phone shows only the middle of the game's width: the wings stay on screen */
 .totalwin-art { position: absolute; inset: 0; }
 .totalwin-art canvas { display: block; width: 100%; height: 100%; } /* the teal aura is drawn in the canvas (rig.json "aura") */
 .totalwin-rays { position: absolute; left: 50%; top: 50%; width: 120%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
@@ -600,6 +611,28 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .totalwin-sub { position: relative; margin-top: 1.1cqw; font-size: 2.1cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #e6fff7;
   text-shadow: 0 .2cqw .5cqw #000, 0 0 1.2cqw rgb(63 242 200 / .4); }
 @media (prefers-reduced-motion: reduce) { .totalwin-rays { animation: none; } }
+/* Win tiers before the Total Win: BIG, SUPER, MEGA, EPIC WIN, each title bigger than the one before and in its own
+   colour (--c), with rays and the counting amount; a flash covers each step up */
+.wintier { --c: 211 107 255; --tw: 50cqw; --ta: 6.6cqw; position: absolute; inset: 0; z-index: 9; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse 60% 55% at 50% 42%, rgb(var(--c) / .2), transparent 70%), rgb(3 10 9 / .93); overflow: hidden; }
+.wintier[data-tier="super"] { --c: 63 242 220; --tw: 56cqw; --ta: 7.2cqw; }
+.wintier[data-tier="mega"] { --c: 255 122 42; --tw: 62cqw; --ta: 7.8cqw; }
+.wintier[data-tier="epic"] { --c: 93 255 143; --tw: 70cqw; --ta: 8.4cqw; }
+.portrait .wintier { --tw: 44cqw; }
+.portrait .wintier[data-tier="super"] { --tw: 48cqw; }
+.portrait .wintier[data-tier="mega"] { --tw: 52cqw; }
+.portrait .wintier[data-tier="epic"] { --tw: 56cqw; } /* a phone shows only the middle 56% of the game's width */
+.wintier-box { position: relative; width: var(--tw); aspect-ratio: 16 / 9; margin-top: -3cqw; transition: width .45s cubic-bezier(.3, 1.6, .5, 1); }
+.wintier-art { position: absolute; inset: 0; }
+.wintier-art canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.wintier-rays { position: absolute; left: 50%; top: 50%; width: 125%; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(rgb(var(--c) / .34) 0 4deg, transparent 9deg 22.5deg);
+  mask: radial-gradient(closest-side, #000 15%, rgb(0 0 0 / .6) 45%, transparent 100%); -webkit-mask: radial-gradient(closest-side, #000 15%, rgb(0 0 0 / .6) 45%, transparent 100%);
+  animation: twRays 16s linear infinite; }
+.wintier-amount { font-size: var(--ta); margin-top: -2.4cqw; transition: font-size .45s cubic-bezier(.3, 1.6, .5, 1);
+  filter: drop-shadow(0 .35cqw 0 #2a1902) drop-shadow(0 0 1.4cqw rgb(var(--c) / .55)); }
+.wintier-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 45%, #fff 0, rgb(var(--c) / .7) 30%, transparent 70%); }
+@media (prefers-reduced-motion: reduce) { .wintier-rays { animation: none; } .wintier-box, .wintier-amount { transition: none; } }
 .fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
 
 .tests { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -678,29 +711,32 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 @keyframes goPulse { 50% { opacity: .4; } }
 @media (prefers-reduced-motion: reduce) { .intro-logo, .intro-go { animation: none !important; } }
 
-/* Bonus buy: a gold plaque docked on the dashboard's left wing, and its confirmation dialog */
-.buy-btn { all: unset; box-sizing: border-box; position: absolute; left: 8.6%; top: 60.6%; width: 15%; height: 20.6%; z-index: 12; cursor: pointer;
-  display: grid; grid-template-columns: 1fr; justify-items: center; align-content: center; gap: .45cqw; padding: .6cqw .5cqw; border-radius: 1cqw;
-  background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border: .3cqw solid #c99a3e;
-  box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .7), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 1.4cqw rgb(255 79 210 / .45);
+/* Bonus buy: the Maestro Studios seal docked on the dashboard's left wing (the phone panel resizes it), and its dialog.
+   A gold-rimmed dark seal with the logo, a Buy Bonus ribbon, and the FS Boost level as a pill on top while a boost is on. */
+.buy-btn { all: unset; box-sizing: border-box; position: absolute; left: 10.6%; top: 59.5%; width: 11cqw; height: 11cqw; z-index: 12; cursor: pointer;
+  display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, #2d3b44, #12181d 62%, #07090c 100%);
+  box-shadow: inset 0 0 0 .22cqw #0c0a10, inset 0 0 1.3cqw rgb(0 0 0 / .8), 0 0 0 .44cqw #d9ab4c, 0 0 0 .57cqw #8a6122, 0 0 0 .8cqw #0c0a10, 0 0 2.2cqw rgb(255 79 210 / .5), 0 .7cqw 1.2cqw rgb(0 0 0 / .7);
   animation: buyGlow 2.2s ease-in-out infinite; transition: transform .1s, filter .2s; }
-@keyframes buyGlow { 50% { box-shadow: 0 0 0 .16cqw #15131a, inset 0 0 0 .14cqw #15131a, inset 0 0 1.4cqw rgb(0 0 0 / .7), 0 .5cqw 1.2cqw rgb(0 0 0 / .6), 0 0 2.4cqw rgb(255 79 210 / .8); } }
+@keyframes buyGlow { 50% { box-shadow: inset 0 0 0 .22cqw #0c0a10, inset 0 0 1.3cqw rgb(0 0 0 / .8), 0 0 0 .44cqw #d9ab4c, 0 0 0 .57cqw #8a6122, 0 0 0 .8cqw #0c0a10, 0 0 3.5cqw rgb(255 79 210 / .85), 0 .7cqw 1.2cqw rgb(0 0 0 / .7); } }
 .buy-btn:hover { filter: brightness(1.15); }
 .buy-btn:active { transform: scale(.95); }
-.buy-btn:focus-visible { outline: .3cqw solid var(--ghost); outline-offset: .2cqw; }
+.buy-btn:focus-visible { outline: .3cqw solid var(--ghost); outline-offset: .9cqw; }
 .buy-btn:disabled { cursor: default; filter: grayscale(.85) brightness(.7); animation: none; }
-/* FS Boost state on the plaque: grey when off, green at 3×, orange at 6× (chosen in the Bonus menu) */
-.bb-boost { font: 800 1.1cqw/1 var(--ui); letter-spacing: .12em; text-transform: uppercase; color: #9aa59c; white-space: nowrap;
-  padding: .35cqw .7cqw; border-radius: 1cqw; background: rgb(0 0 0 / .5); box-shadow: inset 0 0 0 .1cqw rgb(255 255 255 / .12); }
-.buy-btn.boosted { border-color: #6dffb3; }
-.buy-btn.boosted .bb-boost { color: #b6ffd8; background: rgb(6 40 26 / .75); box-shadow: inset 0 0 0 .1cqw #6dffb3, 0 0 .9cqw rgb(109 255 179 / .7); }
-.buy-btn.six { border-color: #ffb347; }
-.buy-btn.six .bb-boost { color: #ffe0a8; background: rgb(48 24 4 / .75); box-shadow: inset 0 0 0 .1cqw #ffb347, 0 0 .9cqw rgb(255 150 50 / .8); }
-.bb-fs { width: 5.6cqw; aspect-ratio: 1; display: block; }
-.bb-fs .sym { width: 100%; }
-.bb-txt { display: grid; justify-items: center; line-height: .9; }
-.bb-top { font: 800 1.3cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: #e9e2c8; text-shadow: 0 .1cqw 0 #000; }
-.bb-main { font: 400 3cqw/1 var(--display); letter-spacing: .03em; color: #ffd877; -webkit-text-stroke: .08em #2a1700; paint-order: stroke fill; text-shadow: 0 0 .3em rgb(255 200 80 / .7), 0 .1em 0 #1c0f00; }
+.bb-logo { display: block; width: 84%; translate: 0 -6%; filter: drop-shadow(0 0 .5cqw rgb(109 255 179 / .55)) drop-shadow(0 .18cqw 0 #000); pointer-events: none; }
+.bb-txt { position: absolute; left: 50%; bottom: -1.4cqw; translate: -50% 0; display: grid; grid-auto-flow: column; gap: .45cqw; align-items: baseline; line-height: .9;
+  padding: .45cqw 1.3cqw; border-radius: .45cqw; white-space: nowrap;
+  background: linear-gradient(#7d1f5c, #4a0f36); border: .2cqw solid #d9ab4c; box-shadow: 0 0 0 .13cqw #0c0a10, 0 .35cqw .5cqw rgb(0 0 0 / .6); }
+.bb-top { font: 800 1.25cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: #f3ead2; text-shadow: 0 .1cqw 0 #000; }
+.bb-main { font: 400 2cqw/1 var(--display); letter-spacing: .03em; color: #ffd877; -webkit-text-stroke: .08em #2a1700; paint-order: stroke fill; text-shadow: 0 0 .3em rgb(255 200 80 / .7), 0 .1em 0 #1c0f00; }
+/* FS Boost state (chosen in the Bonus menu): a pill on top and the rim green at 3×, orange at 6× */
+.bb-boost { display: none; position: absolute; left: 50%; top: -1.3cqw; translate: -50% 0; font: 800 1.1cqw/1 var(--ui); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap;
+  padding: .4cqw .8cqw; border-radius: 1.3cqw; }
+.buy-btn:is(.boosted, .six) .bb-boost { display: block; }
+.buy-btn.boosted { box-shadow: inset 0 0 0 .22cqw #0c0a10, inset 0 0 1.3cqw rgb(0 0 0 / .8), 0 0 0 .44cqw #6dffb3, 0 0 0 .8cqw #0c0a10, 0 0 2.6cqw rgb(109 255 179 / .7); animation: none; }
+.buy-btn.boosted .bb-boost { color: #b6ffd8; background: rgb(6 40 26 / .9); box-shadow: inset 0 0 0 .1cqw #6dffb3, 0 0 .9cqw rgb(109 255 179 / .7); }
+.buy-btn.six { box-shadow: inset 0 0 0 .22cqw #0c0a10, inset 0 0 1.3cqw rgb(0 0 0 / .8), 0 0 0 .44cqw #ffb347, 0 0 0 .8cqw #0c0a10, 0 0 2.6cqw rgb(255 150 50 / .75); }
+.buy-btn.six .bb-boost { color: #ffe0a8; background: rgb(48 24 4 / .9); box-shadow: inset 0 0 0 .1cqw #ffb347, 0 0 .9cqw rgb(255 150 50 / .8); }
 .buy-dlg { position: absolute; inset: 0; z-index: 55; display: grid; place-items: center; background: rgb(3 10 9 / .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
 .buy-price { display: grid; justify-items: center; gap: .2cqw; margin-top: .3cqw; }
 .buy-price span { font: 800 1.1cqw/1 var(--ui); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
@@ -766,51 +802,87 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .hud, .ui { display: none; }
 .portrait body { display: block; position: fixed; inset: 0; } /* fixed: iOS cannot pan the over-wide game */
 .portrait .game { position: absolute; top: 0; left: calc(-22vw / .56); width: calc(100vw / .56); box-shadow: none; }
-.portrait .ui { display: block; position: fixed; inset: 0; z-index: 100; pointer-events: none; container-type: inline-size; }
+.portrait .ui { display: block; position: fixed; inset: 0; z-index: 100; pointer-events: none; container-type: size; } /* cqw and cqh: the visible screen */
 .portrait .ui > * { pointer-events: auto; }
 .portrait .hud { display: grid; position: absolute; left: 0; right: 0; top: calc(100vw / .56 * 572 / 1024 * .8); bottom: 0; z-index: 20;
-  grid-template-rows: auto auto 1fr auto; align-content: start; gap: 3.2vw; padding: 3vw 4vw calc(4vw + env(safe-area-inset-bottom, 0px));
-  background: url(assets/img0.webp) 40% 30% / cover, #2e363a; border-top: .9vw solid #c99a3e;
-  box-shadow: 0 -.4vw 0 #15131a, inset 0 2vw 5vw rgb(0 0 0 / .55), 0 -3vw 6vw rgb(0 0 0 / .6); font-family: var(--ui); }
-/* message bar and lives */
-.portrait .hud .msg { position: static; width: auto; height: auto; min-height: 9vw; padding: 1.5vw 3vw; box-sizing: border-box; border-radius: 2.4vw;
-  font-size: 4.1vw; gap: 2vw; background: rgb(6 14 12 / .82); border: .5vw solid #c99a3e; white-space: normal; text-align: center; }
+  grid-template-rows: auto minmax(0, 1fr) auto; padding: 2.6vw 3vw calc(2.6vw + env(safe-area-inset-bottom, 0px));
+  /* the crypt goes on below the reels: shade under the frame's ledge, the scene's wings, darker towards the values */
+  background: linear-gradient(rgb(3 9 8 / .78), rgb(3 9 8 / 0) 10vw), linear-gradient(rgb(3 8 7 / 0) 50%, rgb(3 8 7 / .55) 74%, rgb(2 6 5 / .92) 100%),
+    linear-gradient(rgb(4 12 10 / .28), rgb(4 12 10 / .28)), url(assets/hud-bg.webp) 50% 0 / cover, #0b1714;
+  box-shadow: 0 -.5vw 0 #0c0a10; font-family: var(--ui); overflow: hidden; }
+/* drifting mist low over the floor */
+.portrait .hud::before { content: ""; position: absolute; left: -20%; right: -20%; bottom: 14%; height: 34%; pointer-events: none; z-index: 0;
+  background: radial-gradient(50% 45% at 30% 60%, rgb(120 220 190 / .16), transparent), radial-gradient(45% 40% at 72% 50%, rgb(120 220 190 / .12), transparent);
+  animation: hudMist 14s ease-in-out infinite alternate; }
+@keyframes hudMist { to { translate: 12% 0; } }
+.portrait .hud > * { position: relative; z-index: 1; }
+/* message: a small stone tablet under the reels, the lives inside */
+.portrait .hud .msg { position: static; width: auto; height: auto; min-height: 8.6vw; max-width: 80vw; margin: 0 auto; padding: 1.3vw 4.5vw; box-sizing: border-box; border-radius: 1.6vw;
+  font-size: 4vw; gap: 2vw; white-space: normal; text-align: center;
+  background: linear-gradient(rgb(255 255 255 / .05), rgb(0 0 0 / .35)), url(assets/img0.webp) 40% 30% / 260% auto, #1d2427;
+  border: .6vw solid #b8893a; box-shadow: 0 0 0 .35vw #0c0a10, inset 0 0 0 .3vw #0c0a10, inset 0 0 3vw rgb(0 0 0 / .75), 0 1.4vw 2.6vw rgb(0 0 0 / .6); }
 .portrait .hud .lives { gap: 1.4vw; }
 .portrait .hud .life { width: 3.4vw; height: 4.8vw; }
-/* balance, bet, win */
-.h-vals { display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 2.2vw; }
-.h-box { display: grid; justify-items: center; align-content: center; gap: 1vw; padding: 1.8vw 1.2vw; border-radius: 2.6vw; min-width: 0;
-  background: linear-gradient(#25222f, #14111a); border: .6vw solid #d0a54c; box-shadow: 0 0 0 .3vw #15131a, inset 0 .8vw 1.6vw rgb(0 0 0 / .7); }
-.h-lbl { font: 800 2.9vw/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; color: #e9e2c8; }
-.h-slot { display: grid; grid-auto-flow: column; align-items: center; justify-content: center; gap: 1.6vw; min-width: 0; position: relative; }
-.portrait .hud .val { position: static; width: auto; height: auto; font-size: calc(4.6vw * var(--fit, 1)); text-shadow: 0 .3vw 0 #000; overflow: visible; }
-.portrait .hud .mult { position: absolute; left: auto; right: -2vw; top: -9vw; font-size: 5.4vw; }
-.portrait .hud :is(#betMinus, #betPlus) { position: relative; left: auto; top: auto; width: 8vw; height: 8vw; border-radius: 50%; display: grid; place-items: center;
-  background: radial-gradient(circle at 50% 35%, #2e4a43, #12221e 75%); box-shadow: inset 0 0 0 .5vw #c99a3e; color: #f3ead2; font: 800 5.4vw/1 var(--ui); }
-.portrait .hud #betMinus::before { content: "\2212"; }
-.portrait .hud #betPlus::before { content: "+"; }
-.portrait .hud #betMinus:disabled, .portrait .hud #betPlus:disabled { opacity: .4; }
-/* controls row: turbo, autoplay, spin, info, sound */
-.h-ctrls { display: grid; grid-template-columns: 1fr 1fr 1.7fr 1fr 1fr; align-items: center; justify-items: center; }
-.h-c { display: grid; justify-items: center; gap: 1.2vw; }
-.h-c > .hot { order: -1; }
-.h-cap { font: 800 2.9vw/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: #e9e2c8; text-shadow: 0 .3vw 0 #000; }
+/* the deck: buy seal left, bet arrows around the big spin, info and sound right, turbo and autoplay under the spin */
+.h-deck { align-self: end; display: grid; grid-template-columns: minmax(0, 1fr) 9vw 28vw 9vw minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; justify-items: center; row-gap: 3vw; }
+.h-buy { grid-column: 1; grid-row: 1 / 3; align-self: end; justify-self: start; display: grid; padding: 0 0 3vw 1.5vw; }
+.h-arrow { grid-row: 1; display: grid; }
+#hBetL { grid-column: 2; } #hSpin { grid-column: 3; grid-row: 1; display: grid; } #hBetR { grid-column: 4; }
+.h-side { grid-column: 5; grid-row: 1 / 3; align-self: end; justify-self: end; display: grid; gap: 4vw; padding: 0 2vw 1.6vw 0; }
+.h-small { grid-column: 2 / 5; grid-row: 2; display: flex; gap: 7vw; }
+.h-c { display: grid; justify-items: center; }
 /* ids, so these beat the landscape positions set per button id */
-.portrait .hud :is(#autoBtn, #spin, #infoBtn, #musicBtn, #turboBtn) { position: relative; left: auto; top: auto; width: 13vw; height: 13vw; aspect-ratio: auto; border-radius: 50%; }
-.portrait .hud .hot.round, .portrait .hud #infoBtn { background: radial-gradient(circle at 50% 35%, #24443c, #0b1714 75%); box-shadow: 0 0 0 .9vw #c99a3e, 0 0 0 1.4vw #15131a, 0 1vw 2vw rgb(0 0 0 / .6); }
-.portrait .hud #spin { width: 22vw; height: 22vw; box-shadow: 0 0 0 1.3vw #c99a3e, 0 0 0 2vw #15131a, 0 0 5vw rgb(109 255 179 / .45); }
-.portrait .hud #infoBtn::before { content: "i"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 7.6vw/1 Georgia, serif; color: #e9f6f1; text-shadow: 0 0 2vw rgb(109 255 179 / .6); }
-.portrait .hud #turboBtn { border-radius: 2.6vw; width: 12vw; height: 12vw; }
-.portrait .hud #turboBtn .tb-lbl { font-size: 2.9vw; translate: -50% 1.2vw; }
-.portrait .hud #musicBtn { width: 12vw; height: 12vw; z-index: auto; }
-.portrait .hud .auto-left { font-size: 3vw; min-width: 6vw; padding: .4vw 1vw; border-radius: 3vw; }
-/* buy plaque */
-.h-buy { display: grid; }
-.portrait .hud .buy-btn { position: relative; left: auto; top: auto; width: 76vw; height: 16vw; margin: 0 auto; grid-template-columns: auto auto 1fr; justify-items: start; align-items: center; gap: 2.4vw; padding: 0 3vw 0 2.4vw; border-radius: 3vw; border-width: .8vw; }
-.portrait .hud .bb-boost { justify-self: end; font-size: 2.9vw; padding: 1.3vw 2.2vw; border-radius: 3vw; }
-.portrait .hud .bb-fs { width: 10vw; }
-.portrait .hud .bb-top { font-size: 3.2vw; }
-.portrait .hud .bb-main { font-size: 7.4vw; }
+.portrait .hud :is(#autoBtn, #spin, #infoBtn, #musicBtn, #turboBtn) { position: relative; left: auto; top: auto; width: 11.5vw; height: 11.5vw; aspect-ratio: auto; border-radius: 50%; z-index: auto; }
+/* gold-rimmed crypt seals, like the painted buttons on the landscape console */
+.portrait .hud :is(#autoBtn, #infoBtn, #musicBtn, #turboBtn) {
+  background: radial-gradient(circle at 50% 32%, #2a5246, #0e211c 62%, #07110e 100%);
+  box-shadow: inset 0 0 0 .5vw #0c0a10, inset 0 .8vw 1.4vw rgb(150 255 210 / .12), inset 0 -1vw 1.6vw rgb(0 0 0 / .6),
+    0 0 0 .8vw #c99a3e, 0 0 0 1vw #8a6122, 0 0 0 1.4vw #0c0a10, 0 1.2vw 2vw rgb(0 0 0 / .7); }
+.portrait .hud #spin { width: 28vw; height: 28vw; background: radial-gradient(circle, #0c201a 58%, #07110e 70%);
+  box-shadow: 0 0 0 1.3vw #d9ab4c, 0 0 0 1.7vw #8a6122, 0 0 0 2.3vw #0c0a10, 0 0 0 3.1vw rgb(201 154 62 / .35), 0 0 7vw rgb(109 255 179 / .55), 0 2vw 3vw rgb(0 0 0 / .7); }
+.portrait .hud #spin .disc { inset: 4%; width: 92%; height: 92%; }
+.portrait .hud #infoBtn::before { content: "i"; position: absolute; inset: 0; display: grid; place-items: center; font: 700 6.6vw/1 Georgia, serif; color: #e9f6f1; text-shadow: 0 0 2vw rgb(109 255 179 / .7), 0 .3vw 0 #000; }
+.portrait .hud #turboBtn svg { width: 58%; height: 58%; }
+.portrait .hud #turboBtn .tb-lbl { display: none; }
+.portrait .hud #turboBtn[aria-pressed="true"] { background: radial-gradient(circle at 50% 35%, #4d9c63, #163a26 75%);
+  box-shadow: inset 0 0 0 .5vw #0c0a10, 0 0 0 .8vw #d8ff7a, 0 0 0 1.4vw #0c0a10, 0 0 4vw rgb(190 255 110 / .8); animation: none; }
+.portrait .hud #autoBtn .disc { inset: 10%; width: 80%; height: 80%; }
+.portrait .hud .auto-left { font-size: 3vw; min-width: 6vw; padding: .4vw 1vw; border-radius: 3vw; right: -30%; top: -25%; }
+.portrait .hud .hot:active { transform: scale(.92); }
+/* bet arrows: gold chevrons either side of the spin */
+.portrait .hud :is(#betMinus, #betPlus) { position: relative; left: auto; top: auto; width: 9vw; height: 14vw; border-radius: 2vw; filter: drop-shadow(0 .5vw .6vw rgb(0 0 0 / .8)); }
+.portrait .hud :is(#betMinus, #betPlus)::before { content: ""; position: absolute; inset: 14% 18%; background: linear-gradient(#ffe7a3, #d9ab4c 45%, #8a6122);
+  clip-path: polygon(78% 0, 100% 14%, 42% 50%, 100% 86%, 78% 100%, 0 50%); }
+.portrait .hud #betPlus::before { scale: -1 1; }
+.portrait .hud :is(#betMinus, #betPlus):disabled { opacity: .35; }
+/* Buy Bonus: the Maestro Studios seal, with a ribbon */
+.portrait .hud .buy-btn { position: relative; left: auto; top: auto; width: 25vw; height: 25vw; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; gap: 0;
+  background: radial-gradient(circle at 50% 38%, #2d3b44, #12181d 62%, #07090c 100%);
+  box-shadow: inset 0 0 0 .5vw #0c0a10, inset 0 0 3vw rgb(0 0 0 / .8), 0 0 0 1vw #d9ab4c, 0 0 0 1.3vw #8a6122, 0 0 0 1.8vw #0c0a10, 0 0 5vw rgb(255 79 210 / .5), 0 1.6vw 2.6vw rgb(0 0 0 / .7);
+  animation: buyGlowP 2.2s ease-in-out infinite; }
+@keyframes buyGlowP { 50% { box-shadow: inset 0 0 0 .5vw #0c0a10, inset 0 0 3vw rgb(0 0 0 / .8), 0 0 0 1vw #d9ab4c, 0 0 0 1.3vw #8a6122, 0 0 0 1.8vw #0c0a10, 0 0 8vw rgb(255 79 210 / .85), 0 1.6vw 2.6vw rgb(0 0 0 / .7); } }
+.portrait .hud .bb-logo { filter: drop-shadow(0 0 1.2vw rgb(109 255 179 / .55)) drop-shadow(0 .4vw 0 #000); pointer-events: none; }
+.portrait .hud .bb-txt { bottom: -3.2vw; gap: 1vw; padding: 1vw 3vw; border-radius: 1vw;
+  background: linear-gradient(#7d1f5c, #4a0f36); border: .45vw solid #d9ab4c; box-shadow: 0 0 0 .3vw #0c0a10, 0 .8vw 1.2vw rgb(0 0 0 / .6); }
+.portrait .hud .bb-top { font-size: 2.8vw; color: #f3ead2; }
+.portrait .hud .bb-main { font-size: 4.6vw; }
+.portrait .hud .bb-boost { top: -3vw; font-size: 2.6vw; padding: .9vw 1.8vw; border-radius: 3vw; }
+.portrait .hud .buy-btn.boosted { box-shadow: inset 0 0 0 .5vw #0c0a10, inset 0 0 3vw rgb(0 0 0 / .8), 0 0 0 1vw #6dffb3, 0 0 0 1.8vw #0c0a10, 0 0 6vw rgb(109 255 179 / .7); animation: none; }
+.portrait .hud .buy-btn.six { box-shadow: inset 0 0 0 .5vw #0c0a10, inset 0 0 3vw rgb(0 0 0 / .8), 0 0 0 1vw #ffb347, 0 0 0 1.8vw #0c0a10, 0 0 6vw rgb(255 150 50 / .75); }
+/* balance, win, bet: lettering straight on the floor, no boxes */
+.h-vals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2vw; margin-top: 4.4vw; padding: 0 1vw; }
+.h-box { display: grid; gap: .6vw; min-width: 0; justify-items: center; }
+.h-bal { justify-items: start; } .h-bet { justify-items: end; }
+.h-lbl { font: 800 3.4vw/1 var(--ui); letter-spacing: .1em; text-transform: uppercase; color: #8dffc4; -webkit-text-stroke: .5vw #04120d; paint-order: stroke fill;
+  text-shadow: 0 0 2vw rgb(109 255 179 / .55); }
+.h-slot { display: grid; width: 100%; min-width: 0; position: relative; }
+.portrait .hud :is(#balVal, #winVal, #betVal) { position: static; width: 100%; height: auto; left: auto; top: auto; font-size: calc(6vw * var(--fit, 1)); color: #fbf5e4; -webkit-text-stroke: .7vw #0a0d0c; paint-order: stroke fill;
+  text-shadow: 0 .5vw 0 #000, 0 0 2vw rgb(0 0 0 / .8); overflow: hidden; place-items: center; }
+.portrait .hud #balVal { place-items: center start; } .portrait .hud #betVal { place-items: center end; }
+.portrait .hud #winVal { color: var(--gold); }
+.portrait .hud #betVal.boosted { color: #b6ffd8; text-shadow: 0 .5vw 0 #000, 0 0 3vw rgb(109 255 179 / .9); }
+.portrait .hud #betVal.six { color: #ffe0a8; text-shadow: 0 .5vw 0 #000, 0 0 3vw rgb(255 150 50 / .9); }
+.portrait .hud .mult { position: absolute; left: auto; right: 0; top: -6.6vw; translate: none; font-size: 5.4vw; } /* beside the WIN label */
 /* menus and dialogs in the phone layer (cqw = % of the screen width there) */
 .portrait .ui .auto-menu { left: 50%; top: 50%; right: auto; bottom: auto; translate: -50% -50%; width: 84cqw; padding: 6cqw 5cqw 5cqw; gap: 3.5cqw; border-radius: 3cqw; border-width: 1.2cqw; }
 .portrait .ui .auto-menu::before { inset: -1.2cqw; padding: 1.2cqw; border-radius: 3cqw; }
@@ -844,17 +916,18 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .portrait .ui .rules-head h2 { font-size: 8cqw; }
 .portrait .ui .rules-close { width: 10cqw; font-size: 5cqw; }
 .portrait .ui .replay-bar { font-size: 3.2cqw; padding: 1.4cqw 3cqw; max-width: 92%; top: 1.5cqw; }
-/* intro: the three cards stacked, art beside the text */
-.portrait .ui .intro { grid-template-rows: auto 1fr auto; padding: 6cqw 5cqw 7cqw; gap: 4cqw; }
-.portrait .ui .intro-logo { width: 56cqw; }
-.portrait .ui .intro-cards { grid-template-columns: 1fr; gap: 5cqw; width: 100%; }
-.portrait .ui .intro .icard { aspect-ratio: auto; grid-template-columns: 34cqw 1fr; grid-template-rows: auto auto; column-gap: 4cqw; row-gap: 1.6cqw; justify-items: start; text-align: left; padding: 4cqw; }
+/* intro: the three cards stacked, art beside the text. Sized by the screen's height too (cqh), so on short phones
+   everything, "Click to continue" included, fits on one screen without scrolling; the logo takes what is left. */
+.portrait .ui .intro { grid-template-rows: minmax(0, 1fr) auto auto; padding: min(6cqw, 3cqh) 5cqw calc(min(7cqw, 3.4cqh) + env(safe-area-inset-bottom, 0px)); gap: min(4cqw, 2.2cqh); overflow: hidden; touch-action: none; }
+.portrait .ui .intro-logo { width: auto; height: 100%; max-width: 56cqw; min-height: 0; object-fit: contain; }
+.portrait .ui .intro-cards { grid-template-columns: 1fr; gap: min(5cqw, 2.4cqh); width: 100%; }
+.portrait .ui .intro .icard { aspect-ratio: auto; grid-template-columns: min(34cqw, 19cqh) 1fr; grid-template-rows: auto auto; column-gap: 4cqw; row-gap: min(1.6cqw, .8cqh); justify-items: start; text-align: left; padding: min(4cqw, 1.8cqh) 4cqw; }
 .portrait .ui .intro .icard.mid { translate: none; scale: 1; }
-.portrait .ui .intro .ic-art { grid-row: 1 / 3; height: 26cqw; }
-.portrait .ui .intro .icard h2 { font-size: 7cqw; align-self: end; }
-.portrait .ui .intro .icard p { font-size: 3.4cqw; align-self: start; }
-.portrait .ui .ic-mult { font-size: 5cqw; }
-.portrait .ui .intro-go { font-size: 4.4cqw; }
+.portrait .ui .intro .ic-art { grid-row: 1 / 3; height: min(26cqw, 14cqh); }
+.portrait .ui .intro .icard h2 { font-size: min(7cqw, 3.8cqh); align-self: end; }
+.portrait .ui .intro .icard p { font-size: min(3.4cqw, 2cqh); align-self: start; }
+.portrait .ui .ic-mult { font-size: min(5cqw, 2.8cqh); }
+.portrait .ui .intro-go { font-size: min(4.4cqw, 2.6cqh); }
 
 /* Bonus menu: the buyable modes side by side (stacked in portrait), each with its price and button */
 .buy-menu { position: relative; width: min(92%, 96cqw); max-height: 92%; box-sizing: border-box; display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 1cqw;

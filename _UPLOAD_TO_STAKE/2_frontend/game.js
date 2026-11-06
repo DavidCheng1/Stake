@@ -7,11 +7,13 @@ const money = v => RGS.formatMoney(v);
 // German for lang=de, English for every other language
 // social mode (Stake.us) is English only, with restricted gambling words replaced
 const i18n = (de, en) => RGS.lang === "de" && !RGS.social ? de : RGS.socialText(en);
-// ---------- Pace: turbo plays a round faster; a click during a round (slam stop) hurries the sequence that is playing ----------
+// ---------- Pace: rounds play NORMAL times faster than their authored timings, TURBO with turbo on; a click during a
+// round (slam stop) hurries the sequence that is playing. The VS duel keeps its own, gentler pace so it stays readable
+// (its break-out clip, assets/vs-break.webp, is retimed to VS_NORMAL by tools/retime_webp.py).
 // Every wait (sleep, later) and every scripted animation runs at pace(); the idle CSS loops keep their own speed.
-const TURBO = 2, SLAM = 6;
-let turbo = false, slam = false;
-const pace = () => (turbo ? TURBO : 1) * (slam ? SLAM : 1);
+const NORMAL = 2, TURBO = 3.5, VS_NORMAL = 1.8, VS_TURBO = 2.5, SLAM = 6;
+let turbo = false, slam = false, dueling = false;
+const pace = () => (dueling ? (turbo ? VS_TURBO : VS_NORMAL) : (turbo ? TURBO : NORMAL)) * (slam ? SLAM : 1);
 // Each sequence of a round (reels, a win, a tumble, a duel, a banner, a bonus spin...) calls this when it starts,
 // so a skip hurries only the sequence it was pressed in and the next one plays at normal speed again.
 function nextSequence() { slam = false; }
@@ -284,11 +286,27 @@ const fx = (() => {
     if (ready) SPR.set(key, sp);
     return sp;
   }
+  // a gold coin, face on (the back a shade darker), drawn once
+  function coinSprite(back) {
+    const key = back ? "coin-b" : "coin"; let sp = SPR.get(key); if (sp) return sp;
+    sp = document.createElement("canvas"); sp.width = sp.height = 48; const c = sp.getContext("2d");
+    const g = c.createRadialGradient(18, 16, 2, 24, 24, 24);
+    g.addColorStop(0, back ? "#ffe9a0" : "#fff6c8"); g.addColorStop(.45, back ? "#d99a1c" : "#f2c341"); g.addColorStop(1, "#8a5206");
+    c.fillStyle = g; c.beginPath(); c.arc(24, 24, 23, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = "rgba(120,70,4,.9)"; c.lineWidth = 2.5; c.beginPath(); c.arc(24, 24, 16, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = "rgba(255,246,200,.75)"; c.lineWidth = 1.5; c.beginPath(); c.arc(24, 24, 21.5, Math.PI * 1.1, Math.PI * 1.7); c.stroke();
+    SPR.set(key, sp);
+    return sp;
+  }
   function emit(x, y, o = {}) {
     if (RM) return;
     x += OX; y += OY;
     const n = o.n ?? 20, s = o.scale ?? 1, kind = o.kind ?? "wisp", rgb = (o.rgb ?? "89 255 156").split(" ").join(",");
     for (let i = 0; i < n; i++) {
+      if (kind === "coin") { // a gold coin thrown up, spinning as it falls
+        parts.push({ x: x + (Math.random() - .5) * (o.spread ?? 0), y, vx: (Math.random() - .5) * 7 * s, vy: -(5 + Math.random() * 7) * s, g: .32 * s, life: 1, r: (6 + Math.random() * 5) * s, kind, spin: Math.random() * 6.3, vs: .12 + Math.random() * .18 });
+        continue;
+      }
       if (kind === "smoke") { // slow, growing puff; o.ang / o.sp aim it
         const ang = (o.ang ?? Math.random() * Math.PI * 2) + (Math.random() - .5) * .5, sp = (o.sp ?? 1) * (.6 + Math.random() * .8) * s;
         parts.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 1, r: (5 + Math.random() * 5) * s, kind, rgb, rot: Math.random() * 6.3, vr: (Math.random() - .5) * .03 });
@@ -313,6 +331,11 @@ const fx = (() => {
         p.x += p.vx; p.y += p.vy; p.vx *= .975; p.vy = p.vy * .975 - .01; p.r *= 1.011; p.rot += p.vr; p.life -= .0085;
         ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = Math.max(0, p.life) * Math.min(1, (1 - p.life) * 8) * .6;
         ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.drawImage(smokeSprite(p.rgb), -p.r * 2, -p.r * 2, p.r * 4, p.r * 4); ctx.restore();
+      } else if (p.kind === "coin") {
+        p.x += p.vx; p.y += p.vy; p.vy += p.g; p.vx *= .99; p.spin += p.vs; p.life -= p.y > H ? 1 : .006;
+        const face = Math.cos(p.spin);
+        ctx.save(); ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = Math.min(1, p.life * 3);
+        ctx.translate(p.x, p.y); ctx.scale(Math.max(.12, Math.abs(face)), 1); ctx.drawImage(coinSprite(face < 0), -p.r, -p.r, p.r * 2, p.r * 2); ctx.restore();
       } else if (p.kind === "bubble") {
         p.wob += .12; p.x += p.vx * .4 + Math.sin(p.wob) * .5; p.y += p.vy * .7; p.life -= .014;
         ctx.strokeStyle = `rgba(${p.rgb},${p.life})`; ctx.lineWidth = 1.5;
@@ -753,7 +776,7 @@ const DUEL_T3 = [[150, 35], [200, 25], [250, 15], [300, 10], [500, 8], [750, 5],
 // value pools above are only used for the rolling badge animation
 // Before a duel the Ghost Pirate breaks out of the VS reel: he slams his hands against the glass left and right, it
 // cracks into lightning that runs out over the board, he gathers the energy and the reel bursts in a green flash.
-// Played from the clip (assets/vs-break.webp) when it has arrived and turbo is off; otherwise the quick version.
+// Played from the clip (assets/vs-break.webp, retimed to VS_NORMAL) when it has arrived and turbo is off; otherwise the quick version.
 // The clip is fetched once after the intro; each duel plays it from a fresh object URL, since an animated image
 // only starts over under a new URL.
 let breakBlob = null;
@@ -802,7 +825,8 @@ async function breakOut(tall, vsSym) {
   const grow = ms => orb.animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(.7)", opacity: .9, offset: .5 }, { transform: "scale(.6)", opacity: .8, offset: .7 }, { transform: "scale(1.15)", opacity: 1 }], { duration: ms, fill: "forwards", easing: "ease-in" });
   const clip = turbo ? null : vsBreakClip();
   if (clip) {
-    // the clip (2.75-8.96 s of the Gemini video at 1.6x) plays in the reel: his hands on the glass until 1.38 s, then
+    // the clip (2.75-8.96 s of the Gemini video at 1.6x, then 1.8x faster for VS_NORMAL) plays in the reel; the times here
+    // are at 1x and sleep() divides them by the pace: his hands on the glass until 1.38 s, then
     // lightning at his hands, from 2.2 s he turns and charges at the left edge, and it bursts at 3.72 s. The cracks
     // and the ball of ghost fire outside the frame keep to those times.
     const v = new Image(); v.alt = ""; v.src = clip;
@@ -844,7 +868,12 @@ async function breakOut(tall, vsSym) {
   br.remove(); orb.remove();
 }
 // The vsDuel event decides everything shown here; challengers that lose are only for tension.
+// It plays at the duel's pace (VS_NORMAL / VS_TURBO), the rest of the round at the faster one.
 async function reelDuel(d) {
+  dueling = true;
+  try { return await duelShow(d); } finally { dueling = false; }
+}
+async function duelShow(d) {
   nextSequence();
   const reelIdx = d.reel, rl = reels[reelIdx], tall = rl.tall;
   const tier = d.tier, m1 = d.top.mult, m1b = d.bottom.mult;
@@ -967,17 +996,101 @@ async function banner(title, sub, hold = 1700) {
   bannerEl.hidden = true;
 }
 
+// ---------- Win tiers after the free spins, before the Total Win: the bonus win counts up while the title steps up
+// through BIG, SUPER, MEGA and EPIC WIN as it passes each tier (x: times the bet), each title bigger than the one
+// before. The titles are rigs put together by tools/sprites/win_tiers_assets.py; they load when a bonus starts. ----------
+const WIN_TIERS = [
+  { key: "big", x: 20, rgb: "211 107 255" },
+  { key: "super", x: 50, rgb: "63 242 220" },
+  { key: "mega", x: 150, rgb: "255 122 42" },
+  { key: "epic", x: 500, rgb: "93 255 143" },
+];
+const tierRigs = {};
+function preloadWinTiers() {
+  const width = stage.getBoundingClientRect().width * .7;
+  for (const t of WIN_TIERS) tierRigs[t.key] ??= RigPlayer.load("assets/win-tiers/" + t.key, { width }).catch(() => null);
+}
+// returns false when the win is below the first tier or the art is missing (then the Total Win counts it up itself)
+async function winTierScreen(total) {
+  const top = WIN_TIERS.findLastIndex(t => total >= t.x * bet);
+  if (top < 0) return false;
+  preloadWinTiers();
+  const rigs = await Promise.all(WIN_TIERS.slice(0, top + 1).map(t => tierRigs[t.key]));
+  if (rigs.some(r => !r)) return false;
+  nextSequence();
+  const el = document.getElementById("winTier"), box = document.getElementById("wtArt"), amtEl = document.getElementById("wtAmount"), flash = document.getElementById("wtFlash");
+  const center = () => { const b = box.getBoundingClientRect(), s = stage.getBoundingClientRect(); return [b.left - s.left + b.width / 2, b.top - s.top + b.height / 2, b.width]; };
+  let anim = null, rain = 0, lvl = 0;
+  // a title lands: the last one flies off, a flash, a shake, coins and sparks, and a higher sound for each tier
+  const enter = i => {
+    const t = WIN_TIERS[i], cv = document.createElement("canvas"), old = box.lastElementChild, oldAnim = anim;
+    el.dataset.tier = t.key; lvl = i;
+    box.append(cv);
+    anim = RigPlayer.play(cv, rigs[i], { intro: !RM, still: RM });
+    if (old) old.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(1.4)" }], { duration: 300, easing: "ease-in", fill: "forwards" })
+      .finished.then(() => { oldAnim?.stop(); old.remove(); });
+    sound.tierUp(i); hero.react("cheer", 2600);
+    if (RM) return;
+    flash.animate([{ opacity: 0 }, { opacity: .55 + i * .1, offset: .25 }, { opacity: 0 }], { duration: 500, easing: "ease-out" });
+    shake(5 + i * 3, 380 + i * 80);
+    later(() => { // when the title lands
+      const [x, y, w] = center();
+      fx.emit(x, y + w * .12, { n: 14 + i * 10, kind: "coin", spread: w * .5, scale: w / 700 });
+      fx.emit(x, y, { n: 30 + i * 12, kind: "spark", rgb: t.rgb, scale: w / 420 });
+    }, 330);
+  };
+  // coins keep raining, more for each tier, while it counts
+  const coins = () => {
+    if (el.hidden || RM) return;
+    const [x, y, w] = center();
+    fx.emit(x, y + w * .1, { n: 1 + Math.floor(lvl / 2), kind: "coin", spread: w * .9, scale: w / 800 });
+    rain = setTimeout(coins, 160 - lvl * 25);
+  };
+  // counts from a to b: an even pace into the next tier, slowing down into the total; it follows the pace, so a skip
+  // finishes it at once
+  const count = (a, b, last) => new Promise(res => {
+    const dur = last ? 2600 : 1900;
+    let k = 0, prev = performance.now(), tick = 0;
+    (function step(t) {
+      k = Math.min(1, k + Math.max(0, t - prev) * pace() / dur); prev = Math.max(prev, t);
+      const e = last ? 1 - Math.pow(1 - k, 3) : k;
+      amtEl.textContent = money(k < 1 ? RGS.roundMoney(a + (b - a) * e) : b);
+      if (k < 1 && t - tick > 85) { tick = t; sound.tick(); }
+      if (k < 1) requestAnimationFrame(step); else res();
+    })(prev);
+  });
+  box.replaceChildren(); amtEl.textContent = money(0); el.hidden = false;
+  el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
+  // each tier counts up to where the next one starts; the top one up to the total
+  const ends = WIN_TIERS.slice(1, top + 1).map(t => t.x * bet).concat(total);
+  let from = 0;
+  for (let i = RM ? top : 0; i <= top; i++) {
+    enter(i);
+    if (i === 0) coins();
+    await count(from, RM ? total : ends[i], i === top);
+    from = ends[i];
+    if (slam) anim.skipIntro();
+  }
+  if (!RM) amtEl.animate([{ transform: "scale(1)" }, { transform: "scale(1.2)" }, { transform: "scale(1)" }], { duration: 420, easing: "ease-out" });
+  await sleep(1400);
+  clearTimeout(rain);
+  await el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).finished;
+  el.hidden = true; anim.stop(); box.replaceChildren();
+  return true;
+}
+
 // ---------- Total Win screen after the free spins: the emblem plays its intro once, then its loop, while the bonus
 // win counts up under it. It loads when a bonus starts; reduced motion shows a still. ----------
-// the emblem is vector art (tools/sprites/total_win_svg.py) whose parts move live (rigplayer.js), rendered at the
-// screen's own resolution
+// the emblem's parts move live (rigplayer.js), with their lights; put together from the asset sheet by
+// tools/sprites/total_win_assets.py
 const TW_RIG = "assets/total-win";
 let twRig = null;
 function preloadTotalWin() {
   twRig ??= RigPlayer.load(TW_RIG, { width: stage.getBoundingClientRect().width * .62 }).catch(() => null);
 }
-// returns false when the art is missing, then the caller shows the plain banner
-async function totalWinScreen(total, spins) {
+// returns false when the art is missing, then the caller shows the plain banner. counted: the win tiers counted it
+// up already, so it shows at once
+async function totalWinScreen(total, spins, counted = false) {
   nextSequence();
   preloadTotalWin();
   const intro = !RM && !turbo; // turbo starts on the loop
@@ -987,7 +1100,7 @@ async function totalWinScreen(total, spins) {
   const x = (Math.round(total / bet * 100) / 100).toLocaleString(RGS.lang, { maximumFractionDigits: 2 });
   document.getElementById("twSub").textContent = i18n(`${spins} Freispiele gespielt · ${x}× Einsatz`, `${spins} free spins played · ${x}× bet`);
   const cv = document.createElement("canvas");
-  box.replaceChildren(cv); amtEl.textContent = money(0); el.hidden = false;
+  box.replaceChildren(cv); amtEl.textContent = money(counted ? total : 0); el.hidden = false;
   const anim = RigPlayer.play(cv, rig, { intro, still: RM });
   hero.react("cheer", 4000); sound.fanfare();
   el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
@@ -1001,8 +1114,8 @@ async function totalWinScreen(total, spins) {
   };
   ember();
   // the amount counts up while the emblem arrives; it follows the pace, so a skip finishes it at once
-  let k = 0, last = performance.now(), lastTick = 0;
-  const counted = new Promise(res => (function step(t) {
+  let k = counted ? 1 : 0, last = performance.now(), lastTick = 0;
+  const done = new Promise(res => (function step(t) {
     k = Math.min(1, k + Math.max(0, t - last) * pace() / 2400); last = Math.max(last, t);
     amtEl.textContent = money(k < 1 ? RGS.roundMoney(total * (1 - Math.pow(1 - k, 3))) : total);
     if (k < 1 && t - lastTick > 85) { lastTick = t; sound.tick(); }
@@ -1012,7 +1125,7 @@ async function totalWinScreen(total, spins) {
     while (!anim.introDone && !slam) await new Promise(r => setTimeout(r, 40));
     anim.skipIntro();
   }
-  await counted;
+  await done;
   if (!RM) amtEl.animate([{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }], { duration: 420, easing: "ease-out" });
   await sleep(2200);
   await el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).finished;
@@ -1041,8 +1154,14 @@ function makeCrate(id, mult) {
 function makeRune(v, id) {
   const el = div("rtok"); el.style.setProperty("--c", SYM[id].rgb);
   const img = new Image(); img.src = IMG[id]; img.alt = ""; img.draggable = false;
-  const t = document.createElement("span"); t.className = "rv"; t.textContent = fmtV(v * bet);
+  const t = document.createElement("span"); t.className = "rv"; setRv(t, fmtV(v * bet));
   el.append(img, t); return el;
+}
+// a rune's value: up to 6 characters at full size, longer amounts (high bets, multiplied wins) smaller, so they stay
+// inside the rune
+function setRv(t, text) {
+  t.textContent = text;
+  t.style.setProperty("--fit", Math.min(1, 6.5 / text.length).toFixed(3));
 }
 function dropIn(el, heavy) {
   if (RM) return;
@@ -1185,8 +1304,8 @@ async function harvest(start, spinEvents, end) {
   runeStep = 0;
   const fsCells = start.crates.map(k => [k.reel, k.row]), n = Math.min(7, fsCells.length);
   say(`${n} FS · ${i18n("Freispiele!", "Free Spins!")}`);
-  stage.classList.add("bonus");
-  preloadTotalWin();
+  stage.classList.add("bonus"); game.classList.add("bonus");
+  preloadTotalWin(); preloadWinTiers();
   await banner(n === 3 ? i18n("Geisterkisten", "Ghost Crates") : `${n} ${i18n("Geisterkisten", "Ghost Crates")}`, i18n(`3 Leben · Nur Runen in ${MIN_LINK}er-Gruppen an einer Kiste zählen`, `3 lives · Only groups of ${MIN_LINK}+ runes touching a crate count`), 2100);
   K = reels.map(() => Array(ROWS).fill(null));
   reels.forEach(rl => { rl.tall.hidden = true; rl.tall.replaceChildren(); rl.cells.forEach(c => c.style.visibility = ""); });
@@ -1245,7 +1364,7 @@ async function harvest(start, spinEvents, end) {
     await sleep(500);
     await Promise.all(g.cells.map(([c, r], i) => sleep(i * 40).then(() => {
       const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v * bet, to = from * g.mult, t0 = performance.now();
-      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); t.textContent = fmtV(k < 1 ? RGS.roundMoney(from + (to - from) * k) : to); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
+      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtV(k < 1 ? RGS.roundMoney(from + (to - from) * k) : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
     })));
     shake(6, 300);
     await sleep(450);
@@ -1272,10 +1391,11 @@ async function harvest(start, spinEvents, end) {
   }
   await countTo(total, 400);
   livesEl.hidden = true;
-  if (!(total > 0 && await totalWinScreen(total, spinEvents.length)))
+  const tiered = total > 0 && await winTierScreen(total);
+  if (!(total > 0 && await totalWinScreen(total, spinEvents.length, tiered)))
     await banner(total >= 50 * bet ? i18n("Riesige Beute!", "Huge Haul!") : i18n("Freispiele vorbei", "Free Spins over"), i18n(money(total) + " gewonnen", money(total) + " won"), 2200);
   say(i18n(`Geisterkisten · ${money(total)} gewonnen`, `Ghost Crates · ${money(total)} won`));
-  stage.classList.remove("bonus");
+  stage.classList.remove("bonus"); game.classList.remove("bonus");
   G = reels.map(() => Array.from({ length: ROWS }, () => { let id; do { id = randSym(); } while (id === "fs" || id === "vs"); return id; }));
   reels.forEach((rl, c) => rl.cells.forEach((cell, r) => { const s2 = makeSym(G[c][r]); cell.replaceChildren(s2); land(s2); }));
   return total;
@@ -1381,7 +1501,9 @@ async function playRound(events, resumed) {
         while (events[i + 1].type === "bonusSpin") spins.push(events[++i]);
         const end = events[++i];
         if (start.type !== "bonusStart" || end.type !== "bonusEnd") throw new Error("malformed bonus events");
-        won += await harvest(start, spins, end);
+        const bonusWin = await harvest(start, spins, end);
+        won += bonusWin;
+        if (bonusWin >= WIN_TIERS[0].x * bet) bigPlayed = true; // the win tiers and the Total Win celebrated it already
         RGS.saveEvent(end.index);
         break;
       }
@@ -1401,8 +1523,8 @@ async function playRound(events, resumed) {
 
 function updateBal() { balVal.textContent = RGS.replay ? "–" : money(balance); } // replays have no wallet
 function updateBet() {
-  bet = BETS[betIdx]; betVal.textContent = fmtV(bet);
-  refreshPays(); showBoost();
+  bet = BETS[betIdx];
+  refreshPays(); showBoost(); // showBoost writes the bet field: with FS Boost on it shows what a spin costs
   document.getElementById("betMinus").disabled = busy || RGS.replay || betIdx === 0;
   document.getElementById("betPlus").disabled = busy || RGS.replay || betIdx === BETS.length - 1;
 }
@@ -1411,7 +1533,8 @@ const spinBtn = document.getElementById("spin"), autoBtn = document.getElementBy
 let autoOn = false, loading = true;
 const canSkip = () => !loading && !RGS.jurisdiction.disabledSlamstop;
 // during a round Spin stays clickable: it skips the sequence that is playing instead of starting a new round
-const lock = on => { busy = on; buttons.forEach(b => b.disabled = on); spinBtn.disabled = on && !canSkip(); if (!on) { slam = false; updateBet(); } updateBuy(); };
+// a running autoplay keeps its button, so it can be paused mid-spin
+const lock = on => { busy = on; buttons.forEach(b => b.disabled = on && !(b === autoBtn && autoOn)); spinBtn.disabled = on && !canSkip(); if (!on) { slam = false; updateBet(); } updateBuy(); };
 // slam stop: a click on Spin or the board (or Space) plays the sequence that is running SLAM times faster and fades out
 // the sounds it scheduled; a second click in the same sequence does nothing, one in the next sequence skips that one
 function skip() { if (!busy || slam || !canSkip()) return; slam = true; hurry(); sound.cut(); }
@@ -1444,36 +1567,61 @@ async function runRound(round, resumed) {
 }
 // ---------- Autoplay with selectable number of spins ----------
 const autoMenu = document.getElementById("autoMenu"), autoLeftEl = document.getElementById("autoLeft"), amStart = document.getElementById("amStart");
-let autoLeft = 0, autoChoice = 0;
-function showAutoLeft() { autoLeftEl.hidden = !autoOn; autoLeftEl.textContent = autoLeft === Infinity ? "∞" : autoLeft; }
-function stopAuto(msg) { autoOn = false; autoLeft = 0; autoBtn.setAttribute("aria-pressed", "false"); showAutoLeft(); updateBuy(); if (msg) say(msg); }
+// A click on the Autoplay button while it runs pauses it: the spin that is playing finishes and the spins left are kept.
+// A click while paused opens the menu, where Start reads "Resume" with the spins left (one press alone never starts
+// auto-betting [104]); picking a number there starts a new run instead.
+let autoLeft = 0, autoChoice = 0, autoPaused = false, autoRun = 0;
+const autoCount = () => autoLeft === Infinity ? "∞" : autoLeft;
+function showAutoLeft() {
+  autoLeftEl.hidden = !autoOn && !autoPaused; autoLeftEl.textContent = (autoPaused ? "❚❚ " : "") + autoCount();
+  autoBtn.classList.toggle("paused", autoPaused);
+}
+function stopAuto(msg) { autoOn = false; autoPaused = false; autoLeft = 0; autoBtn.setAttribute("aria-pressed", "false"); autoBtn.disabled = busy; showAutoLeft(); updateBuy(); if (msg) say(msg); }
+function pauseAuto() {
+  if (autoLeft <= 0) { stopAuto(i18n("Autoplay gestoppt", "Autoplay stopped")); return; }
+  autoOn = false; autoPaused = true; autoBtn.setAttribute("aria-pressed", "false"); autoBtn.disabled = busy; showAutoLeft(); updateBuy();
+  say(i18n(`Autoplay pausiert · noch ${autoCount()}`, `Autoplay paused · ${autoCount()} left`));
+}
 async function autoLoop() {
-  while (autoOn && autoLeft > 0) {
+  const run = ++autoRun; // a pause and a resume during one spin must not leave two loops running
+  while (autoOn && autoLeft > 0 && run === autoRun) {
     if (balance < bet * modeCost(boost ? boost.mode : "BASE")) { stopAuto(i18n("Guthaben reicht nicht · Autoplay beendet", "Balance too low · Autoplay ended")); break; }
     if (autoLeft !== Infinity) autoLeft--; showAutoLeft();
     await play();
-    if (!autoOn) break;
+    if (!autoOn || run !== autoRun) break;
     if (autoLeft <= 0) { stopAuto(i18n("Autoplay beendet", "Autoplay ended")); break; }
     await sleep(700);
   }
 }
 function openAutoMenu(open) {
   autoMenu.hidden = !open; autoBtn.setAttribute("aria-expanded", String(open));
-  if (open) { qa(autoMenu, "[data-n]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.n === autoChoice))); amStart.disabled = !autoChoice; (q(autoMenu, '[aria-pressed="true"]') || q(autoMenu, "[data-n]")).focus(); }
+  if (open) {
+    if (autoPaused) autoChoice = 0; // paused: Start resumes unless a number is picked
+    qa(autoMenu, "[data-n]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.n === autoChoice)));
+    startLabel();
+    (q(autoMenu, '[aria-pressed="true"]') || q(autoMenu, "[data-n]")).focus();
+  }
+}
+function startLabel() {
+  const resume = autoPaused && !autoChoice;
+  amStart.textContent = resume ? i18n(`Weiter · ${autoCount()}`, `Resume · ${autoCount()}`) : "Start";
+  amStart.disabled = !autoChoice && !resume;
 }
 autoBtn.addEventListener("click", () => {
-  if (autoOn) { stopAuto(i18n("Autoplay gestoppt", "Autoplay stopped")); return; } // while running, one click stops it
+  if (autoOn) { pauseAuto(); return; } // while running, one click pauses it
   openAutoMenu(autoMenu.hidden);
 });
 qa(autoMenu, "[data-n]").forEach(b => {
-  b.addEventListener("click", () => { autoChoice = +b.dataset.n; qa(autoMenu, "[data-n]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); amStart.disabled = false; });
+  b.addEventListener("click", () => { autoChoice = +b.dataset.n; qa(autoMenu, "[data-n]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); startLabel(); });
   b.addEventListener("dblclick", () => amStart.click());
 });
 amStart.addEventListener("click", () => {
-  if (!autoChoice) return;
+  const resume = autoPaused && !autoChoice;
+  if (!autoChoice && !resume) return;
   openAutoMenu(false);
-  autoOn = true; autoLeft = autoChoice; autoBtn.setAttribute("aria-pressed", "true"); showAutoLeft(); updateBuy();
-  say(autoChoice === Infinity ? i18n("Autoplay · endlos", "Autoplay · endless") : `Autoplay · ${autoChoice} Spins`);
+  autoOn = true; autoPaused = false; if (!resume) autoLeft = autoChoice; autoBtn.setAttribute("aria-pressed", "true"); showAutoLeft(); updateBuy();
+  say(resume ? i18n(`Autoplay geht weiter · noch ${autoCount()}`, `Autoplay resumed · ${autoCount()} left`)
+    : autoChoice === Infinity ? i18n("Autoplay · endlos", "Autoplay · endless") : `Autoplay · ${autoChoice} Spins`);
   if (!busy) autoLoop(); else (async () => { while (busy) await sleep(200); autoLoop(); })();
 });
 document.getElementById("amClose").addEventListener("click", () => openAutoMenu(false));
@@ -1483,9 +1631,15 @@ document.getElementById("betMinus").addEventListener("click", () => { if (!busy 
 document.getElementById("betPlus").addEventListener("click", () => { if (!busy && betIdx < BETS.length - 1) { betIdx++; updateBet(); } });
 document.getElementById("infoBtn").addEventListener("click", () => openRules(true));
 document.getElementById("spin").addEventListener("click", () => busy ? skip() : play());
-addEventListener("keydown", e => { if (e.code === "Space" && e.target === document.body && !RGS.jurisdiction.disabledSpacebar) { e.preventDefault(); busy ? skip() : play(); } });
+// [228] Space works the Spin button wherever the focus is: a button the player just clicked (Bet +, Turbo...) must not
+// take the key, so its own Space click is held back on keyup. Inside an open menu or dialog and on the volume sliders
+// Space keeps its usual job.
+const spaceBets = e => e.code === "Space" && !RGS.jurisdiction.disabledSpacebar
+  && !e.target.closest?.("input, select, textarea, #autoMenu, #sndMenu, #buyDlg, #rules, #errDlg, #replayBar, #replayDlg, #intro");
+addEventListener("keydown", e => { if (!spaceBets(e)) return; e.preventDefault(); if (!e.repeat) busy ? skip() : play(); });
+addEventListener("keyup", e => { if (spaceBets(e)) e.preventDefault(); });
 game.addEventListener("pointerdown", e => { if (busy && !e.target.closest("button, .auto-menu, #intro, #rules")) skip(); });
-// turbo: every round plays TURBO times faster; remembered between visits
+// turbo: rounds play at TURBO instead of NORMAL pace (the duel at VS_TURBO); remembered between visits
 const turboBtn = document.getElementById("turboBtn");
 try { turbo = localStorage.getItem("ghostDuels.turbo") === "on"; } catch {}
 const showTurbo = () => turboBtn.setAttribute("aria-pressed", String(turbo));
@@ -1498,7 +1652,6 @@ showTurbo();
 
 // ---------- Bonus menu: every buyable mode with its price at the current bet; an option's button plays it ----------
 const buyBtn = document.getElementById("buyBtn"), buyDlg = document.getElementById("buyDlg");
-q(buyBtn, ".bb-fs").appendChild(makeSym("fs", { lite: true }));
 // card art: n FS symbols fanned out, or two ghosts facing off over a VS
 function buyArt(b) {
   const art = div("ic-art"), place = (s2, left, top, width, rot, z) => { Object.assign(s2.style, { left: left + "%", top: top + "%", width: width + "%", rotate: rot + "deg", zIndex: z }); art.appendChild(s2); };
@@ -1555,6 +1708,9 @@ function showBoost() {
     o.pr.textContent = `${money(bet * (o.b ? o.b.cost : 1))} ${perSpin}`;
   }
   buyBtn.classList.toggle("boosted", !!boost); buyBtn.classList.toggle("six", boost === BOOSTS[1]);
+  // the bet field shows what the next spin costs: the bet times the boost (3× or 6×)
+  betVal.textContent = fmtV(bet * (boost ? boost.cost : 1));
+  betVal.classList.toggle("boosted", !!boost); betVal.classList.toggle("six", boost === BOOSTS[1]);
   bbBoost.textContent = `${BOOST_NAME} ${boost ? boost.level : off}`;
   buyBtn.setAttribute("aria-label", i18n("Bonus kaufen", "Buy Bonus") + ` · ${BOOST_NAME}: ` + (boost ? `${boost.level}, ${money(bet * boost.cost)} ${perSpin}` : off));
 }
@@ -1790,6 +1946,12 @@ const sound = (() => {
       [12, 15, 19, 22, 24, 27, 31].forEach((n, i) => bell(t + .2 + i * .08, NOTE(n), .07, 1.6));
       if (max) growl(t, 1.6, .09);
     },
+    // a win tier lands (0 BIG ... 3 EPIC): a hit and a bright major run of bells, two semitones higher for each tier
+    tierUp(level = 0) {
+      const t = at(); if (t == null) return; duck(2.6);
+      tone(t, { f: 95, f2: 38, a: .004, d: .5, vol: .5, rev: .3 }); hiss(t, { f: 3000, f2: 500, q: .7, a: .01, d: .3, vol: .16, rev: .3 });
+      [12, 16, 19, 24, 28].forEach((n, i) => bell(t + .06 + i * .065, NOTE(n + level * 2), .08, 1.5));
+    },
     // an FS symbol lands: a heavy hit and a bright bell, a step higher for each FS already in this spin
     fsLand(nth = 1) { const t = at(); if (t == null) return; const up = 2 ** ((Math.min(nth, 7) - 1) * 2 / 12); tone(t, { f: 95, f2: 32, a: .003, d: .5, vol: .55 }); bell(t, NOTE(0) * up, .2, 1.8, .6); bell(t + .03, NOTE(7) * up, .1, 1.4, .6); },
     // one free-spin symbol away (2.4 s per teasing reel): synth fallback for the designed edging music
@@ -1848,7 +2010,7 @@ const sound = (() => {
     [0, 3, 7].forEach((n, i) => smp("chime", t + i * .07, .3, pitch(n)));
     return true;
   });
-  use("fanfare", null, t => { duck(3.2); return smp("fanfare", t, .75); });
+  use("fanfare", null, t => { duck(2.2); return smp("fanfare", t, .75); }); // a 2 s ghost sting: the music comes back right after it
   use("toll", null, t => smp("toll", t, .7));
   use("rune", null, (t, step = 0) => smp("crystal", t, .32, pitch(SCALE[(step % 8) + 4])));
   use("collect", null, (t, step = 0) => smp("crystal", t, .2, pitch(SCALE[(step % 8) + 4])));
@@ -1860,6 +2022,16 @@ const sound = (() => {
   // edging music under each teasing reel (the music dips from the tease itself); each further reel starts a semitone higher
   use("edge", 0, (t, d, nth = 1) => smp("edge", t, .8, 2 ** ((Math.min(nth, 5) - 1) / 12)));
   use("fsLand", null, (t, nth = 1) => { duck(1.2); return smp("fs_land", t, 1, 2 ** ((Math.min(nth, 7) - 1) * 2 / 12)); });
+  // a win tier: the VS burst as its hit, coins pouring with the first one, and a major run of chimes that climbs with
+  // every tier
+  use("tierUp", null, (t, level = 0) => {
+    if (!buf.burst || !buf.chime) return false;
+    duck(2.6);
+    smp("burst", t, .55, 1 + level * .06);
+    if (level === 0) smp("bigwin", t + .04, .5);
+    [0, 4, 7, 12, 16].slice(0, 3 + Math.min(level, 2)).forEach((n, i) => smp("chime", t + .07 + i * .065, .3, pitch(12 + n + level * 2)));
+    return true;
+  });
   use("bigWin", null, (t, max = false) => { duck(max ? 4 : 3); if (!smp("bigwin", t, .8)) return false; if (max) smp("sting_devil", t + .3, .45); return true; });
 
   return {
@@ -2379,7 +2551,7 @@ rulesSection(i18n("Bedienung", "Controls"), [[
   [i18n("Spin:", "Spin:"), i18n("Startet eine Runde mit dem aktuellen Einsatz. Während einer Runde überspringt ein erneuter Druck (oder ein Tipp auf das Spielfeld) die Animationen; das Ergebnis bleibt gleich.", "Starts a round at the current bet. During a round, press it again (or tap the board) to skip the animations; the result stays the same.")],
   [i18n("Leertaste:", "Space bar:"), i18n("Wie Spin.", "Same as Spin.")],
   [i18n("Einsatz − / +:", "Bet − / +:"), i18n("Senkt oder erhöht den Einsatz innerhalb der angebotenen Stufen.", "Lowers or raises the bet within the levels offered.")],
-  [i18n("Autoplay:", "Autoplay:"), i18n("Wähle die Anzahl Spins und drücke Start. Erneut drücken stoppt. Reicht das Guthaben nicht, endet Autoplay.", "Choose the number of spins, then press Start. Press again to stop. Autoplay ends when the balance is too low.")],
+  [i18n("Autoplay:", "Autoplay:"), i18n("Wähle die Anzahl Spins und drücke Start. Erneut auf Autoplay drücken pausiert: Der laufende Spin endet, die restlichen Spins bleiben. Noch einmal drücken und Weiter wählen setzt fort, oder wähle eine neue Anzahl. Reicht das Guthaben nicht, endet Autoplay.", "Choose the number of spins, then press Start. Press the Autoplay button again to pause: the spin that is playing finishes and the spins left are kept. Press it once more and choose Resume to carry on, or pick a new number. Autoplay ends when the balance is too low.")],
   [i18n("Turbo:", "Turbo:"), i18n("Spielt Runden etwa doppelt so schnell. Erneut drücken schaltet ihn aus.", "Plays rounds about twice as fast. Press again to turn it off.")],
   [i18n("Bonus kaufen:", "Buy Bonus:"), i18n("Öffnet das Bonusmenü: oben der FS-Boost für die nächsten Spins (Aus, 3×, 6×), darunter die kaufbaren Boni mit ihrem Preis (siehe oben). Der Knopf zeigt, ob der FS-Boost an ist.", "Opens the Bonus menu: at the top the FS Boost for the next spins (Off, 3×, 6×), below it the bonuses to buy with their prices (see above). The button shows whether the FS Boost is on.")],
   [i18n("Ton (oben rechts):", "Sound (top right):"), i18n("Lautstärke für Musik und Effekte und Stummschalten aller Töne.", "Music and effects volume, and mute for all sound.")],
@@ -2443,10 +2615,9 @@ if (RGS.social) {
 
 // ---------- Value fields: long amounts (CA$, MX$, big balances) shrink to fit their painted box instead of being cut off ----------
 const FIT = ["balVal", "betVal", "winVal"].map(id => document.getElementById(id));
-// Only the landscape layout's painted boxes have a fixed width; the phone panel sizes the fields to their text.
+// The painted boxes (landscape) and the panel's three columns (portrait) both have a fixed width.
 function fitVal(el) {
   el.style.setProperty("--fit", 1);
-  if (document.documentElement.classList.contains("portrait")) return;
   const room = el.clientWidth, need = el.scrollWidth;
   if (room > 20 && need > room) el.style.setProperty("--fit", Math.max(.5, room / need * .96).toFixed(3));
 }
@@ -2457,7 +2628,7 @@ addEventListener("resize", () => FIT.forEach(fitVal));
 // ---------- Portrait (phones held upright): reels on top, cropped from the art; a touch panel below ----------
 // The real controls and values move into the panel (listeners and ids stay), and menus and dialogs into a layer
 // sized for the phone; turning the phone back puts everything where it was.
-const PANEL = [["msg", "hMsg"], ["balVal", "hBal"], ["betMinus", "hBetM"], ["betVal", "hBetM"], ["betPlus", "hBetM"], ["winVal", "hWin"], ["multChip", "hWin"],
+const PANEL = [["msg", "hMsg"], ["balVal", "hBal"], ["betMinus", "hBetL"], ["betVal", "hBet"], ["betPlus", "hBetR"], ["winVal", "hWin"], ["multChip", "hWin"],
   ["turboBtn", "hTurbo"], ["autoBtn", "hAuto"], ["spin", "hSpin"], ["infoBtn", "hInfo"], ["musicBtn", "hSound"], ["buyBtn", "hBuy"]];
 const LAYER = ["autoMenu", "sndMenu", "buyDlg", "rules", "replayBar", "replayDlg", "errDlg", "intro"];
 const homes = new Map(); // a comment marks each element's place in the landscape layout
@@ -2520,6 +2691,6 @@ const introDone = new Promise(resolve => {
 if (!RM) introDone.then(() => fetch("assets/vs-break.webp").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
 
 // the loading bar waits for the images of the first screen
-LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp",
+LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp", "assets/hud-bg.webp", "assets/bb-logo.webp",
   RM ? "assets/pirate-still.webp" : "assets/pirate-idle.webp"]);
 boot();
