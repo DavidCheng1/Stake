@@ -146,6 +146,17 @@ def basic(r):
         b.wait_for(f"!({r.p['busy']})", 300)
         r.add(228, "Space bar places a bet", len(b.plays()) == n + 1, f"plays before {n}, after {len(b.plays())}")
         r.add("228b", "Space does not scroll the page", b.ev("window.scrollY") == 0, f"scrollY {b.ev('window.scrollY')}")
+        # a reviewer changes the bet, then presses Space: the focused bet button must not take the key
+        # (the key carries its text here, so a focused button would really activate as it does for a player)
+        b.click(r.sel["betPlus"]); b.pump(.5)
+        n, shown = len(b.plays()), r.text(b, r.sel["bet"])
+        for t in ("keyDown", "keyUp"):
+            b.send("Input.dispatchKeyEvent", type=t, code="Space", key=" ", text=" " if t == "keyDown" else "", windowsVirtualKeyCode=32)
+        b.pump(1)
+        b.wait_for(f"!({r.p['busy']})", 300)
+        after = r.text(b, r.sel["bet"])
+        r.add("228c", "Space bets after clicking Bet +", len(b.plays()) == n + 1 and after == shown,
+              f"focus {b.ev('document.activeElement && document.activeElement.id')!r}; bet {shown} -> {after}; plays {len(b.plays()) - n}")
         r.add("console", "No console errors during basic play", not b.errors, b.errors[:3] or "none")
 
 

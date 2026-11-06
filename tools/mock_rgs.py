@@ -9,7 +9,7 @@ index.json is served: play with mode "BONUS" draws from the bonus buy books and 
     python tools/mock_rgs.py --web other-game-web --publish math-sdk/games/other_game/library/publish_files --game other_game
 
 Force a feature by putting it in rgs_url, e.g. rgs_url=http://127.0.0.1:8080/force/bonus
-(kinds: win, lose, big, bonus, plus Ghost Duels' duel, tier2, tier3, wildonly). Not part of the game upload.
+(kinds: win, lose, big, bonus, maxwin, plus Ghost Duels' duel, tier2, tier3, wildonly). Not part of the game upload.
 """
 
 import argparse
@@ -56,11 +56,12 @@ def categories(book):
 
 def load_books(mode, limit, scan):
     """Keep the first `limit` books of a mode for normal play and, while scanning up to `scan`, examples of rare kinds."""
-    weights = {}
+    weights, top = {}, 0
     with open(os.path.join(PUBLISH, mode["weights"]), encoding="UTF-8") as f:
         for line in f:
-            i, w, _ = line.strip().split(",")
+            i, w, pay = line.strip().split(",")
             weights[int(i)] = int(w)
+            top = max(top, int(pay))  # the mode's max win, for /force/maxwin
     books, forced = {}, {}
     with open(os.path.join(PUBLISH, mode["events"]), "rb") as f:
         reader = io.TextIOWrapper(zstandard.ZstdDecompressor().stream_reader(f), encoding="UTF-8")
@@ -69,7 +70,7 @@ def load_books(mode, limit, scan):
                 break
             book = json.loads(line)
             keep = n < limit
-            for kind in categories(book):
+            for kind in categories(book) + (["maxwin"] if book["payoutMultiplier"] >= top else []):
                 if len(forced.setdefault(kind, [])) < (2000 if kind in ("win", "lose") else 200):
                     forced[kind].append(book["id"])
                     keep = True
@@ -229,6 +230,7 @@ def main():
     host = f"127.0.0.1:{args.port}"
     print(f"\nPlay:   http://{host}/?sessionID=local&lang=en&rgs_url=http://{host}")
     print(f"Bonus:  http://{host}/?sessionID=local&lang=en&rgs_url=http://{host}/force/bonus")
+    print(f"Max win: http://{host}/?sessionID=local&lang=en&rgs_url=http://{host}/force/maxwin")
     print(f"Replay: http://{host}/?replay=true&game={args.game}&version=1&mode=base&event=<book id>&amount=1000000&rgs_url=http://{host}")
     print("        (mode=bonus replays a bonus buy round)\n")
     server.serve_forever()
