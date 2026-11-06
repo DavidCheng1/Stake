@@ -1533,7 +1533,8 @@ const spinBtn = document.getElementById("spin"), autoBtn = document.getElementBy
 let autoOn = false, loading = true;
 const canSkip = () => !loading && !RGS.jurisdiction.disabledSlamstop;
 // during a round Spin stays clickable: it skips the sequence that is playing instead of starting a new round
-const lock = on => { busy = on; buttons.forEach(b => b.disabled = on); spinBtn.disabled = on && !canSkip(); if (!on) { slam = false; updateBet(); } updateBuy(); };
+// a running autoplay keeps its button, so it can be paused mid-spin
+const lock = on => { busy = on; buttons.forEach(b => b.disabled = on && !(b === autoBtn && autoOn)); spinBtn.disabled = on && !canSkip(); if (!on) { slam = false; updateBet(); } updateBuy(); };
 // slam stop: a click on Spin or the board (or Space) plays the sequence that is running SLAM times faster and fades out
 // the sounds it scheduled; a second click in the same sequence does nothing, one in the next sequence skips that one
 function skip() { if (!busy || slam || !canSkip()) return; slam = true; hurry(); sound.cut(); }
@@ -1566,36 +1567,61 @@ async function runRound(round, resumed) {
 }
 // ---------- Autoplay with selectable number of spins ----------
 const autoMenu = document.getElementById("autoMenu"), autoLeftEl = document.getElementById("autoLeft"), amStart = document.getElementById("amStart");
-let autoLeft = 0, autoChoice = 0;
-function showAutoLeft() { autoLeftEl.hidden = !autoOn; autoLeftEl.textContent = autoLeft === Infinity ? "∞" : autoLeft; }
-function stopAuto(msg) { autoOn = false; autoLeft = 0; autoBtn.setAttribute("aria-pressed", "false"); showAutoLeft(); updateBuy(); if (msg) say(msg); }
+// A click on the Autoplay button while it runs pauses it: the spin that is playing finishes and the spins left are kept.
+// A click while paused opens the menu, where Start reads "Resume" with the spins left (one press alone never starts
+// auto-betting [104]); picking a number there starts a new run instead.
+let autoLeft = 0, autoChoice = 0, autoPaused = false, autoRun = 0;
+const autoCount = () => autoLeft === Infinity ? "∞" : autoLeft;
+function showAutoLeft() {
+  autoLeftEl.hidden = !autoOn && !autoPaused; autoLeftEl.textContent = (autoPaused ? "❚❚ " : "") + autoCount();
+  autoBtn.classList.toggle("paused", autoPaused);
+}
+function stopAuto(msg) { autoOn = false; autoPaused = false; autoLeft = 0; autoBtn.setAttribute("aria-pressed", "false"); autoBtn.disabled = busy; showAutoLeft(); updateBuy(); if (msg) say(msg); }
+function pauseAuto() {
+  if (autoLeft <= 0) { stopAuto(i18n("Autoplay gestoppt", "Autoplay stopped")); return; }
+  autoOn = false; autoPaused = true; autoBtn.setAttribute("aria-pressed", "false"); autoBtn.disabled = busy; showAutoLeft(); updateBuy();
+  say(i18n(`Autoplay pausiert · noch ${autoCount()}`, `Autoplay paused · ${autoCount()} left`));
+}
 async function autoLoop() {
-  while (autoOn && autoLeft > 0) {
+  const run = ++autoRun; // a pause and a resume during one spin must not leave two loops running
+  while (autoOn && autoLeft > 0 && run === autoRun) {
     if (balance < bet * modeCost(boost ? boost.mode : "BASE")) { stopAuto(i18n("Guthaben reicht nicht · Autoplay beendet", "Balance too low · Autoplay ended")); break; }
     if (autoLeft !== Infinity) autoLeft--; showAutoLeft();
     await play();
-    if (!autoOn) break;
+    if (!autoOn || run !== autoRun) break;
     if (autoLeft <= 0) { stopAuto(i18n("Autoplay beendet", "Autoplay ended")); break; }
     await sleep(700);
   }
 }
 function openAutoMenu(open) {
   autoMenu.hidden = !open; autoBtn.setAttribute("aria-expanded", String(open));
-  if (open) { qa(autoMenu, "[data-n]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.n === autoChoice))); amStart.disabled = !autoChoice; (q(autoMenu, '[aria-pressed="true"]') || q(autoMenu, "[data-n]")).focus(); }
+  if (open) {
+    if (autoPaused) autoChoice = 0; // paused: Start resumes unless a number is picked
+    qa(autoMenu, "[data-n]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.n === autoChoice)));
+    startLabel();
+    (q(autoMenu, '[aria-pressed="true"]') || q(autoMenu, "[data-n]")).focus();
+  }
+}
+function startLabel() {
+  const resume = autoPaused && !autoChoice;
+  amStart.textContent = resume ? i18n(`Weiter · ${autoCount()}`, `Resume · ${autoCount()}`) : "Start";
+  amStart.disabled = !autoChoice && !resume;
 }
 autoBtn.addEventListener("click", () => {
-  if (autoOn) { stopAuto(i18n("Autoplay gestoppt", "Autoplay stopped")); return; } // while running, one click stops it
+  if (autoOn) { pauseAuto(); return; } // while running, one click pauses it
   openAutoMenu(autoMenu.hidden);
 });
 qa(autoMenu, "[data-n]").forEach(b => {
-  b.addEventListener("click", () => { autoChoice = +b.dataset.n; qa(autoMenu, "[data-n]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); amStart.disabled = false; });
+  b.addEventListener("click", () => { autoChoice = +b.dataset.n; qa(autoMenu, "[data-n]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); startLabel(); });
   b.addEventListener("dblclick", () => amStart.click());
 });
 amStart.addEventListener("click", () => {
-  if (!autoChoice) return;
+  const resume = autoPaused && !autoChoice;
+  if (!autoChoice && !resume) return;
   openAutoMenu(false);
-  autoOn = true; autoLeft = autoChoice; autoBtn.setAttribute("aria-pressed", "true"); showAutoLeft(); updateBuy();
-  say(autoChoice === Infinity ? i18n("Autoplay · endlos", "Autoplay · endless") : `Autoplay · ${autoChoice} Spins`);
+  autoOn = true; autoPaused = false; if (!resume) autoLeft = autoChoice; autoBtn.setAttribute("aria-pressed", "true"); showAutoLeft(); updateBuy();
+  say(resume ? i18n(`Autoplay geht weiter · noch ${autoCount()}`, `Autoplay resumed · ${autoCount()} left`)
+    : autoChoice === Infinity ? i18n("Autoplay · endlos", "Autoplay · endless") : `Autoplay · ${autoChoice} Spins`);
   if (!busy) autoLoop(); else (async () => { while (busy) await sleep(200); autoLoop(); })();
 });
 document.getElementById("amClose").addEventListener("click", () => openAutoMenu(false));
@@ -1605,7 +1631,13 @@ document.getElementById("betMinus").addEventListener("click", () => { if (!busy 
 document.getElementById("betPlus").addEventListener("click", () => { if (!busy && betIdx < BETS.length - 1) { betIdx++; updateBet(); } });
 document.getElementById("infoBtn").addEventListener("click", () => openRules(true));
 document.getElementById("spin").addEventListener("click", () => busy ? skip() : play());
-addEventListener("keydown", e => { if (e.code === "Space" && e.target === document.body && !RGS.jurisdiction.disabledSpacebar) { e.preventDefault(); busy ? skip() : play(); } });
+// [228] Space works the Spin button wherever the focus is: a button the player just clicked (Bet +, Turbo...) must not
+// take the key, so its own Space click is held back on keyup. Inside an open menu or dialog and on the volume sliders
+// Space keeps its usual job.
+const spaceBets = e => e.code === "Space" && !RGS.jurisdiction.disabledSpacebar
+  && !e.target.closest?.("input, select, textarea, #autoMenu, #sndMenu, #buyDlg, #rules, #errDlg, #replayBar, #replayDlg, #intro");
+addEventListener("keydown", e => { if (!spaceBets(e)) return; e.preventDefault(); if (!e.repeat) busy ? skip() : play(); });
+addEventListener("keyup", e => { if (spaceBets(e)) e.preventDefault(); });
 game.addEventListener("pointerdown", e => { if (busy && !e.target.closest("button, .auto-menu, #intro, #rules")) skip(); });
 // turbo: rounds play at TURBO instead of NORMAL pace (the duel at VS_TURBO); remembered between visits
 const turboBtn = document.getElementById("turboBtn");
@@ -2519,7 +2551,7 @@ rulesSection(i18n("Bedienung", "Controls"), [[
   [i18n("Spin:", "Spin:"), i18n("Startet eine Runde mit dem aktuellen Einsatz. Während einer Runde überspringt ein erneuter Druck (oder ein Tipp auf das Spielfeld) die Animationen; das Ergebnis bleibt gleich.", "Starts a round at the current bet. During a round, press it again (or tap the board) to skip the animations; the result stays the same.")],
   [i18n("Leertaste:", "Space bar:"), i18n("Wie Spin.", "Same as Spin.")],
   [i18n("Einsatz − / +:", "Bet − / +:"), i18n("Senkt oder erhöht den Einsatz innerhalb der angebotenen Stufen.", "Lowers or raises the bet within the levels offered.")],
-  [i18n("Autoplay:", "Autoplay:"), i18n("Wähle die Anzahl Spins und drücke Start. Erneut drücken stoppt. Reicht das Guthaben nicht, endet Autoplay.", "Choose the number of spins, then press Start. Press again to stop. Autoplay ends when the balance is too low.")],
+  [i18n("Autoplay:", "Autoplay:"), i18n("Wähle die Anzahl Spins und drücke Start. Erneut auf Autoplay drücken pausiert: Der laufende Spin endet, die restlichen Spins bleiben. Noch einmal drücken und Weiter wählen setzt fort, oder wähle eine neue Anzahl. Reicht das Guthaben nicht, endet Autoplay.", "Choose the number of spins, then press Start. Press the Autoplay button again to pause: the spin that is playing finishes and the spins left are kept. Press it once more and choose Resume to carry on, or pick a new number. Autoplay ends when the balance is too low.")],
   [i18n("Turbo:", "Turbo:"), i18n("Spielt Runden etwa doppelt so schnell. Erneut drücken schaltet ihn aus.", "Plays rounds about twice as fast. Press again to turn it off.")],
   [i18n("Bonus kaufen:", "Buy Bonus:"), i18n("Öffnet das Bonusmenü: oben der FS-Boost für die nächsten Spins (Aus, 3×, 6×), darunter die kaufbaren Boni mit ihrem Preis (siehe oben). Der Knopf zeigt, ob der FS-Boost an ist.", "Opens the Bonus menu: at the top the FS Boost for the next spins (Off, 3×, 6×), below it the bonuses to buy with their prices (see above). The button shows whether the FS Boost is on.")],
   [i18n("Ton (oben rechts):", "Sound (top right):"), i18n("Lautstärke für Musik und Effekte und Stummschalten aller Töne.", "Music and effects volume, and mute for all sound.")],

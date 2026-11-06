@@ -340,6 +340,9 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 #autoBtn .disc { inset: 12%; width: 76%; height: 76%; }
 .auto-left { position: absolute; right: -14%; top: -10%; z-index: 2; min-width: 2.4cqw; padding: .15cqw .4cqw; border-radius: 1cqw; font: 800 1.15cqw/1.2 var(--ui); color: #f3e3b4;
   background: linear-gradient(#2b2735, #17141f); border: .15cqw solid #c9a35a; box-shadow: 0 0 .6cqw rgb(109 255 179 / .6); text-align: center; font-variant-numeric: tabular-nums; }
+/* paused autoplay: the counter (with a pause mark) glows amber, the disc rests dimmed */
+#autoBtn.paused .auto-left { color: #ffd98a; border-color: #f0b445; box-shadow: 0 0 .7cqw rgb(255 190 70 / .75); white-space: nowrap; }
+#autoBtn.paused .disc { filter: brightness(.8) saturate(.7); }
 /* Autoplay menu in the style of the stone console: slate panel, gold rim, dark inset boxes, cream lettering */
 .auto-menu { position: absolute; z-index: 40; right: 26.5%; bottom: 14.5%; width: 23%; padding: 1.6cqw 1.5cqw 1.3cqw; border-radius: 1cqw;
   background: url(assets/img0.webp) 40% 30% / cover, #2e363a;
