@@ -1141,20 +1141,22 @@ const MIN_LINK = 4, MAX_WIN = MAX_WIN_X;
 const N4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const MULT_POOL = [2, 3, 5]; // only for the rolling plate animation
 const fmtV = v => RGS.formatNumber(v);
+// rune and group values: no zeros that say nothing (1, 0.8, 2.25 instead of 1.00, 0.80), so the figures stay big
+const fmtR = v => Number(v).toLocaleString(RGS.lang, { maximumFractionDigits: 6 });
 let K = [];
 const at = (c, r) => K[c]?.[r];
 const kCells = t => { const o = []; K.forEach((col, c) => col.forEach((h, r) => { if (t === null ? !h : h && h.t === t) o.push([c, r]); })); return o; };
 
 function makeCrate(id, mult) {
   const el = div("crate"); el.style.setProperty("--c", SYM[id].rgb);
-  const front = div("cr-front"), plate = div("cr-plate");
-  plate.textContent = "×" + mult; // brackets and tag sit over the coffin front, so its shape does not clip them
-  el.append(div("cr-glow"), div("cr-back"), makeSym(id), front, div("cr-corner l"), div("cr-corner r"), plate); return el;
+  const plate = div("cr-plate"); plate.textContent = "×" + mult;
+  // painted frame, fog behind the character, the character, a thin fog in front of him, the multiplier
+  el.append(div("cr-glow"), div("cr-front"), div("cr-back"), makeSym(id), div("cr-fog"), plate); return el;
 }
 function makeRune(v, id) {
   const el = div("rtok"); el.style.setProperty("--c", SYM[id].rgb);
   const img = new Image(); img.src = IMG[id]; img.alt = ""; img.draggable = false;
-  const t = document.createElement("span"); t.className = "rv"; setRv(t, fmtV(v * bet));
+  const t = document.createElement("span"); t.className = "rv"; setRv(t, fmtR(v * bet));
   el.append(img, t); return el;
 }
 // a rune's value: up to 6 characters at full size, longer amounts (high bets, multiplied wins) smaller, so they stay
@@ -1360,11 +1362,11 @@ async function harvest(start, spinEvents, end) {
   for (const g of winners) {
     g.crates.forEach(k => { const el = q(reels[k.cell[0]].cells[k.cell[1]], ".crate"); animWin(q(el, ".sym")); if (!RM) el.animate([{ transform: "scale(1)" }, { transform: "scale(1.25)" }, { transform: "scale(1)" }], { duration: 600 }); const [x, y, w] = cellCenter(k.cell); fx.emit(x, y, { n: 26, kind: "spark", rgb: SYM[K[k.cell[0]][k.cell[1]].id].rgb, scale: w / 100 }); });
     const pts = g.cells.map(cellCenter), cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
-    floatText(cx, cy, `${fmtV(g.sum * bet)} × ${g.mults.join(" × ")}`, "246 196 79");
+    floatText(cx, cy, `${fmtR(g.sum * bet)} × ${g.mults.join(" × ")}`, "246 196 79");
     await sleep(500);
     await Promise.all(g.cells.map(([c, r], i) => sleep(i * 40).then(() => {
       const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v * bet, to = from * g.mult, t0 = performance.now();
-      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtV(k < 1 ? RGS.roundMoney(from + (to - from) * k) : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
+      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtR(k < 1 ? RGS.roundMoney(from + (to - from) * k) : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
     })));
     shake(6, 300);
     await sleep(450);
@@ -2678,9 +2680,9 @@ const introDone = new Promise(resolve => {
   const close = () => {
     if (closed) return; closed = true;
     removeEventListener("keydown", onKey, true);
-    sound.spin();
-    (RM ? Promise.resolve() : el.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(1.04)" }], { duration: 380, easing: "ease-in", fill: "forwards" }).finished).then(() => el.remove());
     resolve();
+    (RM ? Promise.resolve() : el.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(1.04)" }], { duration: 380, easing: "ease-in", fill: "forwards" }).finished).then(() => el.remove());
+    try { sound.spin(); } catch (err) { console.error(err); } // a sound that fails must not keep the intro up
   };
   // keys only continue: Space must not also start a spin underneath
   const onKey = e => { if (e.key === "Tab") return; e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) close(); };

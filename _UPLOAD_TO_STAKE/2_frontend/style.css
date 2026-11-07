@@ -192,55 +192,55 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 
 /* Crate: open iron-bound chest, the character rises out of it */
 .cell:has(.crate) { z-index: 1; }
-/* Haunted coffin chest: dark weathered planks with eerie light leaking through the gaps, iron bands and brackets,
-   the multiplier on an iron tag in glowing letters, ghost smoke rising from the open lid. --c is the character's colour. */
+/* Ghost crate: a painted tile (wood, iron corners, ghost light; tools/imagegen) with the character big in it, his head
+   breaking out over the top of the frame, and the multiplier in big chunky gold figures across the bottom. --c is the
+   character's colour, lighting the panel behind him. */
 .crate { position: relative; height: 100%; aspect-ratio: 1; max-width: 100%; --c: 109 255 179;
   filter: drop-shadow(0 .4cqw .6cqw rgb(0 0 0 / .7)) drop-shadow(0 0 .9cqw rgb(var(--c) / .35)); }
-.cr-glow { position: absolute; inset: -6% -6% 0; border-radius: 40%; background: radial-gradient(closest-side, rgb(var(--c) / .55), transparent); animation: crGlow 2s ease-in-out infinite; }
-@keyframes crGlow { 50% { opacity: .45; transform: scale(.92); } }
-.cr-back { position: absolute; left: 6%; right: 6%; top: 34%; bottom: 4%; border-radius: 8% 8% 10% 10%;
-  background: radial-gradient(ellipse at 50% 0%, rgb(var(--c) / .9), rgb(var(--c) / .25) 45%, #07090a 78%); border: .25cqw solid #0b0d0e; }
-.crate::after { content: ""; position: absolute; left: 14%; right: 14%; top: 8%; height: 50%; z-index: 1; pointer-events: none; border-radius: 50%;
-  background: radial-gradient(40% 50% at 35% 70%, rgb(var(--c) / .35), transparent 70%), radial-gradient(35% 45% at 65% 60%, rgb(220 255 240 / .22), transparent 70%);
-  filter: blur(.25cqw); mix-blend-mode: screen; animation: crSmoke 3.2s ease-in-out infinite; }
-@keyframes crSmoke { 0% { transform: translateY(18%) scaleX(.9); opacity: 0; } 35% { opacity: 1; } 100% { transform: translateY(-34%) scaleX(1.15); opacity: 0; } }
-.crate > .sym { position: absolute; left: 8%; top: -4%; width: 84%; z-index: 1; filter: drop-shadow(0 0 .5cqw rgb(var(--c) / .7)); }
-.cr-front { position: absolute; left: 0; right: 0; top: 44%; bottom: 0; z-index: 2;
-  clip-path: polygon(0 16%, 8% 0, 92% 0, 100% 16%, 93% 100%, 7% 100%); /* coffin-shaped front */
-  background:
-    linear-gradient(90deg, transparent 0 32%, rgb(0 0 0 / .35) 32.5% 33.5%, transparent 34% 65.5%, rgb(0 0 0 / .35) 66% 67%, transparent 67.5%), /* plank seams */
-    repeating-linear-gradient(176deg, rgb(255 255 255 / .03) 0 .25cqw, transparent .25cqw .7cqw), /* wood grain */
-    radial-gradient(70% 80% at 50% 115%, rgb(var(--c) / .4), transparent 70%), /* eerie light from below */
-    linear-gradient(#3b2c25, #251a16 55%, #120c0a); }
-.cr-front::before { content: ""; position: absolute; left: 0; right: 0; top: 62%; height: 13%; /* iron band with rivets */
-  background: radial-gradient(circle at 12% 50%, #c9ced6 0 12%, transparent 15%) 0 0 / 25% 100% repeat-x, linear-gradient(#5f646b, #2c2f34 60%, #16181b);
-  border-block: .1cqw solid #0b0c0e; }
-.cr-front::after { content: ""; position: absolute; inset: 0; pointer-events: none; /* weathering: dark edges, scratches */
-  background: linear-gradient(90deg, rgb(0 0 0 / .55), transparent 12% 88%, rgb(0 0 0 / .55)), linear-gradient(rgb(0 0 0 / .15), transparent 40%, rgb(0 0 0 / .6)); }
-.cr-corner { position: absolute; bottom: 0; width: 20%; height: 22%; z-index: 3;
-  background: radial-gradient(circle at 50% 55%, #d6dbe2 0 13%, transparent 16%), linear-gradient(160deg, #6d7279, #34373c 55%, #17191c);
-  border: .1cqw solid #0b0c0e; }
-.cr-corner.l { left: 5%; border-radius: 0 50% 0 30%; } .cr-corner.r { right: 5%; border-radius: 50% 0 30% 0; }
-.cr-plate { position: absolute; left: 50%; top: 61%; transform: translate(-50%, -50%); z-index: 4; min-width: 34%; text-align: center;
-  font: 400 1.35cqw/1.05 var(--display); letter-spacing: .03em; color: #effff7; padding: .04cqw .3cqw 0; border-radius: .25cqw;
-  background: linear-gradient(#2a2e33, #121417); border: .14cqw solid rgb(var(--c) / .9);
-  -webkit-text-stroke: .1cqw #06120e; paint-order: stroke fill;
-  text-shadow: 0 0 .5cqw rgb(var(--c)), 0 0 1.2cqw rgb(var(--c) / .7); box-shadow: 0 0 .7cqw rgb(var(--c) / .6), inset 0 0 .4cqw rgb(0 0 0 / .8); font-variant-numeric: tabular-nums; }
+.cr-glow { position: absolute; inset: -4%; border-radius: 22%; background: radial-gradient(closest-side, rgb(var(--c) / .5), transparent); animation: crGlow 2s ease-in-out infinite; }
+@keyframes crGlow { 50% { opacity: .45; transform: scale(.94); } }
+.cr-front { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: url(assets/tile-crate.webp) center / 100% 100% no-repeat; }
+/* fog drifting through the panel: two banks behind the character (.cr-back), a thin one in front of his lower half
+   (.cr-fog). Each bank is twice as wide as the panel and repeats every panel width, so moving it by half loops. */
+.cr-back, .cr-fog { position: absolute; left: 13%; right: 13%; z-index: 1; overflow: hidden; pointer-events: none; }
+.cr-back { top: 13%; bottom: 13%; border-radius: 8%; }
+.cr-fog { bottom: 13%; height: 34%; z-index: 3; border-radius: 0 0 8% 8%; -webkit-mask-image: linear-gradient(transparent, #000 55%); mask-image: linear-gradient(transparent, #000 55%); }
+.cr-back::before, .cr-back::after, .cr-fog::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 200%; filter: blur(.25cqw);
+  background: radial-gradient(30% 22% at 18% 82%, rgb(225 240 236 / .62), transparent), radial-gradient(36% 26% at 62% 74%, rgb(var(--c) / .42), transparent),
+    radial-gradient(26% 18% at 42% 48%, rgb(225 240 236 / .36), transparent), radial-gradient(28% 20% at 86% 36%, rgb(var(--c) / .28), transparent);
+  background-size: 50% 100%; background-repeat: repeat-x; animation: fogDrift 11s linear infinite; }
+.cr-back::after { animation-duration: 17s; animation-direction: reverse; opacity: .7; transform: scaleY(-1); }
+.cr-fog::before { animation-duration: 8s; opacity: .8; }
+@keyframes fogDrift { to { translate: -50% 0; } }
+@media (prefers-reduced-motion: reduce) { .cr-back::before, .cr-back::after, .cr-fog::before { animation: none; } }
+.crate > .sym { position: absolute; left: 5%; top: -9%; width: 90%; z-index: 2; filter: drop-shadow(0 .2cqw .3cqw rgb(0 0 0 / .6));
+  clip-path: inset(-30% 9% 9% 9% round 0 0 8% 8%); /* stays inside the frame, except over the top */ }
+.cr-plate { position: absolute; left: 50%; bottom: -3%; transform: translateX(-50%) rotate(-6deg); z-index: 4; white-space: nowrap;
+  font: 800 3.3cqw/1 var(--ui); letter-spacing: -.02em; color: #ffe066; font-variant-numeric: tabular-nums;
+  -webkit-text-stroke: .5cqw #1c0e04; paint-order: stroke fill;
+  text-shadow: 0 .28cqw 0 #1c0e04, 0 0 1cqw rgb(255 200 60 / .55); }
+.cr-plate::first-letter { font-size: .78em; }
 .crate.active { filter: drop-shadow(0 .4cqw .6cqw rgb(0 0 0 / .7)) drop-shadow(0 0 1.6cqw rgb(var(--c))); }
 .crate.active .cr-glow { animation-duration: .9s; }
-.crate.active .cr-plate { box-shadow: 0 0 1.2cqw rgb(var(--c)), inset 0 0 .4cqw rgb(0 0 0 / .8); }
+.crate.active .cr-plate { color: #fff3b0; text-shadow: 0 .28cqw 0 #1c0e04, 0 0 1.4cqw rgb(255 220 90), 0 0 2.4cqw rgb(var(--c)); }
 
-/* Rune tokens */
-.rtok { position: relative; height: 92%; aspect-ratio: 1; max-width: 100%; display: grid; place-items: center; --c: 109 255 179; }
-.rtok img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 .4cqw rgb(var(--c) / .6)); animation: runeFloat 3s ease-in-out infinite; }
-/* rune values in the spooky lettering of the multipliers: dark outline, glow in the rune's colour. --fit (set with the
-   value, game.js setRv) makes long amounts smaller, so they stay inside the rune at any bet */
-.rtok .rv { position: relative; z-index: 3; margin-top: 56%; font: 400 calc(1.45cqw * var(--fit, 1))/1 var(--display); letter-spacing: .04em; color: #f2fff8;
-  padding: .12cqw calc(.4cqw * var(--fit, 1)) .02cqw; border-radius: .45cqw; background: rgb(4 8 8 / .72); border: .1cqw solid rgb(var(--c) / .55);
-  -webkit-text-stroke: .1cqw #04100c; paint-order: stroke fill;
-  text-shadow: 0 0 .5cqw rgb(var(--c)), 0 0 1cqw rgb(var(--c) / .6); font-variant-numeric: tabular-nums; white-space: nowrap; transition: background .3s, box-shadow .3s; }
-.rtok:not(.linked) .rv { opacity: .7; }
-.rtok.linked .rv { background: rgb(var(--lc) / .85); border-color: #fff8; box-shadow: 0 0 .9cqw rgb(var(--lc)); color: #fff; text-shadow: 0 0 .6cqw #fff, 0 .1cqw 0 #000; }
+/* Rune tiles: a painted stone tile (tools/imagegen) lit in the rune's colour, the rune stone in its upper part and its
+   value in big chunky figures over the bottom. --c is the rune's colour. --fit (set with the value, game.js setRv) makes
+   long amounts smaller, so they stay inside the tile at any bet. */
+.rtok { position: relative; height: 96%; aspect-ratio: 1; max-width: 100%; --c: 109 255 179; }
+.rtok::before { content: ""; position: absolute; inset: 2%; z-index: 0; transition: filter .3s;
+  background: radial-gradient(42% 40% at 50% 44%, rgb(var(--c) / .38), transparent), url(assets/tile-rune.webp) center / 100% 100% no-repeat; }
+.rtok::after { content: ""; position: absolute; inset: 14%; z-index: 0; border-radius: 9%; opacity: 0; transition: opacity .3s; /* lights up when linked, under the rune */
+  box-shadow: inset 0 0 0 .14cqw rgb(var(--lc, var(--c)) / .9), inset 0 0 .9cqw rgb(var(--lc, var(--c)) / .45); }
+.rtok img { position: absolute; z-index: 1; left: 16%; top: 8%; width: 68%; height: 62%; object-fit: contain; filter: drop-shadow(0 0 .4cqw rgb(var(--c) / .6)); animation: runeFloat 3s ease-in-out infinite; }
+.rtok .rv { position: absolute; left: 50%; bottom: 2%; transform: translateX(-50%); z-index: 3; white-space: nowrap;
+  font: 800 calc(2.5cqw * var(--fit, 1))/1 var(--ui); letter-spacing: -.01em; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, rgb(var(--c)) 30%, #fff); -webkit-text-stroke: calc(.42cqw * var(--fit, 1)) #04100c; paint-order: stroke fill;
+  text-shadow: 0 .22cqw 0 #04100c, 0 0 .8cqw rgb(var(--c) / .7); transition: color .3s, text-shadow .3s; }
+.rtok:not(.linked) .rv { opacity: .85; }
+.rtok.linked::before { filter: drop-shadow(0 0 .7cqw rgb(var(--lc))) brightness(1.15); }
+.rtok.linked::after { opacity: 1; }
+.rtok.linked .rv { color: #fff; text-shadow: 0 .22cqw 0 #04100c, 0 0 .9cqw rgb(var(--lc)), 0 0 1.6cqw rgb(var(--lc)); }
 .rtok.linked img { filter: drop-shadow(0 0 .9cqw rgb(var(--lc))) brightness(1.2); }
 
 /* Slow falling column */

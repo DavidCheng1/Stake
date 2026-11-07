@@ -29,8 +29,10 @@ const LOADER = (() => {
     finished = true;
     show(1);
     setTimeout(() => {
-      el.classList.add("out"); fadeStart();
-      setTimeout(() => { el.remove(); BLOCK.forEach(t => removeEventListener(t, block, true)); }, 850);
+      // input goes through from the start of the fade (the screen is click-through then): the intro's cards appear
+      // during it, and a click on "Click to continue" must not be swallowed
+      el.classList.add("out"); fadeStart(); BLOCK.forEach(t => removeEventListener(t, block, true));
+      setTimeout(() => el.remove(), 850);
     }, 300);
   }
   const timer = setInterval(() => { check(); if (finished) clearInterval(timer); }, 100);
