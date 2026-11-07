@@ -670,9 +670,9 @@ function countTo(target, dur = 700) {
     // progress follows the current pace each frame, so a skip speeds up a count that is already running
     // (a frame's timestamp can be slightly older than the start; it never counts backwards)
     k = Math.min(1, k + Math.max(0, t - last) * pace() / dur); last = Math.max(last, t);
-    shown = k < 1 ? from + (target - from) * (1 - Math.pow(1 - k, 3)) : target;
+    shown = k < 1 ? countStep(from + (target - from) * (1 - Math.pow(1 - k, 3)), from, target) : target;
     if (dur / pace() > 300 && k < 1 && t - lastTick > 85) { lastTick = t; sound.tick(); }
-    winVal.textContent = money(k < 1 ? RGS.roundMoney(shown) : shown); if (k < 1) requestAnimationFrame(step); else res();
+    winVal.textContent = money(shown); if (k < 1) requestAnimationFrame(step); else res();
   })(last));
 }
 
@@ -1004,6 +1004,7 @@ const WIN_TIERS = [
   { key: "super", x: 50, rgb: "63 242 220" },
   { key: "mega", x: 150, rgb: "255 122 42" },
   { key: "epic", x: 500, rgb: "93 255 143" },
+  { key: "max", x: MAX_WIN_X, rgb: "255 206 84" }, // only at the cap: lands after EPIC WIN and holds the amount
 ];
 const tierRigs = {};
 function preloadWinTiers() {
@@ -1012,7 +1013,8 @@ function preloadWinTiers() {
 }
 // returns false when the win is below the first tier or the art is missing (then the Total Win counts it up itself)
 async function winTierScreen(total) {
-  const top = WIN_TIERS.findLastIndex(t => total >= t.x * bet);
+  if (roundCapped) total = Math.max(total, MAX_WIN_X * bet); // the round hit the cap (a base win before the free spins makes up the rest)
+  const top = WIN_TIERS.findLastIndex(t => total >= t.x * bet * (1 - 1e-9)); // a capped total may round a hair under
   if (top < 0) return false;
   preloadWinTiers();
   const rigs = await Promise.all(WIN_TIERS.slice(0, top + 1).map(t => tierRigs[t.key]));
@@ -1049,12 +1051,13 @@ async function winTierScreen(total) {
   // counts from a to b: an even pace into the next tier, slowing down into the total; it follows the pace, so a skip
   // finishes it at once
   const count = (a, b, last) => new Promise(res => {
+    if (a >= b) { sleep(2600).then(res); return; } // MAX WIN: the amount is there already, the title holds it
     const dur = last ? 2600 : 1900;
     let k = 0, prev = performance.now(), tick = 0;
     (function step(t) {
       k = Math.min(1, k + Math.max(0, t - prev) * pace() / dur); prev = Math.max(prev, t);
       const e = last ? 1 - Math.pow(1 - k, 3) : k;
-      amtEl.textContent = money(k < 1 ? RGS.roundMoney(a + (b - a) * e) : b);
+      amtEl.textContent = money(k < 1 ? countStep(a + (b - a) * e, a, b) : b);
       if (k < 1 && t - tick > 85) { tick = t; sound.tick(); }
       if (k < 1) requestAnimationFrame(step); else res();
     })(prev);
@@ -1117,7 +1120,7 @@ async function totalWinScreen(total, spins, counted = false) {
   let k = counted ? 1 : 0, last = performance.now(), lastTick = 0;
   const done = new Promise(res => (function step(t) {
     k = Math.min(1, k + Math.max(0, t - last) * pace() / 2400); last = Math.max(last, t);
-    amtEl.textContent = money(k < 1 ? RGS.roundMoney(total * (1 - Math.pow(1 - k, 3))) : total);
+    amtEl.textContent = money(k < 1 ? countStep(total * (1 - Math.pow(1 - k, 3)), 0, total) : total);
     if (k < 1 && t - lastTick > 85) { lastTick = t; sound.tick(); }
     if (k < 1) requestAnimationFrame(step); else res();
   })(last));
@@ -1144,6 +1147,9 @@ const fmtV = v => RGS.formatNumber(v);
 // rune and group values: no zeros that say nothing (1, 0.8, 2.25 instead of 1.00, 0.80), so the figures stay big
 const fmtR = v => Number(v).toLocaleString(RGS.lang, { maximumFractionDigits: 6 });
 const decimals = v => { let k = 0; while (k < 6 && Math.abs(Math.round(v * 10 ** k) - v * 10 ** k) > 1e-6) k++; return k; };
+// a value counting from a to b, in the steps of its ends: whole amounts when both are whole, so no cents flicker on
+// the way (€12,345.00, not €12,345.67)
+const countStep = (v, a, b) => { const f = 10 ** Math.max(decimals(a), decimals(b)); return Math.round(v * f) / f; };
 let K = [];
 const at = (c, r) => K[c]?.[r];
 const kCells = t => { const o = []; K.forEach((col, c) => col.forEach((h, r) => { if (t === null ? !h : h && h.t === t) o.push([c, r]); })); return o; };
@@ -1160,11 +1166,11 @@ function makeRune(v, id) {
   const t = document.createElement("span"); t.className = "rv"; setRv(t, fmtR(v * bet));
   el.append(img, t); return el;
 }
-// a rune's value: up to 6 characters at full size, longer amounts (high bets, multiplied wins) smaller, so they stay
+// a rune's value: up to 3 characters at full size, longer amounts (high bets, multiplied wins) smaller, so they stay
 // inside the rune
 function setRv(t, text) {
   t.textContent = text;
-  t.style.setProperty("--fit", Math.min(1, 6.5 / text.length).toFixed(3));
+  t.style.setProperty("--fit", Math.min(1, 3.4 / text.length).toFixed(3)); // up to 3 characters at full size
 }
 function dropIn(el, heavy) {
   if (RM) return;
@@ -1360,13 +1366,21 @@ async function harvest(start, spinEvents, end) {
   drawGroupLinks(groups);
   const winners = groups.filter(g => g.ok).sort((a, b) => a.sum * a.mult - b.sum * b.mult);
   if (winners.length) { say(i18n("Die Kisten öffnen sich", "The crates open")); sound.toll(); }
+  // What is paid (the event total is authoritative; it already includes the max-win cap). Groups worth more than the
+  // cap (13 crates of x3 multiply a rune by 1.6 million) pay only their share of it: every rune counts up to its part
+  // of what is paid, in steps of the bet, so the runes add up to the win and stay readable.
+  const total = end.totalWin / 100 * bet;
+  const raw = winners.reduce((s, g) => s + g.sum * g.mult * bet, 0);
+  const share = raw > total * (1 + 1e-9) ? total / raw : 1, unit = 10 ** decimals(bet);
+  const paidOf = (v, g) => share < 1 ? Math.round(v * bet * g.mult * share * unit) / unit : v * bet * g.mult;
   for (const g of winners) {
     g.crates.forEach(k => { const el = q(reels[k.cell[0]].cells[k.cell[1]], ".crate"); animWin(q(el, ".sym")); if (!RM) el.animate([{ transform: "scale(1)" }, { transform: "scale(1.25)" }, { transform: "scale(1)" }], { duration: 600 }); const [x, y, w] = cellCenter(k.cell); fx.emit(x, y, { n: 26, kind: "spark", rgb: SYM[K[k.cell[0]][k.cell[1]].id].rgb, scale: w / 100 }); });
     const pts = g.cells.map(cellCenter), cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
-    floatText(cx, cy, `${fmtR(g.sum * bet)} × ${g.mults.join(" × ")}`, "246 196 79");
+    const crates = g.mults.length > 4 ? `${g.mults.slice(0, 2).join(" × ")} × … (${g.mults.length} ${i18n("Kisten", "crates")})` : g.mults.join(" × ");
+    floatText(cx, cy, `${fmtR(g.sum * bet)} × ${crates}`, "246 196 79");
     await sleep(500);
     await Promise.all(g.cells.map(([c, r], i) => sleep(i * 40).then(() => {
-      const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v * bet, to = from * g.mult, t0 = performance.now();
+      const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v * bet, to = K[c][r].paid = paidOf(K[c][r].v, g), t0 = performance.now();
       // counts in the steps of its own values (3 -> 6 shows 4 and 5, not 3.47), so no decimals flash up on the way
       const f = 10 ** Math.max(decimals(from), decimals(to));
       return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtR(k < 1 ? Math.round((from + (to - from) * k) * f) / f : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
@@ -1374,8 +1388,7 @@ async function harvest(start, spinEvents, end) {
     shake(6, 300);
     await sleep(450);
   }
-  // Collect (the event total is authoritative; it already includes the max-win cap)
-  const total = end.totalWin / 100 * bet;
+  // Collect
   clearLit(); setWin(0);
   const mOf = new Map();
   groups.forEach(g => g.cells.forEach(([c, r]) => mOf.set(c + "," + r, g.ok ? g.mult : 0)));
@@ -1388,7 +1401,7 @@ async function harvest(start, spinEvents, end) {
   const runes = kCells("r").filter(([c, r]) => mOf.get(c + "," + r));
   let run = 0;
   for (const [i, [c, r]] of runes.entries()) {
-    run += K[c][r].v * mOf.get(c + "," + r) * bet;
+    run += K[c][r].paid ?? K[c][r].v * mOf.get(c + "," + r) * bet;
     const el = q(reels[c].cells[r], ".rtok"); sound.collect(i);
     if (!RM) el.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(1.4)", offset: .4 }, { transform: "scale(0)", opacity: 0 }], { duration: 380, fill: "forwards" });
     countTo(Math.min(run, total), 180);
@@ -1460,8 +1473,10 @@ async function showFsTrigger(ev) {
 }
 
 // Returns the round's total win in currency
+let roundCapped = false; // the round reaches the max win: its win tiers end on MAX WIN
 async function playRound(events, resumed) {
   clearBoard(); setWin(0);
+  roundCapped = events.some(e => e.type === "wincap");
   say(resumed ? i18n("Runde wird fortgesetzt", "Resuming round") : i18n("Viel Glück!", "Good luck!"));
   vsMult = {}; vsWinner = {};
   let won = 0, rounds = 0, summarised = false;
@@ -1496,8 +1511,11 @@ async function playRound(events, resumed) {
         break;
       case "wincap":
         won = amt(ev.amount); setWin(won);
+        if (bigPlayed) break; // the free spins' win tiers ended on MAX WIN already
         bigPlayed = true; sound.bigWin(true);
-        await banner("MAX WIN", `${MAX_WIN_X.toLocaleString(RGS.lang)}× ${i18n("Einsatz", "bet")}`, 2600);
+        // the win tiers climb through to MAX WIN (they load here: in the base game they were not needed before)
+        preloadWinTiers();
+        if (!(await winTierScreen(won))) await banner("MAX WIN", `${MAX_WIN_X.toLocaleString(RGS.lang)}× ${i18n("Einsatz", "bet")}`, 2600);
         break;
       case "bonusTrigger": {
         baseSummary();

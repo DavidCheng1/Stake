@@ -213,14 +213,17 @@ const RigPlayer = (() => {
       if (shine.width !== w || shine.height !== h) { shine.width = w; shine.height = h; }
       sctx.globalCompositeOperation = "source-over"; sctx.globalAlpha = 1;
       sctx.clearRect(0, 0, w, h);
-      blit(sctx, p, 0, 0, w, h);
+      // with a mask (its frame on the sheet, over the part's box) only the masked pixels shine, e.g. just the letters
+      // of a title painted as a full scene; the part itself is drawn as usual
+      if (e.mask) { blit(ctx, p, bx, by, bw, bh); sctx.drawImage(p.img, ...e.mask, 0, 0, w, h); }
+      else blit(sctx, p, 0, 0, w, h);
       const [x0, y0, x1, y1] = e.rect, ang = (e.angle ?? 25) * Math.PI / 180;
       const cos = Math.cos(ang), sin = Math.sin(ang), len = (x1 - x0) * Math.abs(cos) + (y1 - y0) * Math.abs(sin);
       const c = -.25 + 1.5 * u, hw = (e.width ?? .08) * 2;
       const cx = x0 + cos * c * len, cy = y0 + sin * c * len;
       const g = sctx.createLinearGradient((cx - cos * hw * len - bx) * s, (cy - sin * hw * len - by) * s, (cx + cos * hw * len - bx) * s, (cy + sin * hw * len - by) * s);
       for (const q of [0, .2, .35, .5, .65, .8, 1]) g.addColorStop(q, `rgba(255,255,255,${(e.amount ?? .6) * Math.exp(-(((q - .5) * 4) ** 2))})`);
-      sctx.globalCompositeOperation = "source-atop";
+      sctx.globalCompositeOperation = e.mask ? "source-in" : "source-atop"; // a mask itself never shows, only its light
       sctx.fillStyle = g;
       // only inside the effect's rect (soft), like the region in the sheet renderer
       const m = 8;

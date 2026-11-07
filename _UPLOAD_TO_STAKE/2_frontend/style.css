@@ -285,9 +285,24 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 @media (prefers-reduced-motion: reduce) { .hero-lamp { animation: none; } }
 /* the right part of the dashboard, cut from the background art and laid over the hero so he stands behind it */
 .console-over { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; pointer-events: none;
-  clip-path: polygon(64.45% 100.00%, 64.45% 83.92%, 66.80% 83.22%, 67.38% 80.42%, 70.70% 80.42%, 71.48% 83.57%, 72.66% 83.74%, 73.44% 82.17%, 74.61% 80.77%, 75.98% 79.90%, 76.95% 79.72%, 78.12% 79.90%, 79.49% 80.77%, 80.66% 82.17%, 81.45% 83.74%, 85.55% 84.44%, 85.94% 83.57%, 89.26% 83.92%, 89.45% 94.06%, 90.43% 92.66%, 92.38% 94.76%, 92.38% 100.00%); }
+  /* the dashboard's outline (as a polygon, in % of the game), its edge softened by a few pixels so it does not cut hard
+     across the hero */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1000' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-5%25' y='-5%25' width='110%25' height='120%25'%3E%3CfeGaussianBlur stdDeviation='2.2 3.6'/%3E%3C/filter%3E%3Cpolygon filter='url(%23b)' fill='%23fff' points='644.5,1060 644.5,839.2 668,832.2 673.8,804.2 707,804.2 714.8,835.7 726.6,837.4 734.4,821.7 746.1,807.7 759.8,799 769.5,797.2 781.2,799 794.9,807.7 806.6,821.7 814.5,837.4 855.5,844.4 859.4,835.7 892.6,839.2 894.5,940.6 904.3,926.6 923.8,947.6 923.8,1060'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 1000' preserveAspectRatio='none'%3E%3Cfilter id='b' x='-5%25' y='-5%25' width='110%25' height='120%25'%3E%3CfeGaussianBlur stdDeviation='2.2 3.6'/%3E%3C/filter%3E%3Cpolygon filter='url(%23b)' fill='%23fff' points='644.5,1060 644.5,839.2 668,832.2 673.8,804.2 707,804.2 714.8,835.7 726.6,837.4 734.4,821.7 746.1,807.7 759.8,799 769.5,797.2 781.2,799 794.9,807.7 806.6,821.7 814.5,837.4 855.5,844.4 859.4,835.7 892.6,839.2 894.5,940.6 904.3,926.6 923.8,947.6 923.8,1060'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat; }
 .hero-svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .console-front { position: absolute; left: 68.36%; top: 75.17%; width: 25.39%; height: 24.83%; max-width: none; pointer-events: none; }
+/* ground fog around the hero's feet, in front of the dashboard's right end: two banks drift across (each twice as wide
+   as the fog and repeating every fog width, so moving it by half loops), thicker left and right of his feet */
+.hero-mist { position: absolute; left: 87.6%; top: 82%; width: 12.4%; height: 18%; pointer-events: none; overflow: hidden; /* right of the Info button */
+  background: radial-gradient(20% 80% at 15% 78%, rgb(160 214 196 / .5), transparent), radial-gradient(30% 50% at 48% 96%, rgb(170 222 204 / .5), transparent),
+    radial-gradient(30% 55% at 88% 94%, rgb(160 214 196 / .45), transparent);
+  -webkit-mask-image: linear-gradient(transparent, #000 38%), linear-gradient(90deg, transparent, #000 12%);
+  mask-image: linear-gradient(transparent, #000 38%), linear-gradient(90deg, transparent, #000 12%); -webkit-mask-composite: source-in; mask-composite: intersect; }
+.hero-mist::before, .hero-mist::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 200%; filter: blur(.35cqw);
+  background: radial-gradient(22% 38% at 12% 82%, rgb(190 232 216 / .6), transparent), radial-gradient(26% 42% at 38% 90%, rgb(140 200 180 / .5), transparent),
+    radial-gradient(20% 30% at 64% 74%, rgb(200 238 222 / .38), transparent), radial-gradient(24% 40% at 86% 88%, rgb(150 210 190 / .55), transparent);
+  background-size: 50% 100%; background-repeat: repeat-x; animation: fogDrift 16s linear infinite; }
+.hero-mist::after { animation-duration: 23s; animation-direction: reverse; opacity: .75; top: 12%; }
+@media (prefers-reduced-motion: reduce) { .hero-mist::before, .hero-mist::after { animation: none; } }
 .logo { position: absolute; left: .6%; top: .4%; width: 19%; pointer-events: none; transform-origin: 50% 60%; animation: logoFloat 4.5s ease-in-out infinite; filter: drop-shadow(0 .6cqw .8cqw rgb(0 0 0 / .55)); }
 .logo img { width: 100%; height: auto; display: block; max-width: none; }
 .logo .lg-peek { animation: peek 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
@@ -618,10 +633,11 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .wintier[data-tier="super"] { --c: 63 242 220; --tw: 56cqw; --ta: 7.2cqw; }
 .wintier[data-tier="mega"] { --c: 255 122 42; --tw: 62cqw; --ta: 7.8cqw; }
 .wintier[data-tier="epic"] { --c: 93 255 143; --tw: 70cqw; --ta: 8.4cqw; }
+.wintier[data-tier="max"] { --c: 255 206 84; --tw: 74cqw; --ta: 9cqw; }
 .portrait .wintier { --tw: 44cqw; }
 .portrait .wintier[data-tier="super"] { --tw: 48cqw; }
 .portrait .wintier[data-tier="mega"] { --tw: 52cqw; }
-.portrait .wintier[data-tier="epic"] { --tw: 56cqw; } /* a phone shows only the middle 56% of the game's width */
+.portrait .wintier[data-tier="epic"], .portrait .wintier[data-tier="max"] { --tw: 56cqw; } /* a phone shows only the middle 56% of the game's width */
 .wintier-box { position: relative; width: var(--tw); aspect-ratio: 16 / 9; margin-top: -3cqw; transition: width .45s cubic-bezier(.3, 1.6, .5, 1); }
 .wintier-art { position: absolute; inset: 0; }
 .wintier-art canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
@@ -631,6 +647,10 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   animation: twRays 16s linear infinite; }
 .wintier-amount { font-size: var(--ta); margin-top: -2.4cqw; transition: font-size .45s cubic-bezier(.3, 1.6, .5, 1);
   filter: drop-shadow(0 .35cqw 0 #2a1902) drop-shadow(0 0 1.4cqw rgb(var(--c) / .55)); }
+.portrait .wintier[data-tier="max"] { --ta: 7.4cqw; } /* €25,000.00 fits the phone's narrow view */
+/* the Buy Bonus seal stands over the stage: it steps aside while a win screen is up (it cannot be used then anyway) */
+#buyBtn { transition: transform .1s, filter .2s, opacity .3s; } /* .buy-btn's own, plus the fade */
+body:has(#winTier:not([hidden]), #totalWin:not([hidden])) #buyBtn { opacity: 0; pointer-events: none; }
 .wintier-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 45%, #fff 0, rgb(var(--c) / .7) 30%, transparent 70%); }
 @media (prefers-reduced-motion: reduce) { .wintier-rays { animation: none; } .wintier-box, .wintier-amount { transition: none; } }
 .fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
