@@ -1,0 +1,26 @@
+{
+  "_about": "ElevenLabs Music spec for Ghost Duels (tools/elevenlabs_music.py): one entry per music track. 'file' is where the looped pick goes in the game. Direction: README.md, 'Sound direction v3'.",
+  "defaults": {
+    "model_id": "music_v2_5",
+    "output_format": "mp3_44100_128",
+    "force_instrumental": true
+  },
+  "tracks": [
+    {
+      "name": "base",
+      "role": "Base game background music, loops for as long as the game is open.",
+      "file": "ghost-duels-web/assets/spooky-carousel.mp3",
+      "length_ms": 90000,
+      "takes": 2,
+      "prompt": "Loopable background music for a cozy-spooky pirate ghost slot game, 90 seconds, A minor, 96 BPM, 3/4 waltz feel like a haunted carnival carousel aboard a ghost ship. Lead: music box and celesta playing a simple, memorable minor melody; under it pizzicato strings, a soft accordion or concertina, warm tuba or bass clarinet on the downbeats, light brushed hand drum. Now and then a wordless ghost choir 'ooh' and a soft pipe organ chord, creaking ship wood and faint wind as texture. Mysterious and charming, never scary or tense, no big build-ups, no drops, constant medium-low energy so it can play for an hour without tiring. Leaves room in the upper mids for game chimes. Seamless loop: the end flows back into the beginning. Instrumental only."
+    },
+    {
+      "name": "freespins",
+      "role": "Ghost Crates free spins: the same piece, more excited (the game switches to it for the bonus).",
+      "file": "ghost-duels-web/assets/music-bonus.mp3",
+      "length_ms": 60000,
+      "takes": 2,
+      "prompt": "Loopable bonus-round music for a cozy-spooky pirate ghost slot game, 60 seconds, A minor, 96 BPM: a lively 6/8 sea-shanty feel aboard a ghost ship, fast music-box and celesta runs, accordion and pizzicato strings driving, warm tuba, a wordless ghost choir more present, a low tom pulse. Treasure-hunt anticipation, exciting but still friendly and charming, never scary, no drops. Seamless loop: the end flows back into the beginning. Instrumental only."
+    }
+  ]
+}

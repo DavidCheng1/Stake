@@ -13,3 +13,7 @@ audio-src/elevenlabs/compare.html
 
 # takes painted by tools/imagegen (Gemini); copy the picks the game uses into ghost-duels-web/assets
 imagegen-out/
+
+# ElevenLabs music takes and their listening page (tools/elevenlabs_music.py): local only; the looped pick goes into
+# ghost-duels-web/assets, the file it replaced into audio-src/music-old
+audio-src/elevenlabs/music-takes/
