@@ -127,7 +127,8 @@ def paint(prompt, refs, model, aspect, size):
 # ---------------------------------------------------------------- backdrop removal
 
 def cut(im, bg="magenta"):
-    """Key out a flat backdrop that touches the border; the same colour enclosed by the art stays.
+    """Key out a flat backdrop from the border inwards, plus enclosed pockets of almost exactly the backdrop colour;
+    similar colours enclosed by the art (a pink rune on magenta) stay.
 
     The backdrop is found by flooding from the border through pixels close to the backdrop colour. Along its edge the
     alpha follows the colour distance (anti-aliased outlines stay soft), and the backdrop colour spilled into those
@@ -143,7 +144,8 @@ def cut(im, bg="magenta"):
                 [(0, y) for y in range(0, h, 8)] + [(w - 1, y) for y in range(0, h, 8)]:
         if flood.getpixel((x, y)) == 255:
             ImageDraw.floodfill(flood, (x, y), 128)
-    back = np.asarray(flood) == 128
+    # plus pockets the art encloses that are almost exactly the backdrop (the prompt keeps that colour out of the art)
+    back = (np.asarray(flood) == 128) | (dist < .1)
     band = np.asarray(Image.fromarray((back * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(7))) > 0
     alpha = np.ones((h, w))
     alpha[back] = 0
