@@ -2680,9 +2680,9 @@ const introDone = new Promise(resolve => {
   const close = () => {
     if (closed) return; closed = true;
     removeEventListener("keydown", onKey, true);
-    sound.spin();
-    (RM ? Promise.resolve() : el.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(1.04)" }], { duration: 380, easing: "ease-in", fill: "forwards" }).finished).then(() => el.remove());
     resolve();
+    (RM ? Promise.resolve() : el.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(1.04)" }], { duration: 380, easing: "ease-in", fill: "forwards" }).finished).then(() => el.remove());
+    try { sound.spin(); } catch (err) { console.error(err); } // a sound that fails must not keep the intro up
   };
   // keys only continue: Space must not also start a spin underneath
   const onKey = e => { if (e.key === "Tab") return; e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) close(); };
