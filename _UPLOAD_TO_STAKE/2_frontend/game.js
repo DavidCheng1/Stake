@@ -1143,6 +1143,7 @@ const MULT_POOL = [2, 3, 5]; // only for the rolling plate animation
 const fmtV = v => RGS.formatNumber(v);
 // rune and group values: no zeros that say nothing (1, 0.8, 2.25 instead of 1.00, 0.80), so the figures stay big
 const fmtR = v => Number(v).toLocaleString(RGS.lang, { maximumFractionDigits: 6 });
+const decimals = v => { let k = 0; while (k < 6 && Math.abs(Math.round(v * 10 ** k) - v * 10 ** k) > 1e-6) k++; return k; };
 let K = [];
 const at = (c, r) => K[c]?.[r];
 const kCells = t => { const o = []; K.forEach((col, c) => col.forEach((h, r) => { if (t === null ? !h : h && h.t === t) o.push([c, r]); })); return o; };
@@ -1366,7 +1367,9 @@ async function harvest(start, spinEvents, end) {
     await sleep(500);
     await Promise.all(g.cells.map(([c, r], i) => sleep(i * 40).then(() => {
       const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v * bet, to = from * g.mult, t0 = performance.now();
-      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtR(k < 1 ? RGS.roundMoney(from + (to - from) * k) : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
+      // counts in the steps of its own values (3 -> 6 shows 4 and 5, not 3.47), so no decimals flash up on the way
+      const f = 10 ** Math.max(decimals(from), decimals(to));
+      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtR(k < 1 ? Math.round((from + (to - from) * k) * f) / f : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
     })));
     shake(6, 300);
     await sleep(450);
