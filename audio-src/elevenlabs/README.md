@@ -11,6 +11,50 @@ Musical frame:
 - Wins resolve to **A major**.
 - Palette: haunted bells, ghost choir, pipe organ, bone and wood, chains, thunder, green spectral magic.
 
+## Sound direction v3 (2026-11-08)
+
+Some sounds did not fit together: they came from different "rooms" (reverbs), sat in different keys, and some were much brighter or louder than their neighbours. Version 3 gives every sound and the music one shared direction. It replaces the palette above; the timings and the judge's limits stay as they were. All prompts in `sfx.json` are rewritten in it. `crystal` and `toll` stay, because they need an exact pitch.
+
+### Shared rules (every prompt carries them; the tool sends prompts as written)
+
+A playful-spooky pirate ghost slot game in a torch-lit stone crypt. Hand-made and organic, warm:
+- **Materials:** old wood, bone, iron chains, brass, glass and crystal, soft pipe organ, a distant ghost choir, green spectral shimmer.
+- **Tone:** cartoon-gothic, never horror. Eerie but friendly, no screams, no gore, no harsh noise.
+- **Room:** every sound sits in the same small stone crypt, with a short dark reverb of about 1 second, dry enough to stay clear.
+- **Key:** musical parts are tuned to A (A minor; wins resolve to A major).
+- **Sound limits:** no sub-bass rumble, no piercing highs above about 10 kHz, and soft attacks on anything that plays often.
+- **Takes:** single clean takes, with no background music and no voices with words.
+
+Frequent sounds (click, spin, land, crystal) are short, warm and quiet. Only the rare ones (big win, the devil, the free-spins sting) get to be big.
+
+### Music (for a music generator; not made by tools/elevenlabs_sfx.py)
+
+Base game, replacing `ghost-duels-web/assets/spooky-carousel.mp3`:
+
+```
+Loopable background music for a cozy-spooky pirate ghost slot game, 90 seconds, A minor, 96 BPM, 3/4 waltz
+feel like a haunted carnival carousel aboard a ghost ship. Lead: music box and celesta playing a simple,
+memorable minor melody; under it pizzicato strings, a soft accordion or concertina, warm tuba or bass clarinet
+on the downbeats, light brushed hand drum. Now and then a wordless ghost choir "ooh" and a soft pipe organ
+chord, creaking ship wood and faint wind as texture. Mysterious and charming, never scary or tense, no big
+build-ups, no drops, constant medium-low energy so it can play for an hour without tiring. Leaves room in the
+upper mids for game chimes. Seamless loop: the end flows back into the beginning. Instrumental only.
+```
+
+Free spins (Ghost Crates), the same piece more excited:
+
+```
+Same piece, same key and tempo, but more excited: a lively 6/8 sea-shanty feel, faster music-box runs, the
+accordion and pizzicato driving, the ghost choir more present, a low tom pulse. Treasure-hunt anticipation,
+still friendly. 60-second seamless loop, instrumental.
+```
+
+### Mixing
+
+- **Loudness:** one target for all effects, peaks at −1 dBFS (as `apply` already finishes them).
+- **Music level:** the music sits about 12 dB under the effects and keeps ducking under the big moments, as the game does today.
+- **Balance:** frequent sounds stay well below the rare ones.
+
 ## What gets replaced
 
 | File | Job in the game | Plan |

@@ -4,7 +4,7 @@
     "model_id": "eleven_text_to_sound_v2",
     "output_format": "mp3_44100_128",
     "key": "A minor (game scale: A Phrygian; music: Spooky Carousel, A minor, ~96 BPM); wins resolve to A major",
-    "style": "Haunted Halloween casino: haunted bells, ghost choir, pipe organ, bone and wood, chains, thunder, green spectral magic"
+    "style": "Playful-spooky pirate ghost crypt (direction v3, README.md): hand-made and organic - old wood, bone, iron chains, brass, glass and crystal, soft pipe organ, a distant ghost choir, green spectral shimmer. Cartoon-gothic, never horror: no screams, no harsh noise. One room for everything: a small torch-lit stone crypt, short dark reverb (about 1 s). Musical parts on A (A minor; wins resolve to A major). No sub rumble, no piercing highs, soft attacks on frequent sounds. The tool sends prompts as written, so every prompt carries this palette itself."
   },
   "sounds": [
     {
@@ -22,7 +22,7 @@
         "duration_s": 0.5,
         "prompt_influence": 0.7,
         "takes": 2,
-        "prompt": "Short crisp UI click for a slot game button: a dry wooden tap with a tiny bone rattle and a faint bright tick on top. Clean, satisfying, punchy, starts instantly, no reverb, no tail."
+        "prompt": "Tiny UI click for a playful-spooky pirate ghost slot game: the soft dry tap of an old brass compass lid closing, with a faint wooden tick. Warm, gentle, starts instantly, very short, no reverb, no tail."
       },
       "judge": {
         "max_audible_s": 0.15,
@@ -44,7 +44,10 @@
         "duration_s": 1.2,
         "prompt_influence": 0.55,
         "takes": 6,
-        "prompt": "One-shot slot machine spin: a sharp punchy thud hits instantly at the very first moment, then a fast downward whoosh as the old reels drop away, with a quick bone rattle and a spectral swirl. Short, tight, energetic, Halloween casino, loud, punchy."
+        "prompts": [
+          "Slot spin start for a playful-spooky pirate ghost game: an instant soft wooden thud, then a quick downward whoosh as old bone and wooden tiles tumble away, the creak of a ship's wheel and a faint green spectral swirl. Warm, tight, not bright, short, organic, cartoon-gothic.",
+          "Spin start in a haunted pirate crypt: an instant muffled thump of a wooden crate, a short airy whoosh falling downward and a soft rattle of bones and chain. Warm, round, short, not harsh, made to repeat thousands of times."
+        ]
       },
       "judge": {
         "max_audible_s": 1.1,
@@ -67,7 +70,7 @@
         "duration_s": 0.5,
         "prompt_influence": 0.65,
         "takes": 3,
-        "prompt": "One-shot slot reel stop: a single hard, punchy coffin-lid knock with a crisp bone snap and a tight deep thud. Satisfying, dry, very short, starts instantly, no reverb, no tail."
+        "prompt": "One reel stop in a pirate ghost slot game: a single soft but clear knock of a wooden chest lid on stone with a tiny bone click. Warm mid-range, dry, very short, starts instantly, no reverb, no tail, gentle enough to repeat seven times."
       },
       "judge": {
         "max_audible_s": 0.3,
@@ -91,7 +94,7 @@
         "duration_s": 0.9,
         "prompt_influence": 0.55,
         "takes": 6,
-        "prompt": "Instant heavy impact: a stone tomb slab slams down hard, a deep boom and cracking stone at the very first moment, then a short chain rattle and green magic sparks. Short, punchy, epic, Halloween, loud."
+        "prompt": "A heavy iron-bound treasure chest dropping onto crypt stone: an instant deep wooden thud with a short iron chain rattle and a small puff of green spectral sparks. Punchy, warm, short, small stone room reverb, cartoon-gothic not horror."
       },
       "judge": {
         "max_audible_s": 0.9,
@@ -118,9 +121,9 @@
         "prompt_influence": 0.6,
         "takes": 6,
         "prompts": [
-          "A single haunted bell strike: one clear high glass bell note ringing out with an eerie ghostly shimmer and a cold crypt reverb. One note only, no melody. Spooky, magical, clean.",
-          "One single note on an old cursed music box: a pure ringing bell tone with a faint ghostly whisper in the tail. One note only, no melody. Eerie, delicate, clean.",
-          "A single strike on a haunted glass harmonica: one pure, hollow, ringing note with a wavering ghostly tail. One note only, no melody. Spooky, clean."
+          "One single clear glass bell note, pitch A5, soft attack, warm and round with a gentle ghostly shimmer in the tail, small stone room reverb. One note only, no melody, clean.",
+          "One single note on an old music box, pitch A5: a pure, warm ringing tone with a faint airy shimmer in the tail. One note only, no melody, clean, gentle.",
+          "One single celesta note, pitch A5: soft, round and magical, a short natural ring-out in a small stone room. One note only, no melody, clean."
         ]
       },
       "judge": {
@@ -164,9 +167,8 @@
         "prompt_influence": 0.55,
         "takes": 6,
         "prompts": [
-          "One-shot: a bright juicy pop as winning slot symbols burst, with a quick sparkle shower and a tiny coin jingle. Starts instantly, satisfying, rewarding, short, punchy, casino game.",
-          "One-shot: winning slot symbols shatter like glass into glittering sparkles, a crisp crystal crash with a quick magical shimmer tail. Starts instantly, satisfying, short, punchy.",
-          "One-shot: a ghostly poof of green smoke with a bright magical sparkle burst and a soft upward whoosh. Starts instantly, short, satisfying, Halloween game."
+          "Winning symbols dissolving into green ghost dust: an instant soft pop, a sandy sparkling whoosh and a tiny glass shimmer. Playful-spooky pirate ghost slot game, warm, short, satisfying, not harsh.",
+          "Winning tiles crumbling like old bone and wood into spectral dust: an instant soft crunch with a bright little sparkle tail. Short, satisfying, gentle, cartoon-gothic."
         ]
       },
       "judge": {
@@ -190,8 +192,8 @@
         "prompt_influence": 0.6,
         "takes": 6,
         "prompts": [
-          "Ghostly charge-up: a reversed ghost choir and a reversed haunted bell swelling from silence to a loud peak in one second, green spectral energy crackling and rising in pitch, cut off sharply at its loudest. Creepy, tense, Halloween.",
-          "Spirits gathering: whispering ghost voices and a hollow crypt wind rushing in, rising in pitch and getting louder and louder for one second, a crackle of green ghost fire, ending abruptly at the peak. Eerie, tense, haunted."
+          "Green spectral energy charging up: a soft hum and a whispering ghost choir rising in pitch and getting louder for one second, crackling green sparks, cut off sharply at its loudest. Eerie but playful pirate ghost game, organic, no harsh noise.",
+          "A reversed haunted bell and a soft organ note swelling from silence to a full peak in one second, a rising shimmer of green ghost fire, ending abruptly at its loudest. Tense but friendly, cartoon-gothic."
         ]
       },
       "judge": {
@@ -216,9 +218,9 @@
         "prompt_influence": 0.5,
         "takes": 6,
         "prompts": [
-          "Instant haunted explosion: a coffin lid bursting open with a huge deep boom, a shriek of ghost wind and a short ghost choir hit, rumbling crypt tail. Spooky, powerful, Halloween slot game, loud, punchy.",
-          "Instant impact: a heavy crypt door blasting open, a crack of green spectral lightning and a screaming ghost rushing past, short dark reverb tail. Eerie, powerful, loud, punchy.",
-          "Instant dark magic burst: a deep thunder boom, a shattering tombstone and a gust of howling ghost wind with a low haunted bell, short tail. Spooky, epic, loud, punchy, wide stereo."
+          "Instant magic burst: a coffin lid bursting open with a deep warm boom, a bright crack of green spectral fire and a short ghost choir 'hah', small crypt reverb tail. Powerful but friendly, cartoon-gothic pirate ghost slot game, punchy, no screams.",
+          "Instant impact: an old ship's cannon boom with splintering wood and a swirl of green ghost wind, short dark stone-room tail. Punchy, playful-spooky, not horror.",
+          "Instant dark-magic pop: a deep round thump, old glass shattering into sparkles and a brief rush of ghostly wind, short tail. Exciting, warm, cartoon-gothic, no harsh noise."
         ]
       },
       "judge": {
@@ -244,7 +246,10 @@
         "duration_s": 1.2,
         "prompt_influence": 0.45,
         "takes": 3,
-        "prompt": "One-shot ghost duel clash: two blades collide with a huge metallic impact, a shockwave boom and a short spectral wail, sparks flying, metal ringing out. Aggressive, thrilling Halloween battle arena, loud, punchy, wide stereo."
+        "prompts": [
+          "Two ghostly cutlasses clashing: an instant bright metallic ring with a warm low impact and a short spectral echo, a few sparks. Exciting duel, playful-spooky pirate ghost game, punchy, small stone room reverb, no screams.",
+          "Duel impact: an instant clang of iron on iron with a deep wooden thud underneath and a short shimmering ghostly ring-out. Punchy, exciting, cartoon-gothic, not harsh."
+        ]
       },
       "judge": {
         "max_audible_s": 1.0,
@@ -266,7 +271,10 @@
         "duration_s": 2.4,
         "prompt_influence": 0.5,
         "takes": 2,
-        "prompt": "One-shot knockout: a heavy punchy hit, then a ghost's long descending wail fading away as it is banished. Dramatic and satisfying for the winner, Halloween battle, loud."
+        "prompts": [
+          "Cartoon ghost knocked out: an instant soft punchy hit, then a comic falling 'whooo' ghost wail fading away into the crypt. Funny-spooky, satisfying, not scary, no words.",
+          "A ghost is banished: a warm thump and a long descending ghostly 'oooo' that shrinks away with a little sparkle at the end. Playful, cartoon-gothic, not scary, no words."
+        ]
       },
       "judge": {
         "max_audible_s": 2.3,
@@ -317,9 +325,9 @@
         "prompt_influence": 0.5,
         "takes": 6,
         "prompts": [
-          "Short victory fanfare: an instant brass hit and a bright rising arpeggio of bells into a triumphant major chord, with a sparkle and a coin jingle. Rewarding, exciting slot game win, loud, punchy.",
-          "Duel victory stinger: an instant ringing sword clash, then a triumphant ghost choir shout and a shower of coins and sparkles. Rewarding, exciting, Halloween casino, loud, punchy, wide stereo.",
-          "Win stinger for a slot game: an instant bright chime hit, a fast ascending bell arpeggio and a big major chord with a sparkle tail. Triumphant, rewarding, exciting, loud, punchy, clean."
+          "Duel victory sting in A major: an instant pizzicato and celesta flourish rising into a warm brass and ghost choir 'ahh' chord, with a light shower of coins. Triumphant, playful-spooky pirate ghost slot game, short, clean.",
+          "Short pirate victory sting in A major: a music box run and an accordion chord, a bright bell on top and a sprinkle of gold coins, small stone room. Joyful, cartoon-gothic, clean.",
+          "Win sting in A major: an instant soft brass hit, a quick ascending glass-bell arpeggio and a warm ghost choir chord with a sparkle tail. Rewarding, friendly-spooky, clean."
         ]
       },
       "judge": {
@@ -346,7 +354,10 @@
         "duration_s": 4.5,
         "prompt_influence": 0.5,
         "takes": 6,
-        "prompt": "Starts with an instant massive demonic hit: a brass and choir braam slams at the very first moment, with a deep pipe organ pedal and a monstrous growl, then a ringing gong. Terrifying yet triumphant, epic Halloween jackpot moment, loud, wide stereo."
+        "prompts": [
+          "The devil arrives: an instant low brass and pipe organ sting in A minor, a deep ominous gong and a mischievous breathy chuckle (no words), short dark crypt tail. Big and dramatic but cartoon-gothic, fun, not horror.",
+          "Devilish jackpot sting: an instant warm brass-and-choir hit in A minor, a deep organ pedal, a rolling timpani and a sly laugh made of breath (no words). Dramatic, exciting, playful-spooky, no screams."
+        ]
       },
       "judge": {
         "max_audible_s": 4.3,
@@ -367,11 +378,11 @@
       "gen": {
         "duration_s": 2.5,
         "prompt_influence": 0.55,
-        "takes": 18,
+        "takes": 6,
         "prompts": [
-          "Spooky ghost sting: an instant deep thunder crack, a chilling ghost wail sweeping overhead, a single heavy church bell toll and eerie spectral whispers fading into the crypt. Haunted, dark, short, loud, wide stereo.",
-          "Haunted reveal: an instant crypt door slam, a howling gust of ghostly wind, rattling chains and a spine-chilling ghost choir 'ooooh' rising, ending on a low ominous bell. Spooky, eerie, short, loud.",
-          "Ghost burst: an instant spectral boom, a swirl of screaming ghosts flying past, a creepy music-box chime and an evil cackle echoing in the dark. Spooky, haunted, short, punchy, loud, wide stereo."
+          "Free spins sting in A minor: an instant soft thunder roll, a music box and celesta rising run, a ghost choir 'ooooh' swelling and one deep bell at the end. Mysterious, exciting treasure-hunt feeling, playful-spooky pirate ghost game, short.",
+          "Treasure found: a creaking chest lid opening, an accordion and pizzicato flourish in A minor, a ghost choir 'ooh' and a warm bell at the end, small crypt reverb. Exciting, mysterious, cartoon-gothic, short.",
+          "Haunted bonus reveal: an instant soft boom, a gust of ghostly wind carrying a short glass-harmonica motif in A minor, chains jingling, ending on a low warm bell. Spooky but inviting, short."
         ]
       },
       "judge": {
@@ -400,9 +411,9 @@
         "prompt_influence": 0.45,
         "takes": 6,
         "prompts": [
-          "BIG WIN in a haunted casino: starts instantly with a loud church bell toll and a dark pipe organ chord, then a ghost choir rising in triumph and a cascade of gold coins pouring onto crypt stone. Euphoric but spooky, Halloween, loud, wide stereo.",
-          "Spooky jackpot: an instant thunder crack and a big pipe organ fanfare in A major, haunted bells ringing, gold coins spilling and ghosts cheering with eerie wails. Triumphant, creepy, rewarding, loud, wide stereo.",
-          "Haunted treasure payout: an instant heavy chest lid flung open, a shower of gold coins clinking on stone, a ghost choir swelling and haunted bells chiming, a ghostly pirate laugh at the end. Spooky, rewarding, epic, loud."
+          "Big win in a haunted pirate crypt: starts instantly with a warm pipe organ and brass chord in A major, a ghost choir rising in joy, bells ringing and a cascade of gold coins pouring onto stone. Euphoric, rewarding, spooky-fun, no screams.",
+          "Pirate treasure payout: an instant chest lid flung open, a shower of gold coins on stone, an accordion and music-box fanfare in A major, a ghost choir swelling and a hearty breathy pirate laugh (no words). Joyful, cartoon-gothic.",
+          "Spooky jackpot in A major: an instant bright bell and brass hit, a celesta and pizzicato run climbing, a warm choir chord and coins spilling. Rewarding, euphoric, friendly-spooky."
         ]
       },
       "judge": {
@@ -426,8 +437,8 @@
         "prompt_influence": 0.55,
         "takes": 6,
         "prompts": [
-          "One-shot life lost: a sharp glass crack and a heavy heartbeat thump, then a short descending ghostly whoosh. Tense, dramatic game sound effect, punchy, clear mid-range, not sad.",
-          "One-shot: two quick heartbeat thumps with a bright cracking sound on top and a short eerie whisper fading away. Tense, dramatic, Halloween game, punchy, clear on small speakers."
+          "A life lost: two slow muffled heartbeats in a small stone room with a soft crack of glass and a short descending ghostly sigh. Dramatic but gentle, not sad, warm mid-range, short.",
+          "One-shot: a single heavy heartbeat thump and a soft cracking sound, then a quick falling whisper of wind. Tense but friendly, clear on small speakers, short."
         ]
       },
       "judge": {
@@ -450,7 +461,7 @@
         "duration_s": 1.0,
         "prompt_influence": 0.55,
         "takes": 2,
-        "prompt": "Old stone runes crumbling to dust: a short dry grinding crumble with falling grit and a soft low thud. Quick, light, Halloween."
+        "prompt": "Old rune stones crumbling to dust: a short dry grinding crumble with falling grit and a soft low thud, quiet and understated, small stone room."
       },
       "judge": {
         "max_audible_s": 0.9,
@@ -472,7 +483,7 @@
         "duration_s": 3.0,
         "prompt_influence": 0.5,
         "takes": 5,
-        "prompt": "Ghost pirate challenger entrance that starts instantly with a cannon boom, then a deep ship horn blast, rattling chains, a dark organ chord and a ghostly pirate laugh. Menacing, exciting, Halloween, cinematic, loud, punchy."
+        "prompt": "The skeleton pirate captain challenges: an instant warm cannon boom, a creaking ship and rattling chains, a short dark organ chord and a breathy ghostly pirate laugh (no words). Exciting, cartoon-gothic, small crypt reverb."
       },
       "judge": {
         "max_audible_s": 2.8,
@@ -494,7 +505,10 @@
         "duration_s": 2.2,
         "prompt_influence": 0.45,
         "takes": 3,
-        "prompt": "Banner reveal: a fast rising spectral whoosh into a bright haunted bell hit with a sparkle burst. Exciting announcement, Halloween casino, A major, punchy, loud, wide stereo."
+        "prompts": [
+          "Announcement: a soft rising gust of ghostly wind into a bright bell and celesta hit in A major with a little green sparkle. Inviting, playful-spooky, short.",
+          "A rolled parchment banner unfurling with a soft whoosh, ending on a warm music-box and bell chord in A major. Friendly, magical, short."
+        ]
       },
       "judge": {
         "max_audible_s": 2.0,
@@ -518,9 +532,8 @@
         "prompt_influence": 0.55,
         "takes": 6,
         "prompts": [
-          "Slot scatter symbol lands: an instant soft thump with one clear magical bell note, celesta and glockenspiel on the same pitch, a quick upward sparkle and a short ringing tail. Bright, rewarding, anticipation, Halloween slot game, musical, clean.",
-          "Special bonus symbol appears: an instant music box and harp pluck on one note over a deep soft boom, a ghostly choir 'ah' blooming for half a second and a glitter sparkle, short tail. Magical, mysterious, rewarding, musical, clean.",
-          "Magical scatter symbol landing: an instant crystal bell strike on a single clear note with a low sub thump and a rising fairy-dust shimmer, then a short glowing ring-out. Exciting, special, casino game, clean, one note."
+          "Bonus symbol lands: an instant soft wooden thump with one clear magical bell note on A, celesta on the same pitch, a quick upward green sparkle and a short ring-out. Bright but warm, rewarding, musical, clean, not harsh in the highs.",
+          "Special symbol appears: an instant music box and harp pluck on one note (A) over a deep soft boom, a ghost choir 'ah' blooming for half a second and a glitter sparkle. Magical, mysterious, rewarding, clean."
         ]
       },
       "judge": {
@@ -552,8 +565,8 @@
         "prompt_influence": 0.5,
         "takes": 6,
         "prompts": [
-          "Suspense riser for a slot game: quiet at first and growing louder and higher for two and a half seconds, a heartbeat speeding up, rising tremolo strings and a reverse cymbal swell, then a sudden stop and a short dark tail. Edge-of-your-seat anticipation.",
-          "Tension build-up: a fast ticking clock and a pulsing heartbeat speeding up over a rising synth drone and a reverse whoosh, getting louder until a sudden cut at two and a half seconds. Anticipation, casino game, Halloween."
+          "Suspense riser for a pirate ghost slot game: quiet at first and growing louder and higher for two and a half seconds, pizzicato strings speeding up, a soft heartbeat and a rising glass-harmonica shimmer, then a sudden stop and a short dark tail. Anticipation, eerie but playful.",
+          "Tension build-up: a ticking pocket watch and an accordion tremolo rising in pitch and loudness for two and a half seconds over a soft ghostly choir swell, then a sudden cut and a short crypt tail. Exciting, mysterious, cartoon-gothic."
         ]
       },
       "judge": {
