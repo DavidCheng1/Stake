@@ -100,28 +100,36 @@ def find_images(node, out):
 
 
 def paint(prompt, refs, model, aspect, size):
-    """One picture. Tries the Interactions API (the current one) and falls back to generateContent."""
+    """One picture. generateContent first (it answers with PNG, best for a clean cut); the Interactions API, which
+    only answers with JPEG, when that fails. A dropped connection is tried once more."""
     parts = [ref_part(p) for p in refs]
-    body = {"model": model,
-            "input": [{"type": "text", "text": prompt}] + [{"type": "image", "mime_type": "image/png", "data": d} for d in parts],
-            "response_format": {"type": "image", "mime_type": "image/png", "aspect_ratio": aspect, "image_size": size}}
-    try:
-        res = post(f"{API}/interactions", body)
-    except RuntimeError as e:
-        if not str(e).startswith(("HTTP 404", "HTTP 400")):
-            raise
-        first = e
-        body = {"contents": [{"parts": [{"text": prompt}] + [{"inline_data": {"mime_type": "image/png", "data": d}} for d in parts]}],
-                "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": aspect, "imageSize": size}}}
-        try:
-            res = post(f"{API}/models/{model}:generateContent", body)
-        except RuntimeError as e2:
-            raise RuntimeError(f"interactions: {first}\ngenerateContent: {e2}") from None
-    found = []
-    find_images(res, found)
-    if not found:
-        raise RuntimeError("no picture in the answer: " + json.dumps(res)[:1500])
-    return Image.open(io.BytesIO(base64.b64decode(found[-1]))).convert("RGB")
+    calls = [
+        (f"{API}/models/{model}:generateContent",
+         {"contents": [{"parts": [{"text": prompt}] + [{"inline_data": {"mime_type": "image/png", "data": d}} for d in parts]}],
+          "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": aspect, "imageSize": size}}}),
+        (f"{API}/interactions",
+         {"model": model,
+          "input": [{"type": "text", "text": prompt}] + [{"type": "image", "mime_type": "image/png", "data": d} for d in parts],
+          "response_format": {"type": "image", "mime_type": "image/jpeg", "aspect_ratio": aspect, "image_size": size}}),
+    ]
+    errors = []
+    for url, body in calls:
+        for attempt in range(2):
+            try:
+                res = post(url, body)
+            except (ConnectionError, TimeoutError, urllib.error.URLError) as e:
+                errors.append(f"{url.rsplit('/', 1)[-1]}: {e}")
+                continue
+            except RuntimeError as e:
+                errors.append(f"{url.rsplit('/', 1)[-1]}: {e}")
+                break
+            found = []
+            find_images(res, found)
+            if found:
+                return Image.open(io.BytesIO(base64.b64decode(found[-1]))).convert("RGB")
+            errors.append("no picture in the answer: " + json.dumps(res)[:800])
+            break
+    raise RuntimeError(" | ".join(errors))
 
 
 # ---------------------------------------------------------------- backdrop removal
