@@ -10,3 +10,6 @@ sprites-out/
 # the original sounds in audio-src/sfx-old, the prompt and settings of each used take in audio-src/elevenlabs/applied.json
 audio-src/elevenlabs/takes/
 audio-src/elevenlabs/compare.html
+
+# takes painted by tools/imagegen (Gemini); copy the picks the game uses into ghost-duels-web/assets
+imagegen-out/
