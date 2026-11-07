@@ -618,10 +618,11 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .wintier[data-tier="super"] { --c: 63 242 220; --tw: 56cqw; --ta: 7.2cqw; }
 .wintier[data-tier="mega"] { --c: 255 122 42; --tw: 62cqw; --ta: 7.8cqw; }
 .wintier[data-tier="epic"] { --c: 93 255 143; --tw: 70cqw; --ta: 8.4cqw; }
+.wintier[data-tier="max"] { --c: 255 206 84; --tw: 74cqw; --ta: 9cqw; }
 .portrait .wintier { --tw: 44cqw; }
 .portrait .wintier[data-tier="super"] { --tw: 48cqw; }
 .portrait .wintier[data-tier="mega"] { --tw: 52cqw; }
-.portrait .wintier[data-tier="epic"] { --tw: 56cqw; } /* a phone shows only the middle 56% of the game's width */
+.portrait .wintier[data-tier="epic"], .portrait .wintier[data-tier="max"] { --tw: 56cqw; } /* a phone shows only the middle 56% of the game's width */
 .wintier-box { position: relative; width: var(--tw); aspect-ratio: 16 / 9; margin-top: -3cqw; transition: width .45s cubic-bezier(.3, 1.6, .5, 1); }
 .wintier-art { position: absolute; inset: 0; }
 .wintier-art canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
@@ -631,6 +632,10 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   animation: twRays 16s linear infinite; }
 .wintier-amount { font-size: var(--ta); margin-top: -2.4cqw; transition: font-size .45s cubic-bezier(.3, 1.6, .5, 1);
   filter: drop-shadow(0 .35cqw 0 #2a1902) drop-shadow(0 0 1.4cqw rgb(var(--c) / .55)); }
+.portrait .wintier[data-tier="max"] { --ta: 7.4cqw; } /* €25,000.00 fits the phone's narrow view */
+/* the Buy Bonus seal stands over the stage: it steps aside while a win screen is up (it cannot be used then anyway) */
+#buyBtn { transition: transform .1s, filter .2s, opacity .3s; } /* .buy-btn's own, plus the fade */
+body:has(#winTier:not([hidden]), #totalWin:not([hidden])) #buyBtn { opacity: 0; pointer-events: none; }
 .wintier-flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 45%, #fff 0, rgb(var(--c) / .7) 30%, transparent 70%); }
 @media (prefers-reduced-motion: reduce) { .wintier-rays { animation: none; } .wintier-box, .wintier-amount { transition: none; } }
 .fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }

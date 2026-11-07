@@ -1004,6 +1004,7 @@ const WIN_TIERS = [
   { key: "super", x: 50, rgb: "63 242 220" },
   { key: "mega", x: 150, rgb: "255 122 42" },
   { key: "epic", x: 500, rgb: "93 255 143" },
+  { key: "max", x: MAX_WIN_X, rgb: "255 206 84" }, // only at the cap: lands after EPIC WIN and holds the amount
 ];
 const tierRigs = {};
 function preloadWinTiers() {
@@ -1012,7 +1013,8 @@ function preloadWinTiers() {
 }
 // returns false when the win is below the first tier or the art is missing (then the Total Win counts it up itself)
 async function winTierScreen(total) {
-  const top = WIN_TIERS.findLastIndex(t => total >= t.x * bet);
+  if (roundCapped) total = Math.max(total, MAX_WIN_X * bet); // the round hit the cap (a base win before the free spins makes up the rest)
+  const top = WIN_TIERS.findLastIndex(t => total >= t.x * bet * (1 - 1e-9)); // a capped total may round a hair under
   if (top < 0) return false;
   preloadWinTiers();
   const rigs = await Promise.all(WIN_TIERS.slice(0, top + 1).map(t => tierRigs[t.key]));
@@ -1049,12 +1051,13 @@ async function winTierScreen(total) {
   // counts from a to b: an even pace into the next tier, slowing down into the total; it follows the pace, so a skip
   // finishes it at once
   const count = (a, b, last) => new Promise(res => {
+    if (a >= b) { sleep(2600).then(res); return; } // MAX WIN: the amount is there already, the title holds it
     const dur = last ? 2600 : 1900;
     let k = 0, prev = performance.now(), tick = 0;
     (function step(t) {
       k = Math.min(1, k + Math.max(0, t - prev) * pace() / dur); prev = Math.max(prev, t);
       const e = last ? 1 - Math.pow(1 - k, 3) : k;
-      amtEl.textContent = money(k < 1 ? RGS.roundMoney(a + (b - a) * e) : b);
+      amtEl.textContent = money(k < 1 ? countStep(a + (b - a) * e, a, b) : b);
       if (k < 1 && t - tick > 85) { tick = t; sound.tick(); }
       if (k < 1) requestAnimationFrame(step); else res();
     })(prev);
@@ -1460,8 +1463,10 @@ async function showFsTrigger(ev) {
 }
 
 // Returns the round's total win in currency
+let roundCapped = false; // the round reaches the max win: its win tiers end on MAX WIN
 async function playRound(events, resumed) {
   clearBoard(); setWin(0);
+  roundCapped = events.some(e => e.type === "wincap");
   say(resumed ? i18n("Runde wird fortgesetzt", "Resuming round") : i18n("Viel Glück!", "Good luck!"));
   vsMult = {}; vsWinner = {};
   let won = 0, rounds = 0, summarised = false;
@@ -1496,8 +1501,11 @@ async function playRound(events, resumed) {
         break;
       case "wincap":
         won = amt(ev.amount); setWin(won);
+        if (bigPlayed) break; // the free spins' win tiers ended on MAX WIN already
         bigPlayed = true; sound.bigWin(true);
-        await banner("MAX WIN", `${MAX_WIN_X.toLocaleString(RGS.lang)}× ${i18n("Einsatz", "bet")}`, 2600);
+        // the win tiers climb through to MAX WIN (they load here: in the base game they were not needed before)
+        preloadWinTiers();
+        if (!(await winTierScreen(won))) await banner("MAX WIN", `${MAX_WIN_X.toLocaleString(RGS.lang)}× ${i18n("Einsatz", "bet")}`, 2600);
         break;
       case "bonusTrigger": {
         baseSummary();

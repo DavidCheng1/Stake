@@ -18,6 +18,9 @@ rest pose on the game's dark backdrop and on white, to check the cut) to SPRITE_
 4. Light: the tier's flames flicker, the brightest spots pulse, and each picture's own lights (eyes, moon, lanterns,
    lightning, cannon fire) are set in TIERS; a white flash when it lands, a shine across the letters and sparkles.
    All drawn additively by the player.
+
+Afterwards run tools/sprites/win_tiers_motion.py split: it splits each title into a moving back and a still front and
+gives EPIC WIN its soft edge (MAX WIN is made by that script from a picture painted with tools/imagegen).
 """
 
 import argparse
