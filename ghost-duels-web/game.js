@@ -1149,9 +1149,9 @@ const kCells = t => { const o = []; K.forEach((col, c) => col.forEach((h, r) => 
 
 function makeCrate(id, mult) {
   const el = div("crate"); el.style.setProperty("--c", SYM[id].rgb);
-  const front = div("cr-front"), plate = div("cr-plate");
-  plate.textContent = "×" + mult; // brackets and tag sit over the coffin front, so its shape does not clip them
-  el.append(div("cr-glow"), div("cr-back"), makeSym(id), front, div("cr-corner l"), div("cr-corner r"), plate); return el;
+  const plate = div("cr-plate"); plate.textContent = "×" + mult;
+  // painted frame, fog behind the character, the character, a thin fog in front of him, the multiplier
+  el.append(div("cr-glow"), div("cr-front"), div("cr-back"), makeSym(id), div("cr-fog"), plate); return el;
 }
 function makeRune(v, id) {
   const el = div("rtok"); el.style.setProperty("--c", SYM[id].rgb);
