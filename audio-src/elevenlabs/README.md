@@ -140,6 +140,11 @@ ElevenLabs gives a different result every time, so a deleted take can't be made 
 
 ## Replacement log
 
+**v3 (2026-11-08):** 19 sounds from the sound-direction-v3 prompts, 120 takes in two rounds, about 2,000 credits.
+- **Kept:** `sting` (no take came out clearly in A major; an off-key sting is what v3 is meant to remove), `toll` (the designed bell, exactly A2) and `crystal`.
+- **Licence:** these takes were generated on the **ElevenLabs free plan**. The free plan is generally for non-commercial use; check the licence before release, and generate again on a paid plan if needed.
+- **Music:** the Music API needs a paid plan, so `music.json` is not generated yet.
+
 | File | Version | Replaced with | Why this take | Backup |
 | --- | --- | --- | --- | --- |
 | `click` | v2 | `click_t1.mp3` (0.11 s): "Short crisp UI click for a slot game button: a dry wooden tap with a tiny bone rattle and …" | Crisp tap plus a bright tick, more defined than the soft synth click. (score 100, fits its job) | `audio-src/sfx-old/click_old.mp3` |
@@ -172,6 +177,26 @@ ElevenLabs gives a different result every time, so a deleted take can't be made 
 | `fanfare` | v4 | `fanfare_t6.mp3` (4.39 s): "Monster party sting: an instant thunder clap and a mischievous minor-key organ riff, a bon…" | (score 100, fits its job) | `audio-src/sfx-old/fanfare_old3.mp3` |
 | `fanfare` | v5 | `fanfare_t12.mp3` (4.28 s): "Gothic horror win: an instant thunder boom, a sinister harpsichord and pipe organ riff in …" | (score ?, fits its job) | `audio-src/sfx-old/fanfare_old4.mp3` |
 | `fanfare` | v6 | `fanfare_t16.mp3` (2.0 s): "Spooky ghost sting: an instant deep thunder crack, a chilling ghost wail sweeping overhead…" | (score ?, fits its job) | `audio-src/sfx-old/fanfare_old5.mp3` |
+| `spin` | v3 | `spin_t2.mp3` (0.93 s): "Spin start in a haunted pirate crypt: an instant muffled thump of a wooden crate, a short …" | (score 100, fits its job) | `audio-src/sfx-old/spin_old2.mp3` |
+| `land` | v3 | `land_t1.mp3` (0.28 s): "One reel stop in a pirate ghost slot game: a single soft but clear knock of a wooden chest…" | (score 100, fits its job) | `audio-src/sfx-old/land_old2.mp3` |
+| `land_heavy` | v3 | `land_heavy_t1.mp3` (0.48 s): "A heavy iron-bound treasure chest dropping onto crypt stone: an instant deep wooden thud w…" | (score 100, fits its job) | `audio-src/sfx-old/land_heavy_old2.mp3` |
+| `chime` | v3 | `chime_t2.mp3` (0.98 s): "One single note on an old music box, pitch A5: a pure, warm ringing tone with a faint airy…" | (score 100, fits its job) | `audio-src/sfx-old/chime_old2.mp3` |
+| `tumble` | v2 | `tumble_t1.mp3` (0.6 s): "Winning symbols dissolving into green ghost dust: an instant soft pop, a sandy sparkling w…" | (score 100, fits its job) | `audio-src/sfx-old/tumble_old.mp3` |
+| `charge` | v5 | `charge_t3.mp3` (0.96 s): "Green spectral energy charging up: a soft hum and a whispering ghost choir rising in pitch…" | (score 100, fits its job) | `audio-src/sfx-old/charge_old4.mp3` |
+| `burst` | v5 | `burst_t3.mp3` (0.59 s): "Instant dark-magic pop: a deep round thump, old glass shattering into sparkles and a brief…" | (score 100, fits its job) | `audio-src/sfx-old/burst_old4.mp3` |
+| `clash` | v3 | `clash_t2.mp3` (0.58 s): "Duel impact: an instant clang of iron on iron with a deep wooden thud underneath and a sho…" | (score 100, fits its job) | `audio-src/sfx-old/clash_old2.mp3` |
+| `sting_devil` | v3 | `sting_devil_t2.mp3` (4.33 s): "Devilish jackpot sting: an instant warm brass-and-choir hit in A minor, a deep organ pedal…" | (score 100, fits its job) | `audio-src/sfx-old/sting_devil_old2.mp3` |
+| `bigwin` | v5 | `bigwin_t6.mp3` (3.2 s): "Spooky jackpot in A major: an instant bright bell and brass hit, a celesta and pizzicato r…" | (score 100, fits its job) | `audio-src/sfx-old/bigwin_old3.mp3` |
+| `crumble` | v3 | `crumble_t1.mp3` (0.88 s): "Old rune stones crumbling to dust: a short dry grinding crumble with falling grit and a so…" | (score 92: long: 1.0 s audible (fits 0.9 s, gets faded)) | `audio-src/sfx-old/crumble_old2.mp3` |
+| `challenger` | v3 | `challenger_t1.mp3` (2.69 s): "The skeleton pirate captain challenges: an instant warm cannon boom, a creaking ship and r…" | (score 100, fits its job) | `audio-src/sfx-old/challenger_old2.mp3` |
+| `banner` | v3 | `banner_t2.mp3` (1.55 s): "A rolled parchment banner unfurling with a soft whoosh, ending on a warm music-box and bel…" | (score 100, fits its job) | `audio-src/sfx-old/banner_old2.mp3` |
+| `fs_land` | v3 | `fs_land_t1.mp3` (0.93 s): "Bonus symbol lands: an instant soft wooden thump with one clear magical bell note on A, ce…" | (score 100, fits its job) | `audio-src/sfx-old/fs_land_old2.mp3` |
+| `edge` | v3 | `edge_t1.mp3` (2.86 s): "Suspense riser for a pirate ghost slot game: quiet at first and growing louder and higher …" | (score 100, fits its job) | `audio-src/sfx-old/edge_old2.mp3` |
+| `click` | v3 | `click_t6.mp3` (0.07 s): "Tiny UI click: an instant sharp tap of a brass compass lid snapping shut with a faint wood…" | (score 92: long: 0.48 s audible (fits 0.15 s, gets faded)) | `audio-src/sfx-old/click_old2.mp3` |
+| `wail` | v3 | `wail_t3.mp3` (2.32 s): "Cartoon ghost knocked out: starts instantly with a hard punchy hit at the very first momen…" | (score 100, fits its job) | `audio-src/sfx-old/wail_old2.mp3` |
+| `heartbeat` | v2 | `heartbeat_t10.mp3` (0.8 s): "Two quick knocks on a wooden coffin lid like a heartbeat, crisp mid-range, a small glass c…" | (score 100: 292 ms silence before it (trimmed when applied)) | `audio-src/sfx-old/heartbeat_old.mp3` |
+| `fanfare` | v7 | `fanfare_t9.mp3` (1.29 s): "Free spins sting with root note A, in A minor: starts instantly with a soft thunder boom, …" | (score 100, fits its job) | `audio-src/sfx-old/fanfare_old6.mp3` |
+| `land` | v4 | `land_t4.mp3` (0.1 s): "One single clean wooden 'tock': a soft, round knock of a small wooden block, one hit only,…" | Cleaner: one round, slightly tonal wooden tock instead of a knock plus a click; all in the phone range, almost no noise (score 80: slow attack 20 ms (max 10)) | `audio-src/sfx-old/land_old3.mp3` |
 
 v1 is the original designed sound (`tools/sound_design.py`; `fs_land` is an ElevenLabs sample processed there). v2 is the first ElevenLabs replacement.
 

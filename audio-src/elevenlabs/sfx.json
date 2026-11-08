@@ -21,8 +21,11 @@
       "gen": {
         "duration_s": 0.5,
         "prompt_influence": 0.7,
-        "takes": 2,
-        "prompt": "Tiny UI click for a playful-spooky pirate ghost slot game: the soft dry tap of an old brass compass lid closing, with a faint wooden tick. Warm, gentle, starts instantly, very short, no reverb, no tail."
+        "takes": 6,
+        "prompts": [
+          "Tiny UI click: an instant sharp tap of a brass compass lid snapping shut with a faint wooden tick. A hard transient at the very first millisecond, extremely short, dry, no fade-in, no reverb, no tail.",
+          "Tiny UI click: an instant sharp tap of a brass compass lid snapping shut with a faint wooden tick. A hard transient at the very first millisecond, extremely short, dry, no fade-in, no reverb, no tail."
+        ]
       },
       "judge": {
         "max_audible_s": 0.15,
@@ -43,10 +46,12 @@
       "gen": {
         "duration_s": 1.2,
         "prompt_influence": 0.55,
-        "takes": 6,
+        "takes": 12,
         "prompts": [
           "Slot spin start for a playful-spooky pirate ghost game: an instant soft wooden thud, then a quick downward whoosh as old bone and wooden tiles tumble away, the creak of a ship's wheel and a faint green spectral swirl. Warm, tight, not bright, short, organic, cartoon-gothic.",
-          "Spin start in a haunted pirate crypt: an instant muffled thump of a wooden crate, a short airy whoosh falling downward and a soft rattle of bones and chain. Warm, round, short, not harsh, made to repeat thousands of times."
+          "Spin start in a haunted pirate crypt: an instant muffled thump of a wooden crate, a short airy whoosh falling downward and a soft rattle of bones and chain. Warm, round, short, not harsh, made to repeat thousands of times.",
+          "Clean, minimal slot spin: a single soft wooden click at the very first moment, then one smooth airy whoosh sweeping downward. Crisp and clear, no rattles, no crackle, no rumble, nothing muddy, about half a second, dry with a tiny stone-room reverb.",
+          "Clean spin start for a pirate ghost slot game: one crisp, light swish like a ship's sail snapping, with a tiny wooden tick on top. Simple, clear, airy, no low boom, no noise, very short, gentle enough to repeat thousands of times."
         ]
       },
       "judge": {
@@ -69,14 +74,18 @@
       "gen": {
         "duration_s": 0.5,
         "prompt_influence": 0.65,
-        "takes": 3,
-        "prompt": "One reel stop in a pirate ghost slot game: a single soft but clear knock of a wooden chest lid on stone with a tiny bone click. Warm mid-range, dry, very short, starts instantly, no reverb, no tail, gentle enough to repeat seven times."
+        "takes": 9,
+        "prompts": [
+          "One single clean wooden 'tock': a soft, round knock of a small wooden block, one hit only, no second click, no rattle, no noise. Warm mid-range, slightly tonal like a woodblock, very short, dry, starts instantly. A slot symbol settling into place.",
+          "A slot symbol landing: one soft, rounded knock of a wooden chest lid closing gently, a single clean hit with a warm hollow body. No clicks, no rattles, no crackle, very short, dry, starts instantly, pleasant to hear seven times in a row.",
+          "One muted wooden tap like a soft marimba bar hit with a felt mallet: a single clean, round, warm knock, very short, dry, starts instantly. Nothing else, no click, no noise."
+        ]
       },
       "judge": {
         "max_audible_s": 0.3,
         "max_attack_ms": 10,
         "single_hit": true,
-        "note": "needs mid-range knock, phone speakers drop the low thud"
+        "note": "clean: one round knock, no second click (v3 round 2); needs mid-range, phone speakers drop the low thud"
       }
     },
     {
@@ -270,10 +279,10 @@
       "gen": {
         "duration_s": 2.4,
         "prompt_influence": 0.5,
-        "takes": 2,
+        "takes": 6,
         "prompts": [
-          "Cartoon ghost knocked out: an instant soft punchy hit, then a comic falling 'whooo' ghost wail fading away into the crypt. Funny-spooky, satisfying, not scary, no words.",
-          "A ghost is banished: a warm thump and a long descending ghostly 'oooo' that shrinks away with a little sparkle at the end. Playful, cartoon-gothic, not scary, no words."
+          "Cartoon ghost knocked out: starts instantly with a hard punchy hit at the very first moment, then a comic falling 'whooo' ghost wail fading away into the crypt. Funny-spooky, satisfying, not scary, no words.",
+          "Instant punchy thump at the very first moment, then a ghost's long descending 'oooo' shrinking away with a little sparkle at the end. Playful, cartoon-gothic, not scary, no words."
         ]
       },
       "judge": {
@@ -323,11 +332,10 @@
       "gen": {
         "duration_s": 3.0,
         "prompt_influence": 0.5,
-        "takes": 6,
+        "takes": 10,
         "prompts": [
-          "Duel victory sting in A major: an instant pizzicato and celesta flourish rising into a warm brass and ghost choir 'ahh' chord, with a light shower of coins. Triumphant, playful-spooky pirate ghost slot game, short, clean.",
-          "Short pirate victory sting in A major: a music box run and an accordion chord, a bright bell on top and a sprinkle of gold coins, small stone room. Joyful, cartoon-gothic, clean.",
-          "Win sting in A major: an instant soft brass hit, a quick ascending glass-bell arpeggio and a warm ghost choir chord with a sparkle tail. Rewarding, friendly-spooky, clean."
+          "Victory sting with root note A, in A major: an instant brass hit on an A major chord, a celesta arpeggio A, C sharp, E, A, a warm ghost choir 'ahh' on A major and a sprinkle of coins. Triumphant, playful, short, clean.",
+          "Short win sting in A major, root note A: an instant bright bell on A, a music box run up the A major chord and a warm accordion and choir chord of A major, coins sparkling. Joyful, cartoon-gothic, clean."
         ]
       },
       "judge": {
@@ -378,11 +386,10 @@
       "gen": {
         "duration_s": 2.5,
         "prompt_influence": 0.55,
-        "takes": 6,
+        "takes": 10,
         "prompts": [
-          "Free spins sting in A minor: an instant soft thunder roll, a music box and celesta rising run, a ghost choir 'ooooh' swelling and one deep bell at the end. Mysterious, exciting treasure-hunt feeling, playful-spooky pirate ghost game, short.",
-          "Treasure found: a creaking chest lid opening, an accordion and pizzicato flourish in A minor, a ghost choir 'ooh' and a warm bell at the end, small crypt reverb. Exciting, mysterious, cartoon-gothic, short.",
-          "Haunted bonus reveal: an instant soft boom, a gust of ghostly wind carrying a short glass-harmonica motif in A minor, chains jingling, ending on a low warm bell. Spooky but inviting, short."
+          "Free spins sting with root note A, in A minor: starts instantly with a soft thunder boom, a music box and celesta run ending on a low A, a ghost choir 'ooh' on an A minor chord and one deep bell on A. Mysterious, exciting, short.",
+          "Bonus reveal in A minor, root note A: an instant creaking chest lid and soft boom, an accordion and pizzicato flourish landing on an A minor chord, a ghost choir 'ooh' and a warm low bell on A. Spooky but inviting, short."
         ]
       },
       "judge": {
@@ -435,10 +442,10 @@
       "gen": {
         "duration_s": 1.6,
         "prompt_influence": 0.55,
-        "takes": 6,
+        "takes": 10,
         "prompts": [
-          "A life lost: two slow muffled heartbeats in a small stone room with a soft crack of glass and a short descending ghostly sigh. Dramatic but gentle, not sad, warm mid-range, short.",
-          "One-shot: a single heavy heartbeat thump and a soft cracking sound, then a quick falling whisper of wind. Tense but friendly, clear on small speakers, short."
+          "A life lost: two heartbeat knocks played as a mid-range wooden drum thump with a clear knock, bright enough for phone speakers, a soft crack of glass and a short descending airy whoosh. Dramatic but gentle, not sad, short.",
+          "Two quick knocks on a wooden coffin lid like a heartbeat, crisp mid-range, a small glass crack and a falling whisper. Clear on small speakers, short, not sad."
         ]
       },
       "judge": {
