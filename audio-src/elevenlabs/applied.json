@@ -24,14 +24,14 @@
     "date": "2026-11-08"
   },
   "clash": {
-    "take": "clash_t2.mp3",
-    "version": 3,
+    "take": "restored from 39c4def",
+    "version": 4,
     "backup": "clash_old.mp3",
     "date": "2026-11-08"
   },
   "wail": {
-    "take": "wail_t3.mp3",
-    "version": 3,
+    "take": "restored from 39c4def",
+    "version": 4,
     "backup": "wail_old.mp3",
     "date": "2026-11-08"
   },
@@ -60,20 +60,20 @@
     "date": "2026-11-08"
   },
   "challenger": {
-    "take": "challenger_t1.mp3",
-    "version": 3,
+    "take": "restored from 39c4def",
+    "version": 4,
     "backup": "challenger_old.mp3",
     "date": "2026-11-08"
   },
   "charge": {
-    "take": "charge_t3.mp3",
-    "version": 5,
+    "take": "restored from 39c4def",
+    "version": 6,
     "backup": "charge_old.mp3",
     "date": "2026-11-08"
   },
   "burst": {
-    "take": "burst_t3.mp3",
-    "version": 5,
+    "take": "restored from 39c4def",
+    "version": 6,
     "backup": "burst_old.mp3",
     "date": "2026-11-08"
   },
@@ -129,6 +129,12 @@
     "take": "heartbeat_t10.mp3",
     "version": 2,
     "backup": "heartbeat_old.mp3",
+    "date": "2026-11-08"
+  },
+  "totalwin": {
+    "take": "totalwin_t3.mp3",
+    "version": 1,
+    "backup": null,
     "date": "2026-11-08"
   }
 }

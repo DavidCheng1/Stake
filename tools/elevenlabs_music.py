@@ -45,6 +45,17 @@ def spec():
 
 
 def compose(track, defaults):
+    if track.get("engine") == "sound-generation":  # the sound-effects model: seamless loops up to 30 s, on any plan
+        body = {"text": track["prompt"], "duration_seconds": track["length_ms"] / 1000, "loop": True,
+                "prompt_influence": track.get("prompt_influence", .5), "model_id": track["model_id"]}
+        query = "?" + urllib.parse.urlencode({"output_format": track.get("output_format", defaults["output_format"])})
+        req = urllib.request.Request(API + "/sound-generation" + query, data=json.dumps(body).encode(), method="POST",
+                                     headers={"xi-api-key": api_key(), "Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                return r.read(), body
+        except urllib.error.HTTPError as e:
+            raise RuntimeError(f"HTTP {e.code}: {e.read().decode(errors='replace')[:800]}") from None
     body = {"prompt": track["prompt"], "music_length_ms": track["length_ms"],
             "model_id": track.get("model_id", defaults["model_id"]),
             "force_instrumental": track.get("force_instrumental", defaults.get("force_instrumental", True))}
@@ -116,24 +127,58 @@ def rms(x):
     return float(np.sqrt(np.mean(x ** 2)))
 
 
+def limit(x, ceil, ms=10):
+    """Peaks down to ceil with a smooth gain that starts ms/2 before each peak and lets go ms/2 after it. The file is
+    one period of a loop, so the gain wraps around its ends."""
+    w = max(2, int(SR * ms / 1000)) | 1
+    need = np.minimum(1, ceil / np.maximum(np.abs(x).max(0), 1e-9)).astype(np.float64)  # 64-bit: the running sum
+    # below spans a million samples
+    pad = np.concatenate([need[-w:], need, need[:w]])
+    low = np.lib.stride_tricks.sliding_window_view(pad, w).min(axis=1)  # the dip around each peak, w wide
+    c = np.concatenate([[0], np.cumsum(low)])
+    h = w // 2 + 1  # then smoothed over half that: still under what each peak needs
+    smooth = (c[h:] - c[:-h]) / h
+    off = w - (w // 2) - (h // 2)
+    return x * smooth[off:off + x.shape[1]].astype(np.float32)
+
+
 def loop(name, take):
     _, tracks = spec()
     t = tracks[name]
     src = os.path.join(TAKES, name, take if take.endswith(".mp3") else f"take-{int(take.lstrip('t')):02d}.mp3")
     x = decode(src)
-    # trim silence at both ends (the game loops between the first and last audible sample anyway)
-    loud = np.nonzero(np.abs(x).max(0) > 1e-3)[0]
-    x = x[:, loud[0]:loud[-1] + 1]
-    n, xf = x.shape[1], int(XFADE_S * SR)
-    if n < 4 * xf:
-        sys.exit(f"{src}: too short to loop ({n / SR:.1f} s)")
-    # the last XFADE_S seconds fade into the first ones: the file then ends just before where it began
-    k = np.linspace(0, np.pi / 2, xf, dtype=np.float32)
-    out = x[:, :n - xf].copy()
-    out[:, :xf] = x[:, :xf] * np.sin(k) + x[:, n - xf:] * np.cos(k)
+    if t.get("engine") == "sound-generation":
+        # made as a loop already: a long crossfade would only blur its beat, but where its end does not quite meet its
+        # start, seam_ms of it (equal power) take the click out
+        k = int(t.get("seam_ms", 0) / 1000 * SR)
+        if k:
+            a = np.linspace(0, np.pi / 2, k, dtype=np.float32)
+            out = x[:, :x.shape[1] - k].copy()
+            out[:, :k] = x[:, :k] * np.sin(a) + x[:, x.shape[1] - k:] * np.cos(a)
+        else:
+            out = x.copy()
+    else:
+        # trim silence at both ends (the game loops between the first and last audible sample anyway)
+        loud = np.nonzero(np.abs(x).max(0) > 1e-3)[0]
+        x = x[:, loud[0]:loud[-1] + 1]
+        n, xf = x.shape[1], int(XFADE_S * SR)
+        if n < 4 * xf:
+            sys.exit(f"{src}: too short to loop ({n / SR:.1f} s)")
+        # the last XFADE_S seconds fade into the first ones: the file then ends just before where it began
+        k = np.linspace(0, np.pi / 2, xf, dtype=np.float32)
+        out = x[:, :n - xf].copy()
+        out[:, :xf] = x[:, :xf] * np.sin(k) + x[:, n - xf:] * np.cos(k)
+    if t.get("soften_above_hz"):  # less sizzle: -soften_db_per_octave per octave above it. Over the whole file at once,
+        # as one period of the loop, so the seam stays seamless
+        f = np.fft.rfftfreq(out.shape[1], 1 / SR)
+        gain = 10 ** (-t.get("soften_db_per_octave", 6) * np.log2(np.maximum(f, t["soften_above_hz"]) / t["soften_above_hz"]) / 20)
+        out = np.fft.irfft(np.fft.rfft(out, axis=1) * gain, n=out.shape[1], axis=1).astype(np.float32)
     target = os.path.join(ROOT, t["file"])
-    if os.path.exists(target):  # as loud as the music it replaces
-        out *= rms(decode(target)) / max(rms(out), 1e-9)
+    # as loud as the music it replaces, or, for a track the game does not have yet, as the track named in "match"
+    ref = target if os.path.exists(target) else os.path.join(ROOT, tracks[t["match"]]["file"]) if t.get("match") else None
+    if ref:
+        out *= rms(decode(ref)) / max(rms(out), 1e-9)
+    if os.path.exists(target):
         os.makedirs(OLD, exist_ok=True)
         base = os.path.splitext(os.path.basename(target))[0]
         i, keep = 1, os.path.join(OLD, f"{base}_old.mp3")
@@ -144,7 +189,12 @@ def loop(name, take):
         print(f"kept the current file as {keep}")
     peak = float(np.abs(out).max())
     ceil = 10 ** (-1 / 20)
-    if peak > ceil:
+    if peak > ceil and t.get("limit_db"):  # sharp drum hits: up to limit_db of them are limited, not the whole track
+        over = 20 * np.log10(peak / ceil)
+        out *= 10 ** (-max(0, over - t["limit_db"]) / 20)
+        out = limit(out, ceil)
+        print(f"limited the loudest peaks by up to {min(over, t['limit_db']):.1f} dB")
+    elif peak > ceil:
         out *= ceil / peak
     size = write_mp3(out, target)
     print(f"{name}: {src} -> {target} ({out.shape[1] / SR:.1f} s loop, {size // 1024} KB)")

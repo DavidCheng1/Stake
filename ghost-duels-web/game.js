@@ -1105,7 +1105,7 @@ async function totalWinScreen(total, spins, counted = false) {
   const cv = document.createElement("canvas");
   box.replaceChildren(cv); amtEl.textContent = money(counted ? total : 0); el.hidden = false;
   const anim = RigPlayer.play(cv, rig, { intro, still: RM });
-  hero.react("cheer", 4000); sound.fanfare();
+  hero.react("cheer", 4000); sound.totalWin();
   el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
   // teal embers rising around the emblem while the screen is up
   let embers = 0;
@@ -1519,6 +1519,7 @@ async function playRound(events, resumed) {
         break;
       case "bonusTrigger": {
         baseSummary();
+        sound.music("load"); // the free spins' music loads while the trigger plays
         await showFsTrigger(ev);
         const start = events[++i], spins = [];
         while (events[i + 1].type === "bonusSpin") spins.push(events[++i]);
@@ -1764,9 +1765,9 @@ addEventListener("keydown", e => { if (e.key === "Escape" && !buyDlg.hidden) ope
 // The effects are synthesized placeholders; each one can later be swapped for a recorded sample without touching the call sites.
 const sound = (() => {
   const KEY = "ghostDuels.sound", MUSIC_SRC = "assets/spooky-carousel.mp3";
-  // the free spins' own music: "assets/music-bonus.mp3" once it is made (audio-src/elevenlabs/music.json); null keeps the
-  // base music playing through the bonus
-  const MUSIC_BONUS = null;
+  // the free spins' own music, faster and more driving than the base (audio-src/elevenlabs/music.json, "freespins");
+  // null keeps the base music playing through the bonus
+  const MUSIC_BONUS = "assets/music-bonus.mp3";
   const st = { music: 65, sfx: 80, muted: false }; // sliders 0–100
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
   let ctx, master, musicBus, sfxBus, duckBus, verb, seq, noise, started = false, loadSfx = () => {};
@@ -1827,12 +1828,14 @@ const sound = (() => {
   }
   // The free spins have their own music: it starts from its beginning while the base music fades out underneath (it
   // keeps running) and comes back when they end. Without the bonus file everything stays on the base music.
+  // music("load") only fetches and decodes it (when the free spins are triggered), so it is ready when they start
+  const loadBonus = () => bonusLoad ??= fetch(MUSIC_BONUS).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && ctx.decodeAudioData(b)).catch(() => null);
   function music(kind) {
+    if (kind === "load") { if (ctx && MUSIC_BONUS) loadBonus(); return; }
     wantBonus = kind === "bonus";
     if (!ctx || !MUSIC_BONUS) return;
     if (wantBonus) {
-      bonusLoad ??= fetch(MUSIC_BONUS).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && ctx.decodeAudioData(b)).catch(() => null);
-      bonusLoad.then(buf => {
+      loadBonus().then(buf => {
         if (!buf || !wantBonus || bonusPlay) return;
         const src = looped(buf), g = ctx.createGain(); g.gain.value = 0;
         src.connect(g).connect(musicBus); src.start(0, src.loopStart); bonusPlay = { src, g };
@@ -1997,6 +2000,13 @@ const sound = (() => {
       [12, 15, 19, 22, 24, 27, 31].forEach((n, i) => bell(t + .2 + i * .08, NOTE(n), .07, 1.6));
       if (max) growl(t, 1.6, .09);
     },
+    // the Total Win after the free spins: a bright major chord and a run of bells climbing up, happy (synth fallback for
+    // the designed totalwin)
+    totalWin() {
+      const t = at(); if (t == null) return; duck(3.5);
+      pad(t, [3, 7, 10, 15], 2.4, .045, "triangle", 2600); // C major over the A-minor music
+      [15, 19, 22, 27, 31, 34].forEach((n, i) => bell(t + .1 + i * .09, NOTE(n), .07, 1.6));
+    },
     // a win tier lands (0 BIG ... 3 EPIC): a hit and a bright major run of bells, two semitones higher for each tier
     tierUp(level = 0) {
       const t = at(); if (t == null) return; duck(2.6);
@@ -2022,7 +2032,7 @@ const sound = (() => {
   // ---- designed sounds (tools/sound_design.py -> assets/sfx/*.mp3) replace the synth voices above once loaded;
   // until a file is decoded, or if it fails, the synthesized version plays. Pitched samples are recorded at A5 (880 Hz).
   const SFX = ["click", "spin", "land", "land_heavy", "chime", "crystal", "tumble", "charge", "burst", "clash", "wail", "toll",
-    "sting", "sting_devil", "fanfare", "bigwin", "heartbeat", "crumble", "challenger", "banner", "fs_land", "edge"];
+    "sting", "sting_devil", "fanfare", "bigwin", "totalwin", "heartbeat", "crumble", "challenger", "banner", "fs_land", "edge"];
   const raw = Object.fromEntries(SFX.map(k => [k, fetch(`assets/sfx/${k}.mp3`).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)]));
   const buf = {};
   loadSfx = async () => { for (const k of SFX) { try { const ab = await raw[k]; if (ab) buf[k] = await ctx.decodeAudioData(ab); } catch (err) { console.warn("sfx " + k, err); } } };
@@ -2083,6 +2093,7 @@ const sound = (() => {
     [0, 4, 7, 12, 16].slice(0, 3 + Math.min(level, 2)).forEach((n, i) => smp("chime", t + .07 + i * .065, .3, pitch(12 + n + level * 2)));
     return true;
   });
+  use("totalWin", null, t => { duck(3.5); return smp("totalwin", t, .8); });
   use("bigWin", null, (t, max = false) => { duck(max ? 4 : 3); if (!smp("bigwin", t, .8)) return false; if (max) smp("sting_devil", t + .3, .45); return true; });
 
   return {

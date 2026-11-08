@@ -199,10 +199,10 @@
       "gen": {
         "duration_s": 1.0,
         "prompt_influence": 0.6,
-        "takes": 6,
+        "takes": 10,
         "prompts": [
-          "Green spectral energy charging up: a soft hum and a whispering ghost choir rising in pitch and getting louder for one second, crackling green sparks, cut off sharply at its loudest. Eerie but playful pirate ghost game, organic, no harsh noise.",
-          "A reversed haunted bell and a soft organ note swelling from silence to a full peak in one second, a rising shimmer of green ghost fire, ending abruptly at its loudest. Tense but friendly, cartoon-gothic."
+          "Fighting game power-up charge: a fast rising electric energy whine over a deep bass swell, building for one second with crackling sparks and a rush of wind, cut off sharply at its loudest. Intense, punchy arcade fighting game, no voices.",
+          "Arcade fighter charging a special move: a reversed cymbal and a rising synth riser surging from silence to a full peak in one second, electric crackle on top, ending abruptly at its loudest. Tense and powerful, no voices."
         ]
       },
       "judge": {
@@ -225,11 +225,10 @@
       "gen": {
         "duration_s": 2.0,
         "prompt_influence": 0.5,
-        "takes": 6,
+        "takes": 10,
         "prompts": [
-          "Instant magic burst: a coffin lid bursting open with a deep warm boom, a bright crack of green spectral fire and a short ghost choir 'hah', small crypt reverb tail. Powerful but friendly, cartoon-gothic pirate ghost slot game, punchy, no screams.",
-          "Instant impact: an old ship's cannon boom with splintering wood and a swirl of green ghost wind, short dark stone-room tail. Punchy, playful-spooky, not horror.",
-          "Instant dark-magic pop: a deep round thump, old glass shattering into sparkles and a brief rush of ghostly wind, short tail. Exciting, warm, cartoon-gothic, no harsh noise."
+          "Fighting game VS screen impact: an instant massive punchy boom with a sharp metallic sword shing on top, a shockwave whoosh and a short big-hall reverb tail. Epic, aggressive, arcade versus screen, no voices.",
+          "Arcade fighter versus slam: an instant heavy bass-drop hit with a cymbal crash and a crackle of electric energy, a short big-hall tail. Powerful and exciting, no voices, no music."
         ]
       },
       "judge": {
@@ -239,7 +238,7 @@
     },
     {
       "name": "clash",
-      "role": "Two duel fighters collide; harder and lower the higher the stakes.",
+      "role": "Two duel fighters collide: a fighting-game sword and punch impact; harder and lower the higher the stakes.",
       "use": {
         "vol": [
           0.45,
@@ -254,10 +253,10 @@
       "gen": {
         "duration_s": 1.2,
         "prompt_influence": 0.45,
-        "takes": 3,
+        "takes": 4,
         "prompts": [
-          "Two ghostly cutlasses clashing: an instant bright metallic ring with a warm low impact and a short spectral echo, a few sparks. Exciting duel, playful-spooky pirate ghost game, punchy, small stone room reverb, no screams.",
-          "Duel impact: an instant clang of iron on iron with a deep wooden thud underneath and a short shimmering ghostly ring-out. Punchy, exciting, cartoon-gothic, not harsh."
+          "Two swords clashing hard in a fighting game: an instant bright steel-on-steel shing with a heavy body-punch impact underneath and a short whoosh, punchy and dry with a short tail. Aggressive, satisfying hit, no voices.",
+          "Fighting game heavy hit: a meaty punch impact and a metallic cutlass clang with sparks at the same instant, a short whoosh and a tight tail. Intense arcade combat, no voices."
         ]
       },
       "judge": {
@@ -267,7 +266,7 @@
     },
     {
       "name": "wail",
-      "role": "A duel fighter is knocked out (the other one wins the round).",
+      "role": "A duel fighter is knocked out (the other one wins the round): a fighting-game K.O. hit (the file keeps its old name).",
       "use": {
         "vol": 0.55,
         "rates": [
@@ -279,10 +278,10 @@
       "gen": {
         "duration_s": 2.4,
         "prompt_influence": 0.5,
-        "takes": 6,
+        "takes": 4,
         "prompts": [
-          "Cartoon ghost knocked out: starts instantly with a hard punchy hit at the very first moment, then a comic falling 'whooo' ghost wail fading away into the crypt. Funny-spooky, satisfying, not scary, no words.",
-          "Instant punchy thump at the very first moment, then a ghost's long descending 'oooo' shrinking away with a little sparkle at the end. Playful, cartoon-gothic, not scary, no words."
+          "Fighting game knockout: an instant huge final punch impact with a deep slow-motion boom and a sword shattering, a short rushing whoosh fading away, short dark tail. Decisive K.O. moment, epic, not comic, no voices.",
+          "K.O. finishing blow in an arcade fighting game: an instant crushing hit with a bass drop and a glassy shatter, then a slow-motion whoosh trailing off. Heavy and final, not funny, no voices."
         ]
       },
       "judge": {
@@ -374,7 +373,7 @@
     },
     {
       "name": "fanfare",
-      "role": "Free spins (Ghost Crates bonus) triggered, and the Total Win screen after the bonus: the music dips 2.2 s under it.",
+      "role": "Free spins (Ghost Crates bonus) triggered: the music dips 2.2 s under it. (The Total Win screen has its own sound now: totalwin.)",
       "use": {
         "vol": 0.75,
         "rates": [
@@ -426,6 +425,37 @@
       "judge": {
         "max_audible_s": 4.4,
         "max_attack_ms": 25
+      }
+    },
+    {
+      "name": "totalwin",
+      "role": "Total Win screen after the free spins (after the win tiers): a happy, warm celebration of the whole bonus. The music dips 3.5 s under it.",
+      "use": {
+        "vol": 0.8,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "every bonus that wins"
+      },
+      "gen": {
+        "duration_s": 4.0,
+        "prompt_influence": 0.5,
+        "takes": 6,
+        "prompts": [
+          "Happy total win celebration in a playful-spooky pirate crypt: starts instantly with a bright brass and accordion fanfare in A major, a cheerful music box and celesta melody climbing up, a joyful wordless ghost choir 'aah' on a big A major chord, sparkling bells and a shower of gold coins, ending on a warm, satisfied A major chord. Triumphant, warm and friendly, cartoon-gothic, never dark.",
+          "Victory jingle in A major for a cozy-spooky pirate ghost game: an instant cheerful accordion and pizzicato fanfare, a celesta melody rising to a happy high A, a warm brass chord with a jolly tuba, a joyful ghost choir and a soft cymbal swell with tinkling coins. Bright, celebratory, fun, short crypt reverb, no screams.",
+          "Treasure found: a happy pirate fanfare in A major, an instant brass and fiddle flourish, a music box melody bouncing upward, a glockenspiel sparkle, gold coins clinking, a warm pipe organ and ghost choir resolving to a bright A major chord. Joyful, rewarding, playful-spooky, never menacing."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 4.0,
+        "max_attack_ms": 25,
+        "tonal": "A major"
+      },
+      "finish": {
+        "match": "fanfare",
+        "_why": "new: the Total Win played the fanfare before, so it starts at that loudness"
       }
     },
     {
@@ -489,8 +519,11 @@
       "gen": {
         "duration_s": 3.0,
         "prompt_influence": 0.5,
-        "takes": 5,
-        "prompt": "The skeleton pirate captain challenges: an instant warm cannon boom, a creaking ship and rattling chains, a short dark organ chord and a breathy ghostly pirate laugh (no words). Exciting, cartoon-gothic, small crypt reverb."
+        "takes": 4,
+        "prompts": [
+          "A new challenger enters in a fighting game: an instant dramatic brass and orchestra hit, a fast drum roll into a heavy impact and an electric energy surge, a short ominous choir chord. Intense arcade fighting game, wordless.",
+          "Fighting game challenger alert: an instant heavy impact with a metallic sword draw, a pounding taiko hit and a rising surge of dark energy, a short dramatic orchestral stab. Exciting and tense, no voices."
+        ]
       },
       "judge": {
         "max_audible_s": 2.8,

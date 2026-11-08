@@ -521,25 +521,32 @@ def apply(name, take, why_text=""):
     if not m:
         sys.exit(f"no take {file} in {folder}")
     target = os.path.join(SFX, name + ".mp3")
-    old_x = decode(target)
-    old_loud = measure(old_x, s)["loud_db"]
-    os.makedirs(OLD, exist_ok=True)
-    k, backup = 1, f"{name}_old.mp3"
-    while os.path.exists(os.path.join(OLD, backup)):
-        k += 1
-        backup = f"{name}_old{k}.mp3"
-    shutil.copy2(target, os.path.join(OLD, backup))
+    if os.path.exists(target):
+        old_loud = measure(decode(target), s)["loud_db"]
+        os.makedirs(OLD, exist_ok=True)
+        k, backup = 1, f"{name}_old.mp3"
+        while os.path.exists(os.path.join(OLD, backup)):
+            k += 1
+            backup = f"{name}_old{k}.mp3"
+        shutil.copy2(target, os.path.join(OLD, backup))
+    else:  # a new sound: as loud as the one named in finish.match (the sound it takes over from), nothing to back up
+        ref = s.get("finish", {}).get("match")
+        if not ref:
+            sys.exit(f"{name} is new: name the sound whose loudness it should match in its finish.match")
+        old_loud = measure(decode(os.path.join(SFX, ref + ".mp3")), s)["loud_db"]
+        backup = None
     x = finish(decode(os.path.join(folder, file)), s, old_loud)
     size = write_mp3(x, target)
     r = measure(decode(target), s)
     applied = load_json(APPLIED, {})
-    version = applied.get(name, {}).get("version", 1) + 1
+    version = applied.get(name, {}).get("version", 1 if backup else 0) + 1  # a new sound starts at v1
     first_backup = applied.get(name, {}).get("backup", backup)
     applied[name] = {"take": file, "version": version, "backup": first_backup, "date": datetime.date.today().isoformat()}
     save_json(APPLIED, applied)
     why = m.get("judge", {})
+    kept = f"`audio-src/sfx-old/{backup}`" if backup else f"new sound (as loud as `{s['finish']['match']}`)"
     row = (f"| `{name}` | v{version} | `{file}` ({r['audible_s']} s): \"{m['prompt'][:90]}…\" | {why_text + ' ' if why_text else ''}(score {why.get('score', '?')}"
-           f"{': ' + '; '.join(why.get('notes', [])) if why.get('notes') else ', fits its job'}) | `audio-src/sfx-old/{backup}` |")
+           f"{': ' + '; '.join(why.get('notes', [])) if why.get('notes') else ', fits its job'}) | {kept} |")
     # the new row goes at the end of the replacement log table
     with open(README, encoding="utf-8") as f:
         lines = [ln for ln in f.read().split("\n") if not ln.startswith("| (nothing replaced yet)")]
@@ -552,7 +559,7 @@ def apply(name, take, why_text=""):
     lines.insert(k, row)
     with open(README, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines))
-    print(f"{name}: {file} -> assets/sfx/{name}.mp3 ({size // 1024} KB, loud {r['loud_db']} dB, old {old_loud} dB); backup audio-src/sfx-old/{backup}")
+    print(f"{name}: {file} -> assets/sfx/{name}.mp3 ({size // 1024} KB, loud {r['loud_db']} dB, old {old_loud} dB); {kept.replace('`', '')}")
 
 
 if __name__ == "__main__":

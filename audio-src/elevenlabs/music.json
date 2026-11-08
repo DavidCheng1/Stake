@@ -16,11 +16,19 @@
     },
     {
       "name": "freespins",
-      "role": "Ghost Crates free spins: the same piece, more excited (the game switches to it for the bonus).",
+      "role": "Ghost Crates free spins: the game crossfades to it when the bonus starts and back to the base music when it ends. Casino style (v2 of the track: the sea shanty was too goofy): a polished online-slot bonus groove, clearly more driving than the calm base waltz, in its key. Made with the sound-effects model as a seamless 30 s loop, because ElevenLabs Music needs a paid plan; on one, drop engine, model_id and prompt_influence and set length_ms to 60000.",
       "file": "ghost-duels-web/assets/music-bonus.mp3",
-      "length_ms": 60000,
+      "engine": "sound-generation",
+      "model_id": "eleven_text_to_sound_v3",
+      "length_ms": 30000,
+      "prompt_influence": 0.6,
       "takes": 2,
-      "prompt": "Loopable bonus-round music for a cozy-spooky pirate ghost slot game, 60 seconds, A minor, 96 BPM: a lively 6/8 sea-shanty feel aboard a ghost ship, fast music-box and celesta runs, accordion and pizzicato strings driving, warm tuba, a wordless ghost choir more present, a low tom pulse. Treasure-hunt anticipation, exciting but still friendly and charming, never scary, no drops. Seamless loop: the end flows back into the beginning. Instrumental only."
+      "match": "base",
+      "prompt": "Polished casino slot bonus-round music loop, A minor, 126 BPM, exciting and driving: punchy four-on-the-floor drums with claps and shaker, a deep pulsing synth bass, bright plucked synth arpeggios and a catchy celesta hook, dark cinematic strings and brass stabs, a mysterious Halloween choir pad. Glossy modern online-slot style, spooky but classy, not cartoonish: no tuba, no accordion. Instrumental only, seamless loop.",
+      "soften_above_hz": 4000,
+      "soften_db_per_octave": 6,
+      "limit_db": 4,
+      "seam_ms": 15
     }
   ]
 }
