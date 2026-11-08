@@ -1163,7 +1163,8 @@ function makeCrate(id, mult) {
 function makeRune(v, id) {
   const el = div("rtok"); el.style.setProperty("--c", SYM[id].rgb);
   const img = new Image(); img.src = IMG[id]; img.alt = ""; img.draggable = false;
-  const t = document.createElement("span"); t.className = "rv"; setRv(t, fmtR(v * bet));
+  // a rune shows its value in times the bet (1 to 10), never money, so there are no decimals at any bet
+  const t = document.createElement("span"); t.className = "rv"; setRv(t, fmtR(v));
   el.append(img, t); return el;
 }
 // a rune's value: up to 3 characters at full size, longer amounts (high bets, multiplied wins) smaller, so they stay
@@ -1377,13 +1378,13 @@ async function harvest(start, spinEvents, end) {
     g.crates.forEach(k => { const el = q(reels[k.cell[0]].cells[k.cell[1]], ".crate"); animWin(q(el, ".sym")); if (!RM) el.animate([{ transform: "scale(1)" }, { transform: "scale(1.25)" }, { transform: "scale(1)" }], { duration: 600 }); const [x, y, w] = cellCenter(k.cell); fx.emit(x, y, { n: 26, kind: "spark", rgb: SYM[K[k.cell[0]][k.cell[1]].id].rgb, scale: w / 100 }); });
     const pts = g.cells.map(cellCenter), cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
     const crates = g.mults.length > 4 ? `${g.mults.slice(0, 2).join(" × ")} × … (${g.mults.length} ${i18n("Kisten", "crates")})` : g.mults.join(" × ");
-    floatText(cx, cy, `${fmtR(g.sum * bet)} × ${crates}`, "246 196 79");
+    floatText(cx, cy, `${fmtR(g.sum)} × ${crates}`, "246 196 79");
     await sleep(500);
     await Promise.all(g.cells.map(([c, r], i) => sleep(i * 40).then(() => {
-      const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v * bet, to = K[c][r].paid = paidOf(K[c][r].v, g), t0 = performance.now();
-      // counts in the steps of its own values (3 -> 6 shows 4 and 5, not 3.47), so no decimals flash up on the way
-      const f = 10 ** Math.max(decimals(from), decimals(to));
-      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtR(k < 1 ? Math.round((from + (to - from) * k) * f) / f : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
+      // the rune counts up in whole times the bet (3 -> 6 shows 4 and 5), what it pays stays in money for the collect
+      K[c][r].paid = paidOf(K[c][r].v, g);
+      const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v, to = Math.round(K[c][r].paid / bet), t0 = performance.now();
+      return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtR(k < 1 ? Math.round(from + (to - from) * k) : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
     })));
     shake(6, 300);
     await sleep(450);
@@ -2583,7 +2584,7 @@ rulesSection(i18n("So gewinnst du", "How to win"), [
 rulesSection(i18n("Geisterkisten-Bonus", "Ghost Crates bonus"), [[
   [i18n("Auslöser:", "Trigger:"), i18n("3 oder mehr FS-Symbole auf dem Spielfeld nach allen Kaskaden. Pro Walze landet höchstens ein FS.", "3 or more FS symbols on the board after all tumbles. At most one FS lands per reel.")],
   [i18n("Kisten:", "Crates:"), i18n("Jedes FS wird zu einer Kiste mit Charakter und Multiplikator (×2 oder ×3).", "Every FS turns into a crate with a character and a multiplier (×2 or ×3).")],
-  [i18n("Spins:", "Spins:"), i18n("In jedem Spin können Runen (Wert 1 bis 10 × Einsatz) und selten neue Kisten in leere Felder fallen. Du startest mit 3 Leben: ein Spin ohne Treffer kostet eins, jeder Treffer füllt sie wieder auf.", "In every spin, runes (worth 1 to 10 × bet) and rarely new crates can land in empty cells. You start with 3 lives: a spin without a hit costs one, every hit refills them.")],
+  [i18n("Spins:", "Spins:"), i18n("In jedem Spin können Runen (Wert 1 bis 10 × Einsatz; die Zahl auf einer Rune ist dieses Vielfache des Einsatzes) und selten neue Kisten in leere Felder fallen. Du startest mit 3 Leben: ein Spin ohne Treffer kostet eins, jeder Treffer füllt sie wieder auf.", "In every spin, runes (worth 1 to 10 × bet; the number on a rune is that multiple of the bet) and rarely new crates can land in empty cells. You start with 3 lives: a spin without a hit costs one, every hit refills them.")],
   [i18n("Ende:", "End:"), i18n("Der Bonus endet ohne Leben oder wenn alle Felder belegt sind.", "The bonus ends when no lives are left or every cell is filled.")],
   [i18n("Gewinn:", "Win:"), i18n("Gruppen aus mindestens 4 Runen, die eine Kiste berühren, zahlen die Summe ihrer Runen mal jeden Kisten-Multiplikator der Gruppe.", "Groups of at least 4 runes touching a crate pay the sum of their runes times every crate multiplier in the group.")],
   [i18n("Wiederauslösung:", "Re-triggers:"), i18n("Keine. Im Bonus landen keine FS-Symbole.", "None. No FS symbols land during the bonus.")],
