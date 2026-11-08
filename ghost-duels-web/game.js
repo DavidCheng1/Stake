@@ -1313,7 +1313,7 @@ async function harvest(start, spinEvents, end) {
   runeStep = 0;
   const fsCells = start.crates.map(k => [k.reel, k.row]), n = Math.min(7, fsCells.length);
   say(`${n} FS · ${i18n("Freispiele!", "Free Spins!")}`);
-  stage.classList.add("bonus"); game.classList.add("bonus");
+  stage.classList.add("bonus"); game.classList.add("bonus"); sound.music("bonus");
   preloadTotalWin(); preloadWinTiers();
   await banner(n === 3 ? i18n("Geisterkisten", "Ghost Crates") : `${n} ${i18n("Geisterkisten", "Ghost Crates")}`, i18n(`3 Leben · Nur Runen in ${MIN_LINK}er-Gruppen an einer Kiste zählen`, `3 lives · Only groups of ${MIN_LINK}+ runes touching a crate count`), 2100);
   K = reels.map(() => Array(ROWS).fill(null));
@@ -1413,7 +1413,7 @@ async function harvest(start, spinEvents, end) {
   if (!(total > 0 && await totalWinScreen(total, spinEvents.length, tiered)))
     await banner(total >= 50 * bet ? i18n("Riesige Beute!", "Huge Haul!") : i18n("Freispiele vorbei", "Free Spins over"), i18n(money(total) + " gewonnen", money(total) + " won"), 2200);
   say(i18n(`Geisterkisten · ${money(total)} gewonnen`, `Ghost Crates · ${money(total)} won`));
-  stage.classList.remove("bonus"); game.classList.remove("bonus");
+  stage.classList.remove("bonus"); game.classList.remove("bonus"); sound.music("base");
   G = reels.map(() => Array.from({ length: ROWS }, () => { let id; do { id = randSym(); } while (id === "fs" || id === "vs"); return id; }));
   reels.forEach((rl, c) => rl.cells.forEach((cell, r) => { const s2 = makeSym(G[c][r]); cell.replaceChildren(s2); land(s2); }));
   return total;
@@ -1764,10 +1764,14 @@ addEventListener("keydown", e => { if (e.key === "Escape" && !buyDlg.hidden) ope
 // The effects are synthesized placeholders; each one can later be swapped for a recorded sample without touching the call sites.
 const sound = (() => {
   const KEY = "ghostDuels.sound", MUSIC_SRC = "assets/spooky-carousel.mp3";
+  // the free spins' own music: "assets/music-bonus.mp3" once it is made (audio-src/elevenlabs/music.json); null keeps the
+  // base music playing through the bonus
+  const MUSIC_BONUS = null;
   const st = { music: 65, sfx: 80, muted: false }; // sliders 0–100
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
   let ctx, master, musicBus, sfxBus, duckBus, verb, seq, noise, started = false, loadSfx = () => {};
   let hold = true; // the music stays silent while the studio logo is up (release() lets it in)
+  let baseGain = null, bonusLoad = null, bonusPlay = null, wantBonus = false; // the base music's fader; the free spins' music
   // effects of the current sequence: dry to the effects bus, wet into the reverb; a skip fades this pair out (cut)
   const newSeq = () => { const dry = ctx.createGain(), wet = ctx.createGain(); dry.connect(sfxBus); wet.connect(verb); return { dry, wet }; };
   const file = fetch(MUSIC_SRC).then(r => { if (!r.ok) throw new Error("music " + r.status); return r.arrayBuffer(); });
@@ -1804,17 +1808,41 @@ const sound = (() => {
     const nd = noise.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
     loadMusic(); loadSfx();
   }
+  // a looping source between the first and last audible sample, so silence or decoder padding at the ends never leaves a gap
+  function looped(buf) {
+    const ch = [...Array(buf.numberOfChannels)].map((_, c) => buf.getChannelData(c));
+    const edge = (i, step) => { while (i >= 0 && i < buf.length && !ch.some(d => Math.abs(d[i]) > 1e-3)) i += step; return Math.min(Math.max(i, 0), buf.length - 1); };
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    src.loopStart = edge(0, 1) / buf.sampleRate; src.loopEnd = (edge(buf.length - 1, -1) + 1) / buf.sampleRate;
+    return src;
+  }
+  const fade = (g, to, sec) => { const t = ctx.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(to, t + sec); };
   async function loadMusic() {
     try {
-      const buf = await ctx.decodeAudioData(await file);
-      // loop between the first and last audible sample, so silence or decoder padding at the ends never leaves a gap
-      const ch = [...Array(buf.numberOfChannels)].map((_, c) => buf.getChannelData(c));
-      const edge = (i, step) => { while (i >= 0 && i < buf.length && !ch.some(d => Math.abs(d[i]) > 1e-3)) i += step; return Math.min(Math.max(i, 0), buf.length - 1); };
-      const src = ctx.createBufferSource(), fadeIn = ctx.createGain(); src.buffer = buf; src.loop = true;
-      src.loopStart = edge(0, 1) / buf.sampleRate; src.loopEnd = (edge(buf.length - 1, -1) + 1) / buf.sampleRate;
+      const src = looped(await ctx.decodeAudioData(await file)), fadeIn = ctx.createGain();
       const t = ctx.currentTime; fadeIn.gain.setValueAtTime(0, t); fadeIn.gain.linearRampToValueAtTime(1, t + 2);
       src.connect(fadeIn).connect(musicBus); src.start(0, src.loopStart);
+      baseGain = fadeIn; if (wantBonus) music("bonus");
     } catch (err) { console.warn(err); }
+  }
+  // The free spins have their own music: it starts from its beginning while the base music fades out underneath (it
+  // keeps running) and comes back when they end. Without the bonus file everything stays on the base music.
+  function music(kind) {
+    wantBonus = kind === "bonus";
+    if (!ctx || !MUSIC_BONUS) return;
+    if (wantBonus) {
+      bonusLoad ??= fetch(MUSIC_BONUS).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && ctx.decodeAudioData(b)).catch(() => null);
+      bonusLoad.then(buf => {
+        if (!buf || !wantBonus || bonusPlay) return;
+        const src = looped(buf), g = ctx.createGain(); g.gain.value = 0;
+        src.connect(g).connect(musicBus); src.start(0, src.loopStart); bonusPlay = { src, g };
+        fade(g, 1, 1.2); if (baseGain) fade(baseGain, 0, 1.2);
+      });
+    } else if (bonusPlay) {
+      const { src, g } = bonusPlay; bonusPlay = null;
+      fade(g, 0, 1.5); src.stop(ctx.currentTime + 1.6);
+      if (baseGain) fade(baseGain, 1, 1.5);
+    }
   }
   // first gesture starts the audio; later ones wake it if the browser suspended it (iOS interruptions).
   // Capture phase, so the context exists before the Space or Spin handler asks for its first sound.
@@ -2058,7 +2086,7 @@ const sound = (() => {
   use("bigWin", null, (t, max = false) => { duck(max ? 4 : 3); if (!smp("bigwin", t, .8)) return false; if (max) smp("sting_devil", t + .3, .45); return true; });
 
   return {
-    ...fx, st, duck, cut,
+    ...fx, st, duck, cut, music,
     // a tap or key during the studio logo: start the audio silently, so the music can play as soon as the game shows
     unlock: wake,
     // the game is on screen: fade the music in (it starts with the next tap if the browser still blocks sound)
