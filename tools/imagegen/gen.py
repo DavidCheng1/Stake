@@ -269,6 +269,33 @@ def find_video(node):
     return None
 
 
+def get(url):
+    req = urllib.request.Request(url, headers={"x-goog-api-key": api_key(), "Api-Revision": API_REVISION})
+    with urllib.request.urlopen(req, timeout=120) as r:
+        return json.loads(r.read())
+
+
+def render_video(body):
+    """A video takes minutes: the request runs in the background (it answers at once with the interaction's id) and is
+    polled until it is done, so no connection has to stay open that long."""
+    import time
+    res = post(f"{API}/interactions", {**body, "background": True})
+    iid, t0 = res.get("id"), time.time()
+    while res.get("status") not in ("completed", "failed", "cancelled", None) or (iid and not find_video(res) and res.get("status") != "failed"):
+        if time.time() - t0 > 900:
+            raise RuntimeError(f"still {res.get('status')} after 15 minutes ({iid})")
+        time.sleep(8)
+        try:
+            res = get(f"{API}/interactions/{iid}")
+        except (ConnectionError, urllib.error.URLError, TimeoutError):
+            continue  # a dropped poll is retried
+        if res.get("status") == "completed" and find_video(res):
+            break
+    if res.get("status") == "failed":
+        raise RuntimeError("failed: " + json.dumps(res)[:600])
+    return res
+
+
 def video(a):
     """video <name> <prompt or @file> [--ref ...] [--duration 5] [--aspect 9:16] [--res 720p] [--n 1] [--yes]:
     take-NN.mp4 in imagegen-out/<name> with Gemini Omni (about $0.07 per second), logged in takes.json."""
@@ -286,9 +313,11 @@ def video(a):
         body = {"model": VIDEO_MODEL,
                 "input": [{"type": "text", "text": prompt}] + [{"type": "image", "mime_type": "image/png", "data": ref_part(r)} for r in a.ref],
                 "response_format": {"type": "video", "aspect_ratio": a.aspect, "duration": f"{a.duration}s", "resolution": a.res}}
+        if a.task:  # e.g. image_to_video: the first reference picture is the clip's first frame
+            body["generation_config"] = {"video_config": {"task": a.task}}
         try:
-            res = post(f"{API}/interactions", body)
-        except (RuntimeError, ConnectionError, urllib.error.URLError) as e:
+            res = render_video(body)
+        except (RuntimeError, ConnectionError, urllib.error.URLError, TimeoutError) as e:
             print(f"video {n0 + i + 1}: failed: {e}")
             continue
         data = find_video(res)
@@ -316,6 +345,7 @@ def main():
         p.add_argument("--aspect", default="9:16")
         p.add_argument("--res", default="720p")
         p.add_argument("--n", type=int, default=1)
+        p.add_argument("--task", help="image_to_video: the first --ref is the first frame")
         p.add_argument("--yes", action="store_true")
         video(p.parse_args())
         return
