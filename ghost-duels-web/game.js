@@ -494,12 +494,13 @@ setInterval(() => {
 })();
 
 function pitchPx() { return reels[0].cells[1].getBoundingClientRect().top - reels[0].cells[0].getBoundingClientRect().top; }
+// a symbol falls stretched, squashes onto its bottom edge when it hits, springs up a little and settles
 const DROP_KF = from => [
-  { transform: `translate3d(0, ${from}px, 0)` },
-  { transform: "translate3d(0, 0, 0) scale(1, 1.05)", offset: .64 },
-  { transform: "translate3d(0, -8%, 0)", offset: .78 },
-  { transform: "translate3d(0, 0, 0) scale(1.07, .91)", offset: .91 },
-  { transform: "translate3d(0, 0, 0)" }];
+  { transform: `translate3d(0, ${from}px, 0) scale(.94, 1.1)`, transformOrigin: "50% 92%" },
+  { transform: "translate3d(0, 0, 0) scale(1.14, .84)", transformOrigin: "50% 92%", offset: .62 },
+  { transform: "translate3d(0, -9%, 0) scale(.96, 1.06)", transformOrigin: "50% 92%", offset: .77 },
+  { transform: "translate3d(0, 0, 0) scale(1.05, .95)", transformOrigin: "50% 92%", offset: .9 },
+  { transform: "translate3d(0, 0, 0)", transformOrigin: "50% 92%" }];
 const DROP_EASE = "cubic-bezier(.45,0,.8,.5)";
 
 async function spinReels(res) {
@@ -543,6 +544,11 @@ async function spinReels(res) {
   void reelsEl.offsetHeight;
   // one knock per reel when its bottom symbol hits (that drop peaks at 64% of 340 + 6 × 24 ms); VS reels land at 82% of 460 ms
   for (let c = 0; c < COLS; c++) sound.land(c, (stops[c] + (RM ? 0 : vsReels.includes(c) ? 377 : tease[c] ? 40 : 310)) / 1000 / pace(), vsReels.includes(c));
+  // a little dust puffs out to both sides when a reel's bottom symbol hits the floor
+  if (!RM) for (let c = 0; c < COLS; c++) if (!vsReels.includes(c) && !tease[c]) later(() => {
+    const [x, y, w] = cellCenter([c, ROWS - 1]);
+    for (const [dx, ang] of [[-.28, Math.PI + .25], [.28, -.25]]) fx.emit(x + dx * w, y + w * .4, { n: 3, kind: "smoke", ang, sp: 1.3, rgb: "190 225 210", scale: w / 170 });
+  }, stops[c] + 300);
   const done = [];
   fills.forEach(([c, r, el]) => {
     const delay = stops[c] + (ROWS - 1 - r) * 50;
@@ -731,8 +737,11 @@ async function tumble(ev) {
   // burst the winning symbols and the used wild reels
   const bursts = [...gone].filter(k => !usedVs.includes(+k.split(",")[0])).map(k => {
     const [c, r] = k.split(",").map(Number), el = q(reels[c].cells[r], ".sym");
-    const [x, y, w] = cellCenter([c, r]); fx.emit(x, y, { n: 8, kind: "spark", rgb: SYM[G[c][r]]?.rgb || "255 255 255", scale: w / 130 });
-    return el && !RM ? el.animate([{ transform: "scale(1)", opacity: 1, filter: "brightness(1)" }, { transform: "scale(1.25)", opacity: 1, filter: "brightness(2.5)", offset: .35 }, { transform: "scale(0)", opacity: 0 }], { duration: 360, fill: "forwards" }).finished : null;
+    // a winning symbol wobbles, flares up and bursts into ghost dust of its own colour
+    const [x, y, w] = cellCenter([c, r]), rgb = SYM[G[c][r]]?.rgb || "255 255 255";
+    later(() => { fx.emit(x, y, { n: 12, kind: "spark", rgb, scale: w / 130 }); fx.emit(x, y, { n: 5, kind: "smoke", sp: 1.6, rgb, scale: w / 140 }); }, 180);
+    return el && !RM ? el.animate([{ transform: "scale(1) rotate(0)", opacity: 1, filter: "brightness(1)" }, { transform: "scale(1.16) rotate(-7deg)", opacity: 1, filter: "brightness(1.6)", offset: .22 },
+      { transform: "scale(1.28) rotate(5deg)", opacity: 1, filter: "brightness(2.6)", offset: .45 }, { transform: "scale(.3) rotate(0)", opacity: 0, filter: "brightness(3) blur(3px)" }], { duration: 420, fill: "forwards" }).finished : null;
   });
   usedVs.forEach(c => {
     const t = reels[c].tall, [x, y, w, h] = centerOf(t);
