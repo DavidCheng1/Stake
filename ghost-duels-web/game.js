@@ -100,30 +100,7 @@ const RTP_TEXT = BASE_INFO.rtp.toLocaleString(RGS.lang, { minimumFractionDigits:
 
 // Face rigs, coordinates in % of the square symbol
 const RIG = {
-  pirate: {
-    filler: { x: 51, y: 67, w: 17, h: 6, c: "#3b1408" },
-    parts: [{ name: "jaw", poly: [[18,67],[40,66],[62,65],[80,62],[92,100],[8,100]], o: [50, 66] }],
-    glows: [{ x: 35, y: 52, w: 14, h: 12, c: "125 255 170" }, { x: 54.5, y: 49, w: 14, h: 12, c: "125 255 170" }]
-  },
-  devil: {
-    base: [[0,63],[32,65.5],[62,65.5],[70,58],[78,48],[100,48],[100,53],[75,53],[75,84],[80,93],[100,93],[100,100],[0,100]],
-    parts: [
-      { name: "head", poly: [[0,0],[100,0],[100,50],[78,50],[71,60],[63,70],[31,70],[0,66]], o: [47, 66] },
-      { name: "tail", poly: [[74,53],[100,53],[100,94],[79,94],[73,84]], o: [77, 89] }
-    ],
-    glows: [{ x: 32, y: 45, w: 15, h: 10, c: "255 232 120", part: "head" }, { x: 55, y: 45, w: 15, h: 10, c: "255 232 120", part: "head" }],
-    lids: { color: "#7a2323", line: "#1a0505", part: "head", eyes: [{ x: 32, y: 44, w: 13, h: 9 }, { x: 55, y: 44, w: 13, h: 9 }] }
-  },
-  witch: {
-    base: [[0,61],[15,59],[25,56],[35,51],[45,46],[55,43],[65,41],[75,38],[85,33],[100,28],[100,100],[0,100]],
-    parts: [{ name: "hat", poly: [[0,0],[100,0],[100,31],[85,36],[75,41],[65,44],[55,46],[45,49],[35,54],[25,59],[15,62],[0,64]], o: [50, 46] }],
-    lids: { color: "#f1b6f5", line: "#3a0a52", eyes: [{ x: 48.5, y: 51.5, w: 11, h: 13 }, { x: 68, y: 48, w: 10, h: 12 }] },
-    cheeks: [{ x: 41, y: 59, w: 10 }, { x: 74, y: 55, w: 9 }]
-  },
-  blue: {
-    lids: { color: "#7af6f9", line: "#0c3550", eyes: [{ x: 27, y: 32.5, w: 13, h: 15 }, { x: 52, y: 32.5, w: 13, h: 15 }] },
-    cheeks: [{ x: 20, y: 43, w: 10 }, { x: 58, y: 43, w: 10 }]
-  },
+  // the four characters (busts) move with their win rigs (tools/sprites/symbols), not with clipped layers
   book:    { glows: [{ x: 48, y: 40, w: 34, h: 30, c: "110 255 150" }] },
   key:     { glows: [{ x: 57, y: 21, w: 10, h: 10, c: "255 245 140" }, { x: 70, y: 22, w: 10, h: 10, c: "255 245 140" }] },
   lantern: { glows: [{ x: 52, y: 60, w: 26, h: 34, c: "110 255 160" }] },
@@ -184,50 +161,19 @@ const SHUT = [{ transform: "scaleY(0)" }, { transform: "scaleY(1)", offset: .1 }
 const cheeks = (el, dur = 1400) => qa(el, ".cheek").forEach(c => c.animate([{ opacity: 0 }, { opacity: 1, offset: .25 }, { opacity: .9, offset: .8 }, { opacity: 0 }], { duration: dur }));
 const turn = (deg, extra = "") => ({ transform: `rotate(${deg}deg) ${extra}` });
 
+// a character in a duel: taunting plays its win rig, getting hurt makes it recoil, tip away and pale
+function charExpr(el, m) {
+  if (m === "hurt") {
+    q(el, ".rig").animate([{ transform: "none", filter: "none" }, { transform: "translateX(-6%) rotate(-8deg) scale(.94)", filter: "brightness(.6) saturate(.5)", offset: .15 },
+      { transform: "translateX(-4%) rotate(-6deg) scale(.95)", filter: "brightness(.65) saturate(.5)", offset: .85 }, { transform: "none", filter: "none" }], { duration: 1500 });
+    return;
+  }
+  if (m === "taunt") playSymRig(el, el.dataset.id);
+  flare(el);
+}
 const EXPR = {
-  pirate(el, m) {
-    const jaw = q(el, ".p-jaw");
-    if (m === "hurt") {
-      jaw.animate([{ transform: "none" }, { transform: "translateY(5%)", offset: .15 }, { transform: "translateY(5%)", offset: .9 }, { transform: "none" }], { duration: 1500 });
-      qa(el, ".glow").forEach(g => g.animate([{ opacity: .6 }, { opacity: 0, offset: .2 }, { opacity: 0 }], { duration: 1500 }));
-      return;
-    }
-    const kf = [0, 3.8, .4, 3.6, .4, 3.4, .4, 3, 0].map(v => ({ transform: `translateY(${v}%)` }));
-    jaw.animate(kf, { duration: m === "taunt" ? 900 : 1200 }); flare(el);
-  },
-  devil(el, m) {
-    const head = q(el, ".p-head"), tail = q(el, ".p-tail");
-    if (m === "hurt") {
-      lidsAnim(el, SHUT, 1500);
-      head.animate([turn(0), turn(13, "translateY(2%)"), turn(11, "translateY(2%)"), turn(0)].map((k, i) => ({ ...k, offset: [0, .15, .9, 1][i] })), { duration: 1500 });
-      tail.animate([turn(0), turn(-25), turn(-25), turn(0)], { duration: 1500 });
-      return;
-    }
-    head.animate([0, -7, 6, -7, 6, -5, 4, 0].map((a, i) => turn(a, `translateY(${i % 2 ? -2 : 0}%)`)), { duration: 1200 });
-    lidsAnim(el, [{ transform: "scaleY(0)" }, { transform: "scaleY(.5)", offset: .15 }, { transform: "scaleY(.5)", offset: .85 }, { transform: "scaleY(0)" }], 1300);
-    tail.animate([0, -20, 18, -20, 18, -10, 0].map(a => turn(a)), { duration: 1000 });
-    flare(el);
-  },
-  witch(el, m) {
-    const hat = q(el, ".p-hat");
-    if (m === "hurt") {
-      hat.animate([{ transform: "none" }, { transform: "rotate(-14deg) translate(-3%, 1%)", offset: .2 }, { transform: "rotate(-12deg) translate(-3%, 1%)", offset: .9 }, { transform: "none" }], { duration: 1500 });
-      lidsAnim(el, SHUT, 1500); return;
-    }
-    hat.animate([{ transform: "none" }, { transform: "translateY(-3%) rotate(-11deg)", offset: .3 }, { transform: "translateY(-1%) rotate(7deg)", offset: .55 }, { transform: "rotate(-3deg)", offset: .8 }, { transform: "none" }], { duration: 1200 });
-    lidsAnim(el, HAPPY_BLINK, 1000); cheeks(el);
-  },
-  blue(el, m) {
-    const rig = q(el, ".rig");
-    if (m === "hurt") {
-      lidsAnim(el, SHUT, 1500);
-      rig.animate([{ transform: "none" }, { transform: "scale(1.12, .86) translateY(8%)", offset: .2 }, { transform: "scale(1.08, .9) translateY(6%)", offset: .9 }, { transform: "none" }], { duration: 1500 });
-      return;
-    }
-    rig.animate([{ transform: "none" }, { transform: "scale(1.15, .85) translateY(6%)", offset: .15 }, { transform: "scale(.9, 1.12) translateY(-10%)", offset: .35 },
-      { transform: "scale(1.06, .94)", offset: .55 }, { transform: "scale(.97, 1.04) translateY(-4%)", offset: .75 }, { transform: "none" }], { duration: 1200 });
-    lidsAnim(el, HAPPY_BLINK, 1000); cheeks(el);
-  },
+  // the busts: a win or a taunt plays their rig, getting hurt recoils and greys them
+  pirate: charExpr, devil: charExpr, witch: charExpr, blue: charExpr,
   book(el) { flare(el); q(el, ".rig").animate([turn(0), turn(-7, "translateY(-10%)"), turn(5), turn(0)], { duration: 1100 }); },
   key(el) { flare(el); q(el, ".rig").animate([turn(0), turn(-25), turn(40), turn(30), turn(0)], { duration: 1200, easing: "ease-in-out" }); },
   lantern(el) { flare(el, 1400); q(el, ".rig").animate([0, 18, -14, 9, -5, 0].map(a => turn(a)), { duration: 1300 }); },
