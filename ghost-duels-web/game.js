@@ -59,7 +59,7 @@ const SYM = {
   rune_purple: { name: i18n("Schattenrune", "Shadow Rune"), tier: "rune", rgb: "196 92 255", w: 10, pay: [.3, .8, 1.2, 2.5, 5, 10] },
   rune_fire:   { name: i18n("Feuerrune", "Fire Rune"), tier: "rune", rgb: "255 138 42",  w: 10, pay: [.3, .8, 1.2, 2.5, 5, 10] },
   rune_pink:   { name: i18n("Wirbelrune", "Whirl Rune"), tier: "rune", rgb: "255 79 168", w: 10, pay: [.3, .8, 1.2, 2.5, 5, 10] },
-  fs:     { name: i18n("Freispiele", "Free Spins"),       tier: "scatter", rgb: "255 79 210", w: .516, gloss: true },
+  fs:     { name: i18n("Freispiele", "Free Spins"),       tier: "scatter", rgb: "110 205 255", w: .516, gloss: true },
   vs:     { name: "VS",               tier: "special", rgb: "120 220 255", w: 0, gloss: true }
 };
 const CHARS = ["devil", "pirate", "witch", "blue"];
@@ -100,11 +100,8 @@ const RTP_TEXT = BASE_INFO.rtp.toLocaleString(RGS.lang, { minimumFractionDigits:
 
 // Face rigs, coordinates in % of the square symbol
 const RIG = {
-  // the four characters (busts) move with their win rigs (tools/sprites/symbols), not with clipped layers
-  book:    { glows: [{ x: 48, y: 40, w: 34, h: 30, c: "110 255 150" }] },
-  key:     { glows: [{ x: 57, y: 21, w: 10, h: 10, c: "255 245 140" }, { x: 70, y: 22, w: 10, h: 10, c: "255 245 140" }] },
-  lantern: { glows: [{ x: 52, y: 60, w: 26, h: 34, c: "110 255 160" }] },
-  ring:    { glows: [{ x: 55, y: 30, w: 26, h: 20, c: "245 150 255" }] }
+  // the four characters (busts) move with their win rigs (tools/sprites/symbols), not with clipped layers; the other
+  // symbols light up from their own light layers (assets/sym-fx, symFx)
 };
 
 const clip = poly => `polygon(${poly.map(([x, y]) => `${x}% ${y}%`).join(",")})`;
@@ -136,6 +133,12 @@ function makeSym(id, o = {}) {
   });
   (r.cheeks || []).forEach(c => rig.appendChild(box(div("cheek"), { ...c, h: c.w * .7 })));
   if (d.gloss) { const g = div("gloss"); g.style.webkitMaskImage = g.style.maskImage = `url(${IMG[id]})`; rig.appendChild(g); }
+  // runes, objects and the FS: their glowing parts as a light layer, and a shine that sweeps across them on a win
+  if (d.tier !== "char" && id !== "vs") {
+    const light = div("sym-light"); light.style.backgroundImage = `url(assets/sym-fx/${id}.webp)`;
+    const shine = div("sym-shine"); shine.style.webkitMaskImage = shine.style.maskImage = `url(${IMG[id]})`;
+    rig.append(light, shine);
+  }
   if (r.lids) el.classList.add("has-lids");
   rig.style.animationDelay = (-Math.random() * 3).toFixed(2) + "s";
   return el;
@@ -149,7 +152,9 @@ const POP = {
     { transform: "scale(1.25) rotate(6deg)", offset: .56 }, { transform: "scale(1.22) rotate(-4deg)", offset: .7 },
     { transform: "scale(1.15) rotate(0)", offset: .84 }, { transform: "scale(1)" }],
   obj: [{ transform: "scale(1)" }, { transform: "scale(.9)", offset: .1 }, { transform: "scale(1.22)", offset: .3 }, { transform: "scale(1.15)", offset: .75 }, { transform: "scale(1)" }],
-  rune: [{ transform: "perspective(400px) rotateY(0) scale(1)" }, { transform: "perspective(400px) rotateY(180deg) scale(1.18)", offset: .5 }, { transform: "perspective(400px) rotateY(360deg) scale(1)" }],
+  // a rune charges: it swells, trembles as its sign lights up, then cracks (symFx draws the cracks)
+  rune: [{ transform: "scale(1)" }, { transform: "scale(1.16)", offset: .25 }, { transform: "scale(1.14) rotate(-3deg)", offset: .35 }, { transform: "scale(1.15) rotate(3deg)", offset: .45 },
+    { transform: "scale(1.13) rotate(-2deg)", offset: .55 }, { transform: "scale(1.15) rotate(2deg)", offset: .65 }, { transform: "scale(1.08)", offset: .8 }, { transform: "scale(1)" }],
   scatter: [{ transform: "scale(1)" }, { transform: "scale(1.3) rotate(-7deg)", offset: .3 }, { transform: "scale(1.26) rotate(7deg)", offset: .55 }, { transform: "scale(1)" }],
   special: [{ transform: "scale(1)" }, { transform: "scale(1.2)", offset: .4 }, { transform: "scale(1)" }]
 };
@@ -197,12 +202,40 @@ function playSymRig(el, id) {
   const anim = RigPlayer.play(cv, rig, { intro: true });
   setTimeout(() => { anim.stop(); cv.remove(); el.classList.remove("rigging"); }, rig.intro * 1000 + 60);
 }
+// The win of a rune, an object or the FS: its light layer flares, a shine sweeps across it, and each kind adds its own
+// touch (cracks running through a rune, bubbles from the potion, wisps from the lantern and book, sparkles off the key
+// and the ring, a burst of light from the FS)
+const SYM_FX = { potion: "bubble", lantern: "wisp", book: "wisp", key: "spark", ring: "spark", fs: "spark" };
+function symFx(el, id, d) {
+  if (d.tier === "char" || id === "vs") return;
+  const light = q(el, ".sym-light"), shine = q(el, ".sym-shine"), dur = d.tier === "rune" ? 900 : 1300;
+  light?.animate([{ opacity: .15, transform: "scale(1)" }, { opacity: 1, transform: "scale(1.12)", offset: .35 }, { opacity: .85, transform: "scale(1.06)", offset: .7 }, { opacity: .15, transform: "scale(1)" }], { duration: dur });
+  shine?.animate([{ backgroundPosition: "-120% 0" }, { backgroundPosition: "220% 0" }], { duration: dur * .6, delay: dur * .15, easing: "ease-in-out" });
+  const [x, y, w] = centerOf(el);
+  if (d.tier === "rune") {
+    // cracks run out from the sign, then sparks of the rune's colour burst from them
+    const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("class", "rune-cracks");
+    for (let i = 0; i < 5; i++) {
+      let px = 50, py = 50, a = i / 5 * Math.PI * 2 + Math.random() * .8, dd = `M50 50`;
+      for (let k = 0; k < 4; k++) { a += (Math.random() - .5) * 1.1; px += Math.cos(a) * (10 + Math.random() * 7); py += Math.sin(a) * (10 + Math.random() * 7); dd += ` L${px.toFixed(1)} ${py.toFixed(1)}`; }
+      const p = document.createElementNS(NS, "path"); p.setAttribute("d", dd); p.setAttribute("pathLength", "1"); svg.appendChild(p);
+    }
+    el.appendChild(svg);
+    qa(svg, "path").forEach(p => p.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: dur * .35, delay: dur * .4, fill: "backwards", easing: "ease-out" }));
+    svg.animate([{ opacity: 1 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: dur * 1.3 }).finished.then(() => svg.remove());
+    later(() => fx.emit(x, y, { n: 10, kind: "spark", rgb: d.rgb, scale: w / 130 }), dur * .55);
+    return;
+  }
+  const kind = SYM_FX[id]; if (!kind) return;
+  const burst = () => fx.emit(x, y - w * (kind === "bubble" ? .15 : 0), { n: kind === "spark" ? 14 : 8, kind, rgb: d.rgb, scale: w / 120 });
+  burst(); later(burst, dur * .4);
+}
 function animWin(el, mode = "win") {
   if (!el) return;
   const id = el.dataset.id, d = SYM[id];
   if (RM) { el.animate([{ filter: "brightness(1)" }, { filter: "brightness(1.7)" }, { filter: "brightness(1)" }], { duration: 600 }); return; }
   if (mode === "win") {
-    playSymRig(el, id);
+    playSymRig(el, id); symFx(el, id, d);
     el.animate(POP[d.tier], { duration: d.tier === "rune" ? 900 : 1400, easing: "ease-out" });
     const aura = q(el, ".aura");
     aura && aura.animate([{ opacity: .3, transform: "scale(.8)" }, { opacity: 1, transform: "scale(1.4)", offset: .3 }, { opacity: .3, transform: "scale(1)" }], { duration: 1200 });
