@@ -173,7 +173,7 @@ function charExpr(el, m) {
       { transform: "translateX(-4%) rotate(-6deg) scale(.95)", filter: "brightness(.65) saturate(.5)", offset: .85 }, { transform: "none", filter: "none" }], { duration: 1500 });
     return;
   }
-  if (m === "taunt") playSymRig(el, el.dataset.id);
+  if (m === "taunt" && !playSymAnim(el, "win")) playSymRig(el, el.dataset.id);
   flare(el);
 }
 const EXPR = {
@@ -202,6 +202,49 @@ function playSymRig(el, id) {
   const anim = RigPlayer.play(cv, rig, { intro: true });
   setTimeout(() => { anim.stop(); cv.remove(); el.classList.remove("rigging"); }, rig.intro * 1000 + 60);
 }
+// Filmed symbol animations (tools/sprites/symanim.py: Gemini Omni clips of each symbol's own picture, keyed and cut
+// into sprite sheets): an idle loop now and then, and a win as a cluster connects. A canvas over the symbol, its margin
+// as wide as the motion reaches, plays the sheet from its first frame (the still) while the still hides under it;
+// at the end it fades back onto the still. Sheets load after the intro; until then, and without one, the cut-out rig
+// and the light-layer effects play instead.
+const symAnim = { meta: {}, img: {} };
+function loadSymAnims() {
+  fetch("assets/sym-anim/anim.json").then(r => r.json()).then(m => {
+    symAnim.meta = m;
+    for (const id in m) for (const kind in m[id]) {
+      const im = new Image(); im.src = `assets/sym-anim/${id}-${kind}.webp`;
+      im.decode().then(() => { symAnim.img[id + "-" + kind] = im; }, () => {});
+    }
+  }).catch(() => {});
+}
+function playSymAnim(el, kind) {
+  const id = el?.dataset.id, m = symAnim.meta[id]?.[kind], im = symAnim.img[id + "-" + kind];
+  if (RM || !m || !im || el.classList.contains("rigging")) return false;
+  q(el, ".sym-anim")?.remove();
+  const cv = document.createElement("canvas"); cv.className = "sym-anim"; cv.width = cv.height = m.px;
+  const p = m.pad * 100; cv.style.left = cv.style.top = `${-p}%`; cv.style.width = cv.style.height = `${100 + 2 * p}%`;
+  el.appendChild(cv); el.classList.add("animating", "anim-" + kind);
+  const g = cv.getContext("2d"), step = m.px + 2, t0 = performance.now(), rate = kind === "win" ? pace() : 1;
+  const len = m.n / m.fps * 1000, hold = kind === "win" ? 650 : 0;
+  let last = -1;
+  const done = () => { if (q(el, ".sym-anim") === cv) el.classList.remove("animating", "anim-" + kind); };
+  const tick = now => {
+    if (!cv.isConnected) return done();
+    const t = (now - t0) * rate, f = Math.min(m.n - 1, Math.floor(t / 1000 * m.fps));
+    if (f !== last) { last = f; g.clearRect(0, 0, m.px, m.px); g.drawImage(im, (f % m.cols) * step + 1, Math.floor(f / m.cols) * step + 1, m.px, m.px, 0, 0, m.px, m.px); }
+    if (t < len + hold) { requestAnimationFrame(tick); return; }
+    done(); // the still shows again under the last frame, which fades away
+    cv.animate([{ opacity: 1 }, { opacity: 0 }], { duration: kind === "win" ? 320 : 200 }).finished.then(() => cv.remove());
+  };
+  requestAnimationFrame(tick);
+  return true;
+}
+// now and then a symbol on a calm board plays its idle loop
+setInterval(() => {
+  if (RM || document.hidden || stage.classList.contains("dropping") || q(reelsEl, ".cell.win") || qa(reelsEl, ".sym.anim-idle").length >= 2) return;
+  const all = qa(reelsEl, ".cell > .sym:not(.animating)").filter(s => symAnim.img[s.dataset.id + "-idle"]);
+  if (all.length) playSymAnim(pick(all), "idle");
+}, 700);
 // The win of a rune, an object or the FS: its light layer flares, a shine sweeps across it, and each kind adds its own
 // touch (cracks running through a rune, bubbles from the potion, wisps from the lantern and book, sparkles off the key
 // and the ring, a burst of light from the FS)
@@ -235,8 +278,9 @@ function animWin(el, mode = "win") {
   const id = el.dataset.id, d = SYM[id];
   if (RM) { el.animate([{ filter: "brightness(1)" }, { filter: "brightness(1.7)" }, { filter: "brightness(1)" }], { duration: 600 }); return; }
   if (mode === "win") {
-    playSymRig(el, id); symFx(el, id, d);
-    el.animate(POP[d.tier], { duration: d.tier === "rune" ? 900 : 1400, easing: "ease-out" });
+    // the filmed win carries the motion itself: the symbol only swells a little with it
+    if (playSymAnim(el, "win")) el.animate([{ transform: "scale(1)" }, { transform: "scale(1.1)", offset: .3 }, { transform: "scale(1.06)", offset: .8 }, { transform: "scale(1)" }], { duration: 1400, easing: "ease-out" });
+    else { playSymRig(el, id); symFx(el, id, d); el.animate(POP[d.tier], { duration: d.tier === "rune" ? 900 : 1400, easing: "ease-out" }); }
     const aura = q(el, ".aura");
     aura && aura.animate([{ opacity: .3, transform: "scale(.8)" }, { opacity: 1, transform: "scale(1.4)", offset: .3 }, { opacity: .3, transform: "scale(1)" }], { duration: 1200 });
   }
@@ -2805,6 +2849,7 @@ const introDone = new Promise(resolve => {
 });
 // the VS break-out clip (1.8 MB) loads behind the intro, not in the loading bar
 // the characters' win rigs load behind the intro too (about 60 KB each)
+if (!RM) introDone.then(loadSymAnims);
 if (!RM) introDone.then(() => CHARS.forEach(id => RigPlayer.load(`assets/sym-rigs/${id}`).then(r => { symRigs[id] = r; }, () => {})));
 if (!RM) introDone.then(() => fetch("assets/vs-punch.webm").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
 

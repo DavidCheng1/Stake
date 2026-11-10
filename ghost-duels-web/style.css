@@ -457,7 +457,11 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .sym-rig { filter: drop-shadow(0 0 .3cqw rgb(var(--c) / .85)) drop-shadow(0 0 .9cqw rgb(var(--c) / .4)); }
 /* a character's win rig plays over the symbol; its still picture hides meanwhile */
 .sym-rig { position: absolute; pointer-events: none; z-index: 2; }
-.sym.rigging > .rig { visibility: hidden; }
+.sym.rigging > .rig, .sym.animating > .rig { visibility: hidden; }
+/* a filmed symbol animation (playSymAnim): the canvas reaches past the symbol as far as its motion does, over its neighbours */
+.sym-anim { position: absolute; pointer-events: none; z-index: 2; }
+.cell > .sym.animating { z-index: 4; }
+.cell.win > .sym.animating { z-index: 6; }
 @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-4%) rotate(1.5deg); } }
 .s-blue .rig { animation: floaty 2.6s ease-in-out infinite; }
 @keyframes floaty { 0%, 100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-6%) scale(.97, 1.03); } }
