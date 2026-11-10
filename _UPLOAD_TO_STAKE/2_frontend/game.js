@@ -237,11 +237,26 @@ const EXPR = {
   vs(el) { q(el, ".rig").animate([{ transform: "scale(1)" }, { transform: "scale(1.25) rotate(-8deg)", offset: .3 }, { transform: "scale(1.15) rotate(8deg)", offset: .6 }, { transform: "scale(1)" }], { duration: 900 }); }
 };
 
+// Characters celebrate a win with their parts moving (cut-out rigs made by tools/sprites/rig.py from
+// tools/sprites/symbols/<id>.json): while it plays, the still picture hides under the rig's canvas, which covers the
+// symbol plus the rig's margin, so the moving character sits exactly where the picture was.
+const symRigs = {};
+function playSymRig(el, id) {
+  const rig = symRigs[id];
+  if (!rig || el.classList.contains("rigging")) return;
+  // a canvas does not stretch between its edges like a div: its box is set outright (the symbol plus the margin)
+  const cv = document.createElement("canvas"); cv.className = "sym-rig";
+  cv.style.left = cv.style.top = `${-rig.pad * 100}%`; cv.style.width = cv.style.height = `${100 + 2 * rig.pad * 100}%`;
+  el.appendChild(cv); el.classList.add("rigging");
+  const anim = RigPlayer.play(cv, rig, { intro: true });
+  setTimeout(() => { anim.stop(); cv.remove(); el.classList.remove("rigging"); }, rig.intro * 1000 + 60);
+}
 function animWin(el, mode = "win") {
   if (!el) return;
   const id = el.dataset.id, d = SYM[id];
   if (RM) { el.animate([{ filter: "brightness(1)" }, { filter: "brightness(1.7)" }, { filter: "brightness(1)" }], { duration: 600 }); return; }
   if (mode === "win") {
+    playSymRig(el, id);
     el.animate(POP[d.tier], { duration: d.tier === "rune" ? 900 : 1400, easing: "ease-out" });
     const aura = q(el, ".aura");
     aura && aura.animate([{ opacity: .3, transform: "scale(.8)" }, { opacity: 1, transform: "scale(1.4)", offset: .3 }, { opacity: .3, transform: "scale(1)" }], { duration: 1200 });
@@ -479,12 +494,13 @@ setInterval(() => {
 })();
 
 function pitchPx() { return reels[0].cells[1].getBoundingClientRect().top - reels[0].cells[0].getBoundingClientRect().top; }
+// a symbol falls stretched, squashes onto its bottom edge when it hits, springs up a little and settles
 const DROP_KF = from => [
-  { transform: `translate3d(0, ${from}px, 0)` },
-  { transform: "translate3d(0, 0, 0) scale(1, 1.05)", offset: .64 },
-  { transform: "translate3d(0, -8%, 0)", offset: .78 },
-  { transform: "translate3d(0, 0, 0) scale(1.07, .91)", offset: .91 },
-  { transform: "translate3d(0, 0, 0)" }];
+  { transform: `translate3d(0, ${from}px, 0) scale(.94, 1.1)`, transformOrigin: "50% 92%" },
+  { transform: "translate3d(0, 0, 0) scale(1.14, .84)", transformOrigin: "50% 92%", offset: .62 },
+  { transform: "translate3d(0, -9%, 0) scale(.96, 1.06)", transformOrigin: "50% 92%", offset: .77 },
+  { transform: "translate3d(0, 0, 0) scale(1.05, .95)", transformOrigin: "50% 92%", offset: .9 },
+  { transform: "translate3d(0, 0, 0)", transformOrigin: "50% 92%" }];
 const DROP_EASE = "cubic-bezier(.45,0,.8,.5)";
 
 async function spinReels(res) {
@@ -528,6 +544,11 @@ async function spinReels(res) {
   void reelsEl.offsetHeight;
   // one knock per reel when its bottom symbol hits (that drop peaks at 64% of 340 + 6 × 24 ms); VS reels land at 82% of 460 ms
   for (let c = 0; c < COLS; c++) sound.land(c, (stops[c] + (RM ? 0 : vsReels.includes(c) ? 377 : tease[c] ? 40 : 310)) / 1000 / pace(), vsReels.includes(c));
+  // a little dust puffs out to both sides when a reel's bottom symbol hits the floor
+  if (!RM) for (let c = 0; c < COLS; c++) if (!vsReels.includes(c) && !tease[c]) later(() => {
+    const [x, y, w] = cellCenter([c, ROWS - 1]);
+    for (const [dx, ang] of [[-.28, Math.PI + .25], [.28, -.25]]) fx.emit(x + dx * w, y + w * .4, { n: 3, kind: "smoke", ang, sp: 1.3, rgb: "190 225 210", scale: w / 170 });
+  }, stops[c] + 300);
   const done = [];
   fills.forEach(([c, r, el]) => {
     const delay = stops[c] + (ROWS - 1 - r) * 50;
@@ -716,8 +737,11 @@ async function tumble(ev) {
   // burst the winning symbols and the used wild reels
   const bursts = [...gone].filter(k => !usedVs.includes(+k.split(",")[0])).map(k => {
     const [c, r] = k.split(",").map(Number), el = q(reels[c].cells[r], ".sym");
-    const [x, y, w] = cellCenter([c, r]); fx.emit(x, y, { n: 8, kind: "spark", rgb: SYM[G[c][r]]?.rgb || "255 255 255", scale: w / 130 });
-    return el && !RM ? el.animate([{ transform: "scale(1)", opacity: 1, filter: "brightness(1)" }, { transform: "scale(1.25)", opacity: 1, filter: "brightness(2.5)", offset: .35 }, { transform: "scale(0)", opacity: 0 }], { duration: 360, fill: "forwards" }).finished : null;
+    // a winning symbol wobbles, flares up and bursts into ghost dust of its own colour
+    const [x, y, w] = cellCenter([c, r]), rgb = SYM[G[c][r]]?.rgb || "255 255 255";
+    later(() => { fx.emit(x, y, { n: 12, kind: "spark", rgb, scale: w / 130 }); fx.emit(x, y, { n: 5, kind: "smoke", sp: 1.6, rgb, scale: w / 140 }); }, 180);
+    return el && !RM ? el.animate([{ transform: "scale(1) rotate(0)", opacity: 1, filter: "brightness(1)" }, { transform: "scale(1.16) rotate(-7deg)", opacity: 1, filter: "brightness(1.6)", offset: .22 },
+      { transform: "scale(1.28) rotate(5deg)", opacity: 1, filter: "brightness(2.6)", offset: .45 }, { transform: "scale(.3) rotate(0)", opacity: 0, filter: "brightness(3) blur(3px)" }], { duration: 420, fill: "forwards" }).finished : null;
   });
   usedVs.forEach(c => {
     const t = reels[c].tall, [x, y, w, h] = centerOf(t);
@@ -1105,7 +1129,7 @@ async function totalWinScreen(total, spins, counted = false) {
   const cv = document.createElement("canvas");
   box.replaceChildren(cv); amtEl.textContent = money(counted ? total : 0); el.hidden = false;
   const anim = RigPlayer.play(cv, rig, { intro, still: RM });
-  hero.react("cheer", 4000); sound.fanfare();
+  hero.react("cheer", 4000); sound.totalWin();
   el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
   // teal embers rising around the emblem while the screen is up
   let embers = 0;
@@ -1520,6 +1544,7 @@ async function playRound(events, resumed) {
         break;
       case "bonusTrigger": {
         baseSummary();
+        sound.music("load"); // the free spins' music loads while the trigger plays
         await showFsTrigger(ev);
         const start = events[++i], spins = [];
         while (events[i + 1].type === "bonusSpin") spins.push(events[++i]);
@@ -1765,9 +1790,9 @@ addEventListener("keydown", e => { if (e.key === "Escape" && !buyDlg.hidden) ope
 // The effects are synthesized placeholders; each one can later be swapped for a recorded sample without touching the call sites.
 const sound = (() => {
   const KEY = "ghostDuels.sound", MUSIC_SRC = "assets/spooky-carousel.mp3";
-  // the free spins' own music: "assets/music-bonus.mp3" once it is made (audio-src/elevenlabs/music.json); null keeps the
-  // base music playing through the bonus
-  const MUSIC_BONUS = null;
+  // the free spins' own music, faster and more driving than the base (audio-src/elevenlabs/music.json, "freespins");
+  // null keeps the base music playing through the bonus
+  const MUSIC_BONUS = "assets/music-bonus.mp3";
   const st = { music: 65, sfx: 80, muted: false }; // sliders 0–100
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
   let ctx, master, musicBus, sfxBus, duckBus, verb, seq, noise, started = false, loadSfx = () => {};
@@ -1828,12 +1853,14 @@ const sound = (() => {
   }
   // The free spins have their own music: it starts from its beginning while the base music fades out underneath (it
   // keeps running) and comes back when they end. Without the bonus file everything stays on the base music.
+  // music("load") only fetches and decodes it (when the free spins are triggered), so it is ready when they start
+  const loadBonus = () => bonusLoad ??= fetch(MUSIC_BONUS).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && ctx.decodeAudioData(b)).catch(() => null);
   function music(kind) {
+    if (kind === "load") { if (ctx && MUSIC_BONUS) loadBonus(); return; }
     wantBonus = kind === "bonus";
     if (!ctx || !MUSIC_BONUS) return;
     if (wantBonus) {
-      bonusLoad ??= fetch(MUSIC_BONUS).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && ctx.decodeAudioData(b)).catch(() => null);
-      bonusLoad.then(buf => {
+      loadBonus().then(buf => {
         if (!buf || !wantBonus || bonusPlay) return;
         const src = looped(buf), g = ctx.createGain(); g.gain.value = 0;
         src.connect(g).connect(musicBus); src.start(0, src.loopStart); bonusPlay = { src, g };
@@ -1998,6 +2025,13 @@ const sound = (() => {
       [12, 15, 19, 22, 24, 27, 31].forEach((n, i) => bell(t + .2 + i * .08, NOTE(n), .07, 1.6));
       if (max) growl(t, 1.6, .09);
     },
+    // the Total Win after the free spins: a bright major chord and a run of bells climbing up, happy (synth fallback for
+    // the designed totalwin)
+    totalWin() {
+      const t = at(); if (t == null) return; duck(3.5);
+      pad(t, [3, 7, 10, 15], 2.4, .045, "triangle", 2600); // C major over the A-minor music
+      [15, 19, 22, 27, 31, 34].forEach((n, i) => bell(t + .1 + i * .09, NOTE(n), .07, 1.6));
+    },
     // a win tier lands (0 BIG ... 3 EPIC): a hit and a bright major run of bells, two semitones higher for each tier
     tierUp(level = 0) {
       const t = at(); if (t == null) return; duck(2.6);
@@ -2023,7 +2057,7 @@ const sound = (() => {
   // ---- designed sounds (tools/sound_design.py -> assets/sfx/*.mp3) replace the synth voices above once loaded;
   // until a file is decoded, or if it fails, the synthesized version plays. Pitched samples are recorded at A5 (880 Hz).
   const SFX = ["click", "spin", "land", "land_heavy", "chime", "crystal", "tumble", "charge", "burst", "clash", "wail", "toll",
-    "sting", "sting_devil", "fanfare", "bigwin", "heartbeat", "crumble", "challenger", "banner", "fs_land", "edge"];
+    "sting", "sting_devil", "fanfare", "bigwin", "totalwin", "heartbeat", "crumble", "challenger", "banner", "fs_land", "edge"];
   const raw = Object.fromEntries(SFX.map(k => [k, fetch(`assets/sfx/${k}.mp3`).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)]));
   const buf = {};
   loadSfx = async () => { for (const k of SFX) { try { const ab = await raw[k]; if (ab) buf[k] = await ctx.decodeAudioData(ab); } catch (err) { console.warn("sfx " + k, err); } } };
@@ -2084,6 +2118,7 @@ const sound = (() => {
     [0, 4, 7, 12, 16].slice(0, 3 + Math.min(level, 2)).forEach((n, i) => smp("chime", t + .07 + i * .065, .3, pitch(12 + n + level * 2)));
     return true;
   });
+  use("totalWin", null, t => { duck(3.5); return smp("totalwin", t, .8); });
   use("bigWin", null, (t, max = false) => { duck(max ? 4 : 3); if (!smp("bigwin", t, .8)) return false; if (max) smp("sting_devil", t + .3, .45); return true; });
 
   return {
@@ -2740,6 +2775,8 @@ const introDone = new Promise(resolve => {
   el.focus();
 });
 // the VS break-out clip (1.8 MB) loads behind the intro, not in the loading bar
+// the characters' win rigs load behind the intro too (about 60 KB each)
+if (!RM) introDone.then(() => CHARS.forEach(id => RigPlayer.load(`assets/sym-rigs/${id}`).then(r => { symRigs[id] = r; }, () => {})));
 if (!RM) introDone.then(() => fetch("assets/vs-break.webp").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
 
 // the loading bar waits for the images of the first screen

@@ -452,6 +452,12 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 
 /* Idle motion per symbol */
 .t-char .rig { animation: bob 3.2s ease-in-out infinite; }
+/* a character's win rig is cut from the clean picture (the symbol files have their halo painted in): its light comes
+   from here, in its colour; only one plays at a time */
+.sym-rig { filter: drop-shadow(0 0 .3cqw rgb(var(--c) / .85)) drop-shadow(0 0 .9cqw rgb(var(--c) / .4)); }
+/* a character's win rig plays over the symbol; its still picture hides meanwhile */
+.sym-rig { position: absolute; pointer-events: none; z-index: 2; }
+.sym.rigging > .rig { visibility: hidden; }
 @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-4%) rotate(1.5deg); } }
 .s-blue .rig { animation: floaty 2.6s ease-in-out infinite; }
 @keyframes floaty { 0%, 100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-6%) scale(.97, 1.03); } }

@@ -1,4 +1,4 @@
-Ghost Duels - files for the Stake Engine dashboard (built 2026-11-08 from branch ghost-duels)
+Ghost Duels - files for the Stake Engine dashboard (built 2026-11-10 from branch ghost-duels)
 
 1_math       Upload all 15 files as the math version: index.json plus a books file (.jsonl.zst)
              and a lookup table (.csv) for each mode.
