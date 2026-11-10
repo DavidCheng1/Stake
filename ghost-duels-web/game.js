@@ -9,7 +9,7 @@ const money = v => RGS.formatMoney(v);
 const i18n = (de, en) => RGS.lang === "de" && !RGS.social ? de : RGS.socialText(en);
 // ---------- Pace: rounds play NORMAL times faster than their authored timings, TURBO with turbo on; a click during a
 // round (slam stop) hurries the sequence that is playing. The VS duel keeps its own, gentler pace so it stays readable
-// (its break-out clip, assets/vs-break.webp, is retimed to VS_NORMAL by tools/retime_webp.py).
+// (its break-out clip, assets/vs-punch.webm, plays at that pace).
 // Every wait (sleep, later) and every scripted animation runs at pace(); the idle CSS loops keep their own speed.
 const NORMAL = 2, TURBO = 3.5, VS_NORMAL = 1.8, VS_TURBO = 2.5, SLAM = 6;
 let turbo = false, slam = false, dueling = false;
@@ -376,7 +376,7 @@ function vxSwirl(half) {
 function showTallVS(rl, small) {
   const t = rl.tall; t.hidden = false; t.className = "tall vsx" + (small ? " small" : ""); t.style.removeProperty("--c");
   const crest = div("vx-crest"), mult = div("vx-mult badge"); crest.appendChild(makeSym("vs")); mult.textContent = "×?";
-  t.replaceChildren(...vxBack(), vxSwirl("back"), skullKing(), vxSwirl("front"), crest, mult);
+  t.replaceChildren(...vxBack(), vxSwirl("back"), vxSwirl("front"), crest, mult); // the arena (vs-field.webp) shows through
   rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = "hidden"; });
 }
 // duel winner: the character in the frame with its multiplier at the bottom
@@ -385,6 +385,12 @@ function showTallWinner(rl, id, mult, tier) {
   const badge = div("tall-badge badge" + (tier >= 2 ? " t" + tier : "")); badge.textContent = "×" + mult;
   t.replaceChildren(...vxBack(), makeSym(id), badge);
   rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = "hidden"; });
+  // the winner celebrates in the arena (assets/wins/<id>.webm, a Gemini Omni loop) for as long as the reel stands;
+  // the still symbol shows until the clip plays, and with reduced motion
+  if (RM) return;
+  const v = document.createElement("video"); v.className = "tall-vid"; v.muted = v.loop = v.playsInline = true; v.src = `assets/wins/${id}.webm`;
+  v.addEventListener("playing", () => t.classList.add("has-vid"), { once: true });
+  t.insertBefore(v, badge); v.play().catch(() => {});
 }
 // the small VS has landed: it charges, then the frame shoots open, smoke blasts out and the king rises
 async function tallLanded(rl) {
@@ -404,7 +410,7 @@ async function tallLanded(rl) {
     { duration: 680, easing: "cubic-bezier(.2,.9,.3,1.15)" });
   const open = [{ transform: "scaleY(0)", opacity: .3 }, { transform: "scaleY(1.06)", opacity: 1, offset: .6 }, { transform: "none", opacity: 1 }];
   qa(t, ".vx-glow, .vx-bg, .vx-frame").forEach(e => e.animate(open, { duration: 520, easing: "cubic-bezier(.2,.9,.3,1)" }));
-  q(t, ".vx-king").animate([{ transform: "translateY(38%) scale(.3)", opacity: 0 }, { transform: "translateY(-5%) scale(1.08)", opacity: 1, offset: .65 }, { transform: "none", opacity: 1 }],
+  q(t, ".vx-king")?.animate([{ transform: "translateY(38%) scale(.3)", opacity: 0 }, { transform: "translateY(-5%) scale(1.08)", opacity: 1, offset: .65 }, { transform: "none", opacity: 1 }],
     { duration: 720, delay: 140, easing: "ease-out", fill: "backwards" });
   q(t, ".vx-mult").animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(1.3)", opacity: 1, offset: .7 }, { transform: "none", opacity: 1 }], { duration: 420, delay: 420, fill: "backwards" });
   const flash = div("vx-flash"); t.appendChild(flash);
@@ -746,14 +752,14 @@ const DUEL_T3 = [[150, 35], [200, 25], [250, 15], [300, 10], [500, 8], [750, 5],
 // value pools above are only used for the rolling badge animation
 // Before a duel the Ghost Pirate breaks out of the VS reel: he slams his hands against the glass left and right, it
 // cracks into lightning that runs out over the board, he gathers the energy and the reel bursts in a green flash.
-// Played from the clip (assets/vs-break.webp, retimed to VS_NORMAL) when it has arrived and turbo is off; otherwise the quick version.
+// Played from the clip (assets/vs-punch.webm) when it has arrived and turbo is off; otherwise the quick version.
 // The clip is fetched once after the intro; each duel plays it from a fresh object URL, since an animated image
 // only starts over under a new URL.
 let breakBlob = null;
 const vsBreakClip = () => breakBlob && URL.createObjectURL(breakBlob);
 async function breakOut(tall, vsSym) {
   tall.classList.add("dueling");
-  const king = q(tall, ".vx-king"), br = div("vx-break"), orb = div("vx-orb"), boom = div("vx-boom");
+  let king = q(tall, ".vx-king"); const br = div("vx-break"), orb = div("vx-orb"), boom = div("vx-boom");
   const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
   br.appendChild(svg); tall.append(br, orb, boom);
   const B = br.getBoundingClientRect(), T = tall.getBoundingClientRect(), u = T.width;
@@ -783,7 +789,7 @@ async function breakOut(tall, vsSym) {
     out.push([web(x, y, u * .22), .7], [web(x, y, u * .45), .5]);
     draw(out, 260); sound.crack(); shake(7, 260);
     fx.emit(cx - cw / 2 + cw * fx2, cy - ch / 2 + ch * fy2, { n: 18, kind: "spark", rgb: "150 255 225", scale: u / 110 });
-    king.animate([{ transform: "scale(1.06)" }, { transform: `translateX(${side * 4}%) rotate(${side * 1.6}deg) scale(1.1)`, offset: .3 }, { transform: "scale(1.07)" }], { duration: 360, fill: "forwards" });
+    king?.animate([{ transform: "scale(1.06)" }, { transform: `translateX(${side * 4}%) rotate(${side * 1.6}deg) scale(1.1)`, offset: .3 }, { transform: "scale(1.07)" }], { duration: 360, fill: "forwards" });
   };
   const flicker = () => br.animate([{ opacity: 1 }, { opacity: .5 }, { opacity: 1 }, { opacity: .7 }, { opacity: 1 }], { duration: 240, iterations: Infinity });
   // short bolts crackling round the ball of ghost fire at (fx, .44) of the reel
@@ -795,26 +801,24 @@ async function breakOut(tall, vsSym) {
   const grow = ms => orb.animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(.7)", opacity: .9, offset: .5 }, { transform: "scale(.6)", opacity: .8, offset: .7 }, { transform: "scale(1.15)", opacity: 1 }], { duration: ms, fill: "forwards", easing: "ease-in" });
   const clip = turbo ? null : vsBreakClip();
   if (clip) {
-    // the clip (2.75-8.96 s of the Gemini video at 1.6x, then 1.8x faster for VS_NORMAL) plays in the reel; the times here
-    // are at 1x and sleep() divides them by the pace: his hands on the glass until 1.38 s, then
-    // lightning at his hands, from 2.2 s he turns and charges at the left edge, and it bursts at 3.72 s. The cracks
-    // and the ball of ghost fire outside the frame keep to those times.
-    const v = new Image(); v.alt = ""; v.src = clip;
-    await v.decode().catch(() => {});
-    q(king, "img").replaceWith(v);
+    // the punch clip (assets/vs-punch.webm, Gemini Omni) plays in the reel at the duel's pace, like sleep() below: the
+    // skeleton pirate charges his fist and lands a huge punch at the centre at 2.2 s of the clip; the cracks run out
+    // from there to both sides, outside the frame
+    const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.src = clip;
+    // the arena has no pirate standing in it: the clip gets his window for as long as it plays (it fades out after)
+    if (!king) { const win = skullKing(); tall.insertBefore(win, q(tall, ".vx-crest")); king = q(win, ".vx-king"); }
+    king.classList.add("punch"); q(king, "img").replaceWith(v);
     br.classList.add("out"); // the clip is the show inside the frame: the lightning only runs outside it
     qa(tall, ".vx-swirl").forEach(e => e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: "forwards" }));
-    king.animate([{ filter: "brightness(1.6)" }, { filter: "brightness(1)" }], { duration: 300 }); shake(4, 300);
-    await sleep(1360);
-    impact(0, .42, -1); await sleep(120);
-    impact(1, .46, 1); flicker();
-    await sleep(720);
-    sound.charge(); shake(4, 1500);
-    Object.assign(orb.style, { left: "-35%", width: "90%" }); grow(1500); // at his hands, just outside the frame
-    for (let i = 0; i < 11; i++) { arcs(-.35); await sleep(138); }
+    v.playbackRate = pace(); await v.play().catch(() => {});
+    await sleep(1400);
+    sound.charge(); shake(3, 700); // his fist fills with ghost fire
+    await sleep(800);
+    impact(.5, .5, -1); impact(.5, .5, 1); flicker(); shake(12, 520); // the punch lands
+    await sleep(520);
     later(() => URL.revokeObjectURL(clip), 3000);
   } else {
-    king.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "scale(1.06)", filter: "brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3)" }], { duration: 200, fill: "forwards" });
+    king?.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "scale(1.06)", filter: "brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3)" }], { duration: 200, fill: "forwards" });
     await sleep(180);
     impact(.1, .4, -1); await sleep(200);
     impact(.9, .46, 1); flicker();
@@ -822,7 +826,7 @@ async function breakOut(tall, vsSym) {
     // he gathers the lightning into a ball of ghost fire
     sound.charge(); shake(5, 420);
     grow(380);
-    king.animate([{ transform: "scale(1.07)" }, { transform: "translateX(-1%) scale(1.08)" }, { transform: "translateX(1%) scale(1.07)" }, { transform: "scale(1.09)" }], { duration: 120, iterations: 3, fill: "forwards" });
+    king?.animate([{ transform: "scale(1.07)" }, { transform: "translateX(-1%) scale(1.08)" }, { transform: "translateX(1%) scale(1.07)" }, { transform: "scale(1.09)" }], { duration: 120, iterations: 3, fill: "forwards" });
     for (let i = 0; i < 3; i++) { arcs(.5); await sleep(125); }
   }
   // the reel bursts
@@ -843,6 +847,31 @@ async function reelDuel(d) {
   dueling = true;
   try { return await duelShow(d); } finally { dueling = false; }
 }
+// ---- the fighters' clash as a video (assets/fights/<a>-<b>.webm, one per pairing, made with Gemini Omni) in a panel
+// over the arena; a pairing's clip shows the first of FIGHT_ORDER on top
+const FIGHT_ORDER = ["devil", "pirate", "witch", "blue"], fightClips = new Map();
+function loadFight(a, b) {
+  if (!a || !b || a === b || RM) return Promise.resolve(null);
+  const [x, y] = [a, b].sort((p, q) => FIGHT_ORDER.indexOf(p) - FIGHT_ORDER.indexOf(q)), src = `assets/fights/${x}-${y}.webm`;
+  if (!fightClips.has(src)) fightClips.set(src, new Promise(res => {
+    const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = src;
+    const t = setTimeout(() => res(null), 6000); // not loaded in time: the duel bumps instead
+    v.oncanplaythrough = () => { clearTimeout(t); res(v); }; v.onerror = () => { clearTimeout(t); res(null); };
+  }));
+  return fightClips.get(src);
+}
+async function playFight(tall, v) {
+  const panel = div("fight-panel"), t = tall.getBoundingClientRect(), s = stage.getBoundingClientRect(), w = t.height * 9 / 16;
+  Object.assign(panel.style, { left: `${t.left - s.left + t.width / 2 - w / 2}px`, top: `${t.top - s.top}px`, width: `${w}px`, height: `${t.height}px` });
+  panel.appendChild(v); stage.appendChild(panel);
+  v.currentTime = 0; v.playbackRate = 1.25 * pace();
+  panel.animate([{ opacity: 0, transform: "scale(.92)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: "ease-out" });
+  await v.play().catch(() => {});
+  await new Promise(res => { const iv = setInterval(() => { if (v.ended || v.paused || slam) { clearInterval(iv); res(); } }, 50); });
+  await panel.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, fill: "forwards" }).finished;
+  v.pause(); panel.remove();
+}
+
 async function duelShow(d) {
   nextSequence();
   const reelIdx = d.reel, rl = reels[reelIdx], tall = rl.tall;
@@ -850,6 +879,10 @@ async function duelShow(d) {
   const ghostTop = d.top.symbol, ghostBot = d.bottom.symbol, topWins1 = d.topWins;
   const pirate = d.challengers.find(ch => ch.symbol === "pirate"), devil = d.challengers.find(ch => ch.symbol === "devil");
   const m2 = pirate?.mult, m3 = devil?.mult;
+  // every encounter's clip starts loading now (who faces whom follows from the round's results)
+  const champ1 = topWins1 ? ghostTop : ghostBot, champ2 = pirate?.wins ? "pirate" : champ1;
+  if (!turbo) { loadFight(ghostTop, ghostBot); if (pirate) loadFight(champ1, "pirate"); if (devil) loadFight(champ2, "devil"); }
+  const fightOr = async (a, b, bump) => { const v = turbo ? null : await loadFight(a, b); if (v && !slam) await playFight(tall, v); else await bump(); };
   let winner = topWins1 ? ghostTop : ghostBot, mult = topWins1 ? m1 : m1b;
   const vsSym = q(tall, ".vx-crest .sym") || q(tall, ".sym");
   say(i18n("Duell", "Duel") + `: ${SYM[ghostTop].name} vs ${SYM[ghostBot].name}`);
@@ -921,7 +954,7 @@ async function duelShow(d) {
   await slamVs();
   await Promise.all([rollBadge(top.bd, m1, 1000, DUEL_T1.map(v => v[0])), rollBadge(bot.bd, m1b, 1300, DUEL_T1.map(v => v[0]))]);
   await sleep(200);
-  await clash(3, 0);
+  await fightOr(ghostTop, ghostBot, () => clash(3, 0));
   let champ = topWins1 ? top : bot, loser = topWins1 ? bot : top;
   await knockOut(loser);
   say(`${SYM[champ.id].name} ${i18n("gewinnt", "wins")} · ×${mult}`); cheer(champ);
@@ -938,7 +971,7 @@ async function duelShow(d) {
     await slamVs();
     await rollBadge(ch.bd, value, 1500 + power * 500, pool.map(v => v[0]));
     await sleep(250);
-    await clash(3 + power, power);
+    await fightOr(champ.id, challengerId, () => clash(3 + power, power));
     if (wins) { hero.react("laugh", 1800); await knockOut(champ); loser = champ; champ = ch; winner = ch.id; mult = value; say(`${SYM[ch.id].name} ${i18n("gewinnt", "wins")} · ×${value}`); cheer(ch); }
     else { await knockOut(ch); loser = ch; say(`${SYM[champ.id].name} ${i18n("hält stand", "holds on")} · ×${mult}`); cheer(champ); }
     await sleep(800);
@@ -2723,7 +2756,7 @@ const introDone = new Promise(resolve => {
 // the VS break-out clip (1.8 MB) loads behind the intro, not in the loading bar
 // the characters' win rigs load behind the intro too (about 60 KB each)
 if (!RM) introDone.then(() => CHARS.forEach(id => RigPlayer.load(`assets/sym-rigs/${id}`).then(r => { symRigs[id] = r; }, () => {})));
-if (!RM) introDone.then(() => fetch("assets/vs-break.webp").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
+if (!RM) introDone.then(() => fetch("assets/vs-punch.webm").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
 
 // the loading bar waits for the images of the first screen
 LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp", "assets/hud-bg.webp", "assets/bb-logo.webp",
