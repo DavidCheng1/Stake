@@ -237,11 +237,26 @@ const EXPR = {
   vs(el) { q(el, ".rig").animate([{ transform: "scale(1)" }, { transform: "scale(1.25) rotate(-8deg)", offset: .3 }, { transform: "scale(1.15) rotate(8deg)", offset: .6 }, { transform: "scale(1)" }], { duration: 900 }); }
 };
 
+// Characters celebrate a win with their parts moving (cut-out rigs made by tools/sprites/rig.py from
+// tools/sprites/symbols/<id>.json): while it plays, the still picture hides under the rig's canvas, which covers the
+// symbol plus the rig's margin, so the moving character sits exactly where the picture was.
+const symRigs = {};
+function playSymRig(el, id) {
+  const rig = symRigs[id];
+  if (!rig || el.classList.contains("rigging")) return;
+  // a canvas does not stretch between its edges like a div: its box is set outright (the symbol plus the margin)
+  const cv = document.createElement("canvas"); cv.className = "sym-rig";
+  cv.style.left = cv.style.top = `${-rig.pad * 100}%`; cv.style.width = cv.style.height = `${100 + 2 * rig.pad * 100}%`;
+  el.appendChild(cv); el.classList.add("rigging");
+  const anim = RigPlayer.play(cv, rig, { intro: true });
+  setTimeout(() => { anim.stop(); cv.remove(); el.classList.remove("rigging"); }, rig.intro * 1000 + 60);
+}
 function animWin(el, mode = "win") {
   if (!el) return;
   const id = el.dataset.id, d = SYM[id];
   if (RM) { el.animate([{ filter: "brightness(1)" }, { filter: "brightness(1.7)" }, { filter: "brightness(1)" }], { duration: 600 }); return; }
   if (mode === "win") {
+    playSymRig(el, id);
     el.animate(POP[d.tier], { duration: d.tier === "rune" ? 900 : 1400, easing: "ease-out" });
     const aura = q(el, ".aura");
     aura && aura.animate([{ opacity: .3, transform: "scale(.8)" }, { opacity: 1, transform: "scale(1.4)", offset: .3 }, { opacity: .3, transform: "scale(1)" }], { duration: 1200 });
@@ -2751,6 +2766,8 @@ const introDone = new Promise(resolve => {
   el.focus();
 });
 // the VS break-out clip (1.8 MB) loads behind the intro, not in the loading bar
+// the characters' win rigs load behind the intro too (about 60 KB each)
+if (!RM) introDone.then(() => CHARS.forEach(id => RigPlayer.load(`assets/sym-rigs/${id}`).then(r => { symRigs[id] = r; }, () => {})));
 if (!RM) introDone.then(() => fetch("assets/vs-break.webp").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
 
 // the loading bar waits for the images of the first screen
