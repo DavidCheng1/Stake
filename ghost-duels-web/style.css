@@ -1020,9 +1020,10 @@ body:has(#winTier:not([hidden]), #totalWin:not([hidden])) #buyBtn { opacity: 0; 
 .vx-window .vx-king.vid.punch { top: 0; height: 100%; }
 .vx-king.punch video { display: block; width: 100%; height: 100%; object-fit: cover; }
 .tall-vid { position: absolute; inset: .25cqw; width: calc(100% - .5cqw); height: calc(100% - .5cqw); object-fit: cover; border-radius: 6px; z-index: 2;
-  opacity: 0; transition: opacity .35s; pointer-events: none; }
+  opacity: 0; transition: opacity .6s ease-in-out; pointer-events: none; }
 .tall.has-vid > .tall-vid { opacity: 1; }
-.tall.has-vid > .sym { visibility: hidden; }
+.tall > .sym { transition: opacity .6s ease-in-out, filter .6s; }
+.tall.has-vid > .sym { opacity: 0; filter: brightness(2.2); } /* the still flares out as the clip fades in */
 /* runes, objects and the FS: their glowing parts as a light layer (faint at rest, flaring on a win), a shine that sweeps
    across them, and the cracks that run through a winning rune */
 .sym-light { position: absolute; inset: 0; background: 50% 50% / 100% 100% no-repeat; mix-blend-mode: screen; opacity: .15; pointer-events: none; }
@@ -1033,3 +1034,7 @@ body:has(#winTier:not([hidden]), #totalWin:not([hidden])) #buyBtn { opacity: 0; 
 .rune-cracks { position: absolute; inset: 12%; width: 76%; height: 76%; overflow: visible; pointer-events: none; z-index: 3; }
 .rune-cracks path { fill: none; stroke: #fff; stroke-width: 5.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; filter: drop-shadow(0 0 1.5px rgb(var(--c))) drop-shadow(0 0 4px rgb(var(--c))); }
 @media (prefers-reduced-motion: reduce) { .t-rune .sym-light, .s-fs .sym-light { animation: none; } }
+/* the waiting VS reel: the arena as a living loop (no rays over it) */
+.vx-rest { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .6s; }
+.vx-rest.on { opacity: 1; }
+.vx-bg:has(.vx-rest.on) .vx-rays { display: none; }

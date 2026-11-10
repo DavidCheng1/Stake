@@ -409,7 +409,14 @@ function vxSwirl(half) {
 function showTallVS(rl, small) {
   const t = rl.tall; t.hidden = false; t.className = "tall vsx" + (small ? " small" : ""); t.style.removeProperty("--c");
   const crest = div("vx-crest"), mult = div("vx-mult badge"); crest.appendChild(makeSym("vs")); mult.textContent = "×?";
-  t.replaceChildren(...vxBack(), vxSwirl("back"), vxSwirl("front"), crest, mult); // the arena (vs-field.webp) shows through
+  t.replaceChildren(...vxBack(), crest, mult);
+  // the waiting arena comes alive: a portal of ghost fire turns, lanterns and runes flicker (assets/vs-rest.webm, a
+  // seamless loop); the still arena (vs-field.webp) shows until it plays, and with reduced motion
+  if (!RM) {
+    const v = document.createElement("video"); v.className = "vx-rest"; v.muted = v.loop = v.playsInline = true; v.src = "assets/vs-rest.webm";
+    v.addEventListener("playing", () => v.classList.add("on"), { once: true });
+    q(t, ".vx-bg").prepend(v); v.play().catch(() => {});
+  }
   rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = "hidden"; });
 }
 // duel winner: the character in the frame with its multiplier at the bottom
@@ -422,7 +429,13 @@ function showTallWinner(rl, id, mult, tier) {
   // the still symbol shows until the clip plays, and with reduced motion
   if (RM) return;
   const v = document.createElement("video"); v.className = "tall-vid"; v.muted = v.loop = v.playsInline = true; v.src = `assets/wins/${id}.webm`;
-  v.addEventListener("playing", () => t.classList.add("has-vid"), { once: true });
+  // the still crossfades into the clip under a puff of ghost fire, so the switch never shows
+  v.addEventListener("playing", () => {
+    t.classList.add("has-vid");
+    const [x, y, w, h] = centerOf(t);
+    fx.emit(x, y, { n: 16, kind: "spark", rgb: SYM[id].rgb, scale: w / 90 });
+    for (let i = 0; i < 6; i++) fx.emit(x, y - h * .3 + h * .6 * i / 5, { n: 1, kind: "smoke", rgb: "150 255 200", scale: w / 70, sp: 1.2 });
+  }, { once: true });
   // a little brisker than the clip, and quicker still through its last part, where the pose winds back to the start
   // (the clips are 4 s; a recorded WebM may not know its own length)
   v.addEventListener("timeupdate", () => { v.playbackRate = v.currentTime > 2.6 ? 1.8 : 1.15; });
@@ -883,12 +896,12 @@ async function reelDuel(d) {
   dueling = true;
   try { return await duelShow(d); } finally { dueling = false; }
 }
-// ---- the fighters' clash as a video (assets/fights/<a>-<b>.webm, one per pairing, made with Gemini Omni) in a panel
-// over the arena; a pairing's clip shows the first of FIGHT_ORDER on top
+// ---- the fighters' clash as a video in a panel over the arena: assets/fights/<a>-<b>-<winner>.webm, one per pairing
+// and outcome (made with Gemini Omni), so the clip shows who wins; a pairing's clip has the first of FIGHT_ORDER on top
 const FIGHT_ORDER = ["devil", "pirate", "witch", "blue"], fightClips = new Map();
-function loadFight(a, b) {
+function loadFight(a, b, w) {
   if (!a || !b || a === b || RM) return Promise.resolve(null);
-  const [x, y] = [a, b].sort((p, q) => FIGHT_ORDER.indexOf(p) - FIGHT_ORDER.indexOf(q)), src = `assets/fights/${x}-${y}.webm`;
+  const [x, y] = [a, b].sort((p, q) => FIGHT_ORDER.indexOf(p) - FIGHT_ORDER.indexOf(q)), src = `assets/fights/${x}-${y}-${w}.webm`;
   if (!fightClips.has(src)) fightClips.set(src, new Promise(res => {
     const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = src;
     const t = setTimeout(() => res(null), 6000); // not loaded in time: the duel bumps instead
@@ -917,8 +930,9 @@ async function duelShow(d) {
   const m2 = pirate?.mult, m3 = devil?.mult;
   // every encounter's clip starts loading now (who faces whom follows from the round's results)
   const champ1 = topWins1 ? ghostTop : ghostBot, champ2 = pirate?.wins ? "pirate" : champ1;
-  if (!turbo) { loadFight(ghostTop, ghostBot); if (pirate) loadFight(champ1, "pirate"); if (devil) loadFight(champ2, "devil"); }
-  const fightOr = async (a, b, bump) => { const v = turbo ? null : await loadFight(a, b); if (v && !slam) await playFight(tall, v); else await bump(); };
+  const champ3 = devil?.wins ? "devil" : champ2;
+  if (!turbo) { loadFight(ghostTop, ghostBot, champ1); if (pirate) loadFight(champ1, "pirate", champ2); if (devil) loadFight(champ2, "devil", champ3); }
+  const fightOr = async (a, b, w, bump) => { const v = turbo ? null : await loadFight(a, b, w); if (v && !slam) await playFight(tall, v); else await bump(); };
   let winner = topWins1 ? ghostTop : ghostBot, mult = topWins1 ? m1 : m1b;
   const vsSym = q(tall, ".vx-crest .sym") || q(tall, ".sym");
   say(i18n("Duell", "Duel") + `: ${SYM[ghostTop].name} vs ${SYM[ghostBot].name}`);
@@ -990,7 +1004,7 @@ async function duelShow(d) {
   await slamVs();
   await Promise.all([rollBadge(top.bd, m1, 1000, DUEL_T1.map(v => v[0])), rollBadge(bot.bd, m1b, 1300, DUEL_T1.map(v => v[0]))]);
   await sleep(200);
-  await fightOr(ghostTop, ghostBot, () => clash(3, 0));
+  await fightOr(ghostTop, ghostBot, champ1, () => clash(3, 0));
   let champ = topWins1 ? top : bot, loser = topWins1 ? bot : top;
   await knockOut(loser);
   say(`${SYM[champ.id].name} ${i18n("gewinnt", "wins")} · ×${mult}`); cheer(champ);
@@ -1007,7 +1021,7 @@ async function duelShow(d) {
     await slamVs();
     await rollBadge(ch.bd, value, 1500 + power * 500, pool.map(v => v[0]));
     await sleep(250);
-    await fightOr(champ.id, challengerId, () => clash(3 + power, power));
+    await fightOr(champ.id, challengerId, wins ? challengerId : champ.id, () => clash(3 + power, power));
     if (wins) { hero.react("laugh", 1800); await knockOut(champ); loser = champ; champ = ch; winner = ch.id; mult = value; say(`${SYM[ch.id].name} ${i18n("gewinnt", "wins")} · ×${value}`); cheer(ch); }
     else { await knockOut(ch); loser = ch; say(`${SYM[champ.id].name} ${i18n("hält stand", "holds on")} · ×${mult}`); cheer(champ); }
     await sleep(800);
