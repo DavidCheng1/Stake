@@ -64,7 +64,7 @@ def post(url, body):
     req = urllib.request.Request(url, data=json.dumps(body).encode(), method="POST", headers={
         "x-goog-api-key": api_key(), "Content-Type": "application/json", "Api-Revision": API_REVISION})
     try:
-        with urllib.request.urlopen(req, timeout=300) as r:
+        with urllib.request.urlopen(req, timeout=900) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"HTTP {e.code}: {e.read().decode(errors='replace')[:1500]}") from None
@@ -248,7 +248,77 @@ def generate(a):
     sheet(a.name)
 
 
+VIDEO_MODEL = "gemini-omni-1.2-flash"
+
+
+def find_video(node):
+    """The base64 video in an Interactions answer (a model_output step's content item of type video)."""
+    if isinstance(node, dict):
+        mime = node.get("mime_type") or node.get("mimeType") or ""
+        if isinstance(node.get("data"), str) and mime.startswith("video/"):
+            return node["data"]
+        for v in node.values():
+            found = find_video(v)
+            if found:
+                return found
+    elif isinstance(node, list):
+        for v in node:
+            found = find_video(v)
+            if found:
+                return found
+    return None
+
+
+def video(a):
+    """video <name> <prompt or @file> [--ref ...] [--duration 5] [--aspect 9:16] [--res 720p] [--n 1] [--yes]:
+    take-NN.mp4 in imagegen-out/<name> with Gemini Omni (about $0.07 per second), logged in takes.json."""
+    folder = os.path.join(OUT, a.name)
+    os.makedirs(folder, exist_ok=True)
+    prompt = open(a.prompt[1:], encoding="utf-8").read().strip() if a.prompt.startswith("@") else a.prompt
+    if not a.yes:
+        print(f"{a.n} video(s) of {a.duration} s with {VIDEO_MODEL} ({a.aspect}, {a.res}), {len(a.ref)} reference(s), "
+              f"about ${0.07 * a.duration * a.n:.2f}. Run again with --yes to go ahead.")
+        return
+    log_path = os.path.join(folder, "takes.json")
+    log = json.load(open(log_path, encoding="utf-8")) if os.path.exists(log_path) else []
+    n0 = len([f for f in os.listdir(folder) if f.startswith("take-") and f.endswith(".mp4")])
+    for i in range(a.n):
+        body = {"model": VIDEO_MODEL,
+                "input": [{"type": "text", "text": prompt}] + [{"type": "image", "mime_type": "image/png", "data": ref_part(r)} for r in a.ref],
+                "response_format": {"type": "video", "aspect_ratio": a.aspect, "duration": f"{a.duration}s", "resolution": a.res}}
+        try:
+            res = post(f"{API}/interactions", body)
+        except (RuntimeError, ConnectionError, urllib.error.URLError) as e:
+            print(f"video {n0 + i + 1}: failed: {e}")
+            continue
+        data = find_video(res)
+        if not data:
+            print("no video in the answer: " + json.dumps(res)[:800])
+            continue
+        name = f"take-{n0 + i + 1:02d}.mp4"
+        with open(os.path.join(folder, name), "wb") as f:
+            f.write(base64.b64decode(data))
+        log.append({"take": name, "time": datetime.datetime.now().isoformat(timespec="seconds"), "model": VIDEO_MODEL,
+                    "aspect": a.aspect, "duration": a.duration, "res": a.res, "refs": [os.path.relpath(r, ROOT) for r in a.ref], "prompt": prompt})
+        with open(log_path, "w", encoding="utf-8") as f:
+            json.dump(log, f, indent=1, ensure_ascii=False)
+        print(f"{name} -> {os.path.join(folder, name)}")
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "video":
+        p = argparse.ArgumentParser()
+        p.add_argument("cmd")
+        p.add_argument("name")
+        p.add_argument("prompt")
+        p.add_argument("--ref", nargs="*", default=[])
+        p.add_argument("--duration", type=int, default=5)
+        p.add_argument("--aspect", default="9:16")
+        p.add_argument("--res", default="720p")
+        p.add_argument("--n", type=int, default=1)
+        p.add_argument("--yes", action="store_true")
+        video(p.parse_args())
+        return
     if len(sys.argv) > 1 and sys.argv[1] == "cut":
         p = argparse.ArgumentParser()
         p.add_argument("cmd")
