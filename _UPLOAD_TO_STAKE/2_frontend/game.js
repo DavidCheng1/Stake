@@ -9,7 +9,7 @@ const money = v => RGS.formatMoney(v);
 const i18n = (de, en) => RGS.lang === "de" && !RGS.social ? de : RGS.socialText(en);
 // ---------- Pace: rounds play NORMAL times faster than their authored timings, TURBO with turbo on; a click during a
 // round (slam stop) hurries the sequence that is playing. The VS duel keeps its own, gentler pace so it stays readable
-// (its break-out clip, assets/vs-break.webp, is retimed to VS_NORMAL by tools/retime_webp.py).
+// (its break-out clip, assets/vs-punch.webm, plays at that pace).
 // Every wait (sleep, later) and every scripted animation runs at pace(); the idle CSS loops keep their own speed.
 const NORMAL = 2, TURBO = 3.5, VS_NORMAL = 1.8, VS_TURBO = 2.5, SLAM = 6;
 let turbo = false, slam = false, dueling = false;
@@ -59,7 +59,7 @@ const SYM = {
   rune_purple: { name: i18n("Schattenrune", "Shadow Rune"), tier: "rune", rgb: "196 92 255", w: 10, pay: [.3, .8, 1.2, 2.5, 5, 10] },
   rune_fire:   { name: i18n("Feuerrune", "Fire Rune"), tier: "rune", rgb: "255 138 42",  w: 10, pay: [.3, .8, 1.2, 2.5, 5, 10] },
   rune_pink:   { name: i18n("Wirbelrune", "Whirl Rune"), tier: "rune", rgb: "255 79 168", w: 10, pay: [.3, .8, 1.2, 2.5, 5, 10] },
-  fs:     { name: i18n("Freispiele", "Free Spins"),       tier: "scatter", rgb: "255 79 210", w: .516, gloss: true },
+  fs:     { name: i18n("Freispiele", "Free Spins"),       tier: "scatter", rgb: "110 205 255", w: .516, gloss: true },
   vs:     { name: "VS",               tier: "special", rgb: "120 220 255", w: 0, gloss: true }
 };
 const CHARS = ["devil", "pirate", "witch", "blue"];
@@ -100,34 +100,8 @@ const RTP_TEXT = BASE_INFO.rtp.toLocaleString(RGS.lang, { minimumFractionDigits:
 
 // Face rigs, coordinates in % of the square symbol
 const RIG = {
-  pirate: {
-    filler: { x: 51, y: 67, w: 17, h: 6, c: "#3b1408" },
-    parts: [{ name: "jaw", poly: [[18,67],[40,66],[62,65],[80,62],[92,100],[8,100]], o: [50, 66] }],
-    glows: [{ x: 35, y: 52, w: 14, h: 12, c: "125 255 170" }, { x: 54.5, y: 49, w: 14, h: 12, c: "125 255 170" }]
-  },
-  devil: {
-    base: [[0,63],[32,65.5],[62,65.5],[70,58],[78,48],[100,48],[100,53],[75,53],[75,84],[80,93],[100,93],[100,100],[0,100]],
-    parts: [
-      { name: "head", poly: [[0,0],[100,0],[100,50],[78,50],[71,60],[63,70],[31,70],[0,66]], o: [47, 66] },
-      { name: "tail", poly: [[74,53],[100,53],[100,94],[79,94],[73,84]], o: [77, 89] }
-    ],
-    glows: [{ x: 32, y: 45, w: 15, h: 10, c: "255 232 120", part: "head" }, { x: 55, y: 45, w: 15, h: 10, c: "255 232 120", part: "head" }],
-    lids: { color: "#7a2323", line: "#1a0505", part: "head", eyes: [{ x: 32, y: 44, w: 13, h: 9 }, { x: 55, y: 44, w: 13, h: 9 }] }
-  },
-  witch: {
-    base: [[0,61],[15,59],[25,56],[35,51],[45,46],[55,43],[65,41],[75,38],[85,33],[100,28],[100,100],[0,100]],
-    parts: [{ name: "hat", poly: [[0,0],[100,0],[100,31],[85,36],[75,41],[65,44],[55,46],[45,49],[35,54],[25,59],[15,62],[0,64]], o: [50, 46] }],
-    lids: { color: "#f1b6f5", line: "#3a0a52", eyes: [{ x: 48.5, y: 51.5, w: 11, h: 13 }, { x: 68, y: 48, w: 10, h: 12 }] },
-    cheeks: [{ x: 41, y: 59, w: 10 }, { x: 74, y: 55, w: 9 }]
-  },
-  blue: {
-    lids: { color: "#7af6f9", line: "#0c3550", eyes: [{ x: 27, y: 32.5, w: 13, h: 15 }, { x: 52, y: 32.5, w: 13, h: 15 }] },
-    cheeks: [{ x: 20, y: 43, w: 10 }, { x: 58, y: 43, w: 10 }]
-  },
-  book:    { glows: [{ x: 48, y: 40, w: 34, h: 30, c: "110 255 150" }] },
-  key:     { glows: [{ x: 57, y: 21, w: 10, h: 10, c: "255 245 140" }, { x: 70, y: 22, w: 10, h: 10, c: "255 245 140" }] },
-  lantern: { glows: [{ x: 52, y: 60, w: 26, h: 34, c: "110 255 160" }] },
-  ring:    { glows: [{ x: 55, y: 30, w: 26, h: 20, c: "245 150 255" }] }
+  // the four characters (busts) move with their win rigs (tools/sprites/symbols), not with clipped layers; the other
+  // symbols light up from their own light layers (assets/sym-fx, symFx)
 };
 
 const clip = poly => `polygon(${poly.map(([x, y]) => `${x}% ${y}%`).join(",")})`;
@@ -159,6 +133,12 @@ function makeSym(id, o = {}) {
   });
   (r.cheeks || []).forEach(c => rig.appendChild(box(div("cheek"), { ...c, h: c.w * .7 })));
   if (d.gloss) { const g = div("gloss"); g.style.webkitMaskImage = g.style.maskImage = `url(${IMG[id]})`; rig.appendChild(g); }
+  // runes, objects and the FS: their glowing parts as a light layer, and a shine that sweeps across them on a win
+  if (d.tier !== "char" && id !== "vs") {
+    const light = div("sym-light"); light.style.backgroundImage = `url(assets/sym-fx/${id}.webp)`;
+    const shine = div("sym-shine"); shine.style.webkitMaskImage = shine.style.maskImage = `url(${IMG[id]})`;
+    rig.append(light, shine);
+  }
   if (r.lids) el.classList.add("has-lids");
   rig.style.animationDelay = (-Math.random() * 3).toFixed(2) + "s";
   return el;
@@ -172,7 +152,9 @@ const POP = {
     { transform: "scale(1.25) rotate(6deg)", offset: .56 }, { transform: "scale(1.22) rotate(-4deg)", offset: .7 },
     { transform: "scale(1.15) rotate(0)", offset: .84 }, { transform: "scale(1)" }],
   obj: [{ transform: "scale(1)" }, { transform: "scale(.9)", offset: .1 }, { transform: "scale(1.22)", offset: .3 }, { transform: "scale(1.15)", offset: .75 }, { transform: "scale(1)" }],
-  rune: [{ transform: "perspective(400px) rotateY(0) scale(1)" }, { transform: "perspective(400px) rotateY(180deg) scale(1.18)", offset: .5 }, { transform: "perspective(400px) rotateY(360deg) scale(1)" }],
+  // a rune charges: it swells, trembles as its sign lights up, then cracks (symFx draws the cracks)
+  rune: [{ transform: "scale(1)" }, { transform: "scale(1.16)", offset: .25 }, { transform: "scale(1.14) rotate(-3deg)", offset: .35 }, { transform: "scale(1.15) rotate(3deg)", offset: .45 },
+    { transform: "scale(1.13) rotate(-2deg)", offset: .55 }, { transform: "scale(1.15) rotate(2deg)", offset: .65 }, { transform: "scale(1.08)", offset: .8 }, { transform: "scale(1)" }],
   scatter: [{ transform: "scale(1)" }, { transform: "scale(1.3) rotate(-7deg)", offset: .3 }, { transform: "scale(1.26) rotate(7deg)", offset: .55 }, { transform: "scale(1)" }],
   special: [{ transform: "scale(1)" }, { transform: "scale(1.2)", offset: .4 }, { transform: "scale(1)" }]
 };
@@ -184,50 +166,19 @@ const SHUT = [{ transform: "scaleY(0)" }, { transform: "scaleY(1)", offset: .1 }
 const cheeks = (el, dur = 1400) => qa(el, ".cheek").forEach(c => c.animate([{ opacity: 0 }, { opacity: 1, offset: .25 }, { opacity: .9, offset: .8 }, { opacity: 0 }], { duration: dur }));
 const turn = (deg, extra = "") => ({ transform: `rotate(${deg}deg) ${extra}` });
 
+// a character in a duel: taunting plays its win rig, getting hurt makes it recoil, tip away and pale
+function charExpr(el, m) {
+  if (m === "hurt") {
+    q(el, ".rig").animate([{ transform: "none", filter: "none" }, { transform: "translateX(-6%) rotate(-8deg) scale(.94)", filter: "brightness(.6) saturate(.5)", offset: .15 },
+      { transform: "translateX(-4%) rotate(-6deg) scale(.95)", filter: "brightness(.65) saturate(.5)", offset: .85 }, { transform: "none", filter: "none" }], { duration: 1500 });
+    return;
+  }
+  if (m === "taunt") playSymRig(el, el.dataset.id);
+  flare(el);
+}
 const EXPR = {
-  pirate(el, m) {
-    const jaw = q(el, ".p-jaw");
-    if (m === "hurt") {
-      jaw.animate([{ transform: "none" }, { transform: "translateY(5%)", offset: .15 }, { transform: "translateY(5%)", offset: .9 }, { transform: "none" }], { duration: 1500 });
-      qa(el, ".glow").forEach(g => g.animate([{ opacity: .6 }, { opacity: 0, offset: .2 }, { opacity: 0 }], { duration: 1500 }));
-      return;
-    }
-    const kf = [0, 3.8, .4, 3.6, .4, 3.4, .4, 3, 0].map(v => ({ transform: `translateY(${v}%)` }));
-    jaw.animate(kf, { duration: m === "taunt" ? 900 : 1200 }); flare(el);
-  },
-  devil(el, m) {
-    const head = q(el, ".p-head"), tail = q(el, ".p-tail");
-    if (m === "hurt") {
-      lidsAnim(el, SHUT, 1500);
-      head.animate([turn(0), turn(13, "translateY(2%)"), turn(11, "translateY(2%)"), turn(0)].map((k, i) => ({ ...k, offset: [0, .15, .9, 1][i] })), { duration: 1500 });
-      tail.animate([turn(0), turn(-25), turn(-25), turn(0)], { duration: 1500 });
-      return;
-    }
-    head.animate([0, -7, 6, -7, 6, -5, 4, 0].map((a, i) => turn(a, `translateY(${i % 2 ? -2 : 0}%)`)), { duration: 1200 });
-    lidsAnim(el, [{ transform: "scaleY(0)" }, { transform: "scaleY(.5)", offset: .15 }, { transform: "scaleY(.5)", offset: .85 }, { transform: "scaleY(0)" }], 1300);
-    tail.animate([0, -20, 18, -20, 18, -10, 0].map(a => turn(a)), { duration: 1000 });
-    flare(el);
-  },
-  witch(el, m) {
-    const hat = q(el, ".p-hat");
-    if (m === "hurt") {
-      hat.animate([{ transform: "none" }, { transform: "rotate(-14deg) translate(-3%, 1%)", offset: .2 }, { transform: "rotate(-12deg) translate(-3%, 1%)", offset: .9 }, { transform: "none" }], { duration: 1500 });
-      lidsAnim(el, SHUT, 1500); return;
-    }
-    hat.animate([{ transform: "none" }, { transform: "translateY(-3%) rotate(-11deg)", offset: .3 }, { transform: "translateY(-1%) rotate(7deg)", offset: .55 }, { transform: "rotate(-3deg)", offset: .8 }, { transform: "none" }], { duration: 1200 });
-    lidsAnim(el, HAPPY_BLINK, 1000); cheeks(el);
-  },
-  blue(el, m) {
-    const rig = q(el, ".rig");
-    if (m === "hurt") {
-      lidsAnim(el, SHUT, 1500);
-      rig.animate([{ transform: "none" }, { transform: "scale(1.12, .86) translateY(8%)", offset: .2 }, { transform: "scale(1.08, .9) translateY(6%)", offset: .9 }, { transform: "none" }], { duration: 1500 });
-      return;
-    }
-    rig.animate([{ transform: "none" }, { transform: "scale(1.15, .85) translateY(6%)", offset: .15 }, { transform: "scale(.9, 1.12) translateY(-10%)", offset: .35 },
-      { transform: "scale(1.06, .94)", offset: .55 }, { transform: "scale(.97, 1.04) translateY(-4%)", offset: .75 }, { transform: "none" }], { duration: 1200 });
-    lidsAnim(el, HAPPY_BLINK, 1000); cheeks(el);
-  },
+  // the busts: a win or a taunt plays their rig, getting hurt recoils and greys them
+  pirate: charExpr, devil: charExpr, witch: charExpr, blue: charExpr,
   book(el) { flare(el); q(el, ".rig").animate([turn(0), turn(-7, "translateY(-10%)"), turn(5), turn(0)], { duration: 1100 }); },
   key(el) { flare(el); q(el, ".rig").animate([turn(0), turn(-25), turn(40), turn(30), turn(0)], { duration: 1200, easing: "ease-in-out" }); },
   lantern(el) { flare(el, 1400); q(el, ".rig").animate([0, 18, -14, 9, -5, 0].map(a => turn(a)), { duration: 1300 }); },
@@ -251,12 +202,40 @@ function playSymRig(el, id) {
   const anim = RigPlayer.play(cv, rig, { intro: true });
   setTimeout(() => { anim.stop(); cv.remove(); el.classList.remove("rigging"); }, rig.intro * 1000 + 60);
 }
+// The win of a rune, an object or the FS: its light layer flares, a shine sweeps across it, and each kind adds its own
+// touch (cracks running through a rune, bubbles from the potion, wisps from the lantern and book, sparkles off the key
+// and the ring, a burst of light from the FS)
+const SYM_FX = { potion: "bubble", lantern: "wisp", book: "wisp", key: "spark", ring: "spark", fs: "spark" };
+function symFx(el, id, d) {
+  if (d.tier === "char" || id === "vs") return;
+  const light = q(el, ".sym-light"), shine = q(el, ".sym-shine"), dur = d.tier === "rune" ? 900 : 1300;
+  light?.animate([{ opacity: .15, transform: "scale(1)" }, { opacity: 1, transform: "scale(1.12)", offset: .35 }, { opacity: .85, transform: "scale(1.06)", offset: .7 }, { opacity: .15, transform: "scale(1)" }], { duration: dur });
+  shine?.animate([{ backgroundPosition: "-120% 0" }, { backgroundPosition: "220% 0" }], { duration: dur * .6, delay: dur * .15, easing: "ease-in-out" });
+  const [x, y, w] = centerOf(el);
+  if (d.tier === "rune") {
+    // cracks run out from the sign, then sparks of the rune's colour burst from them
+    const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.setAttribute("class", "rune-cracks");
+    for (let i = 0; i < 5; i++) {
+      let px = 50, py = 50, a = i / 5 * Math.PI * 2 + Math.random() * .8, dd = `M50 50`;
+      for (let k = 0; k < 4; k++) { a += (Math.random() - .5) * 1.1; px += Math.cos(a) * (10 + Math.random() * 7); py += Math.sin(a) * (10 + Math.random() * 7); dd += ` L${px.toFixed(1)} ${py.toFixed(1)}`; }
+      const p = document.createElementNS(NS, "path"); p.setAttribute("d", dd); p.setAttribute("pathLength", "1"); svg.appendChild(p);
+    }
+    el.appendChild(svg);
+    qa(svg, "path").forEach(p => p.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: dur * .35, delay: dur * .4, fill: "backwards", easing: "ease-out" }));
+    svg.animate([{ opacity: 1 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: dur * 1.3 }).finished.then(() => svg.remove());
+    later(() => fx.emit(x, y, { n: 10, kind: "spark", rgb: d.rgb, scale: w / 130 }), dur * .55);
+    return;
+  }
+  const kind = SYM_FX[id]; if (!kind) return;
+  const burst = () => fx.emit(x, y - w * (kind === "bubble" ? .15 : 0), { n: kind === "spark" ? 14 : 8, kind, rgb: d.rgb, scale: w / 120 });
+  burst(); later(burst, dur * .4);
+}
 function animWin(el, mode = "win") {
   if (!el) return;
   const id = el.dataset.id, d = SYM[id];
   if (RM) { el.animate([{ filter: "brightness(1)" }, { filter: "brightness(1.7)" }, { filter: "brightness(1)" }], { duration: 600 }); return; }
   if (mode === "win") {
-    playSymRig(el, id);
+    playSymRig(el, id); symFx(el, id, d);
     el.animate(POP[d.tier], { duration: d.tier === "rune" ? 900 : 1400, easing: "ease-out" });
     const aura = q(el, ".aura");
     aura && aura.animate([{ opacity: .3, transform: "scale(.8)" }, { opacity: 1, transform: "scale(1.4)", offset: .3 }, { opacity: .3, transform: "scale(1)" }], { duration: 1200 });
@@ -430,7 +409,7 @@ function vxSwirl(half) {
 function showTallVS(rl, small) {
   const t = rl.tall; t.hidden = false; t.className = "tall vsx" + (small ? " small" : ""); t.style.removeProperty("--c");
   const crest = div("vx-crest"), mult = div("vx-mult badge"); crest.appendChild(makeSym("vs")); mult.textContent = "×?";
-  t.replaceChildren(...vxBack(), vxSwirl("back"), skullKing(), vxSwirl("front"), crest, mult);
+  t.replaceChildren(...vxBack(), vxSwirl("back"), vxSwirl("front"), crest, mult); // the arena (vs-field.webp) shows through
   rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = "hidden"; });
 }
 // duel winner: the character in the frame with its multiplier at the bottom
@@ -439,6 +418,15 @@ function showTallWinner(rl, id, mult, tier) {
   const badge = div("tall-badge badge" + (tier >= 2 ? " t" + tier : "")); badge.textContent = "×" + mult;
   t.replaceChildren(...vxBack(), makeSym(id), badge);
   rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = "hidden"; });
+  // the winner celebrates in the arena (assets/wins/<id>.webm, a Gemini Omni loop) for as long as the reel stands;
+  // the still symbol shows until the clip plays, and with reduced motion
+  if (RM) return;
+  const v = document.createElement("video"); v.className = "tall-vid"; v.muted = v.loop = v.playsInline = true; v.src = `assets/wins/${id}.webm`;
+  v.addEventListener("playing", () => t.classList.add("has-vid"), { once: true });
+  // a little brisker than the clip, and quicker still through its last part, where the pose winds back to the start
+  // (the clips are 4 s; a recorded WebM may not know its own length)
+  v.addEventListener("timeupdate", () => { v.playbackRate = v.currentTime > 2.6 ? 1.8 : 1.15; });
+  t.insertBefore(v, badge); v.playbackRate = 1.15; v.play().catch(() => {});
 }
 // the small VS has landed: it charges, then the frame shoots open, smoke blasts out and the king rises
 async function tallLanded(rl) {
@@ -458,7 +446,7 @@ async function tallLanded(rl) {
     { duration: 680, easing: "cubic-bezier(.2,.9,.3,1.15)" });
   const open = [{ transform: "scaleY(0)", opacity: .3 }, { transform: "scaleY(1.06)", opacity: 1, offset: .6 }, { transform: "none", opacity: 1 }];
   qa(t, ".vx-glow, .vx-bg, .vx-frame").forEach(e => e.animate(open, { duration: 520, easing: "cubic-bezier(.2,.9,.3,1)" }));
-  q(t, ".vx-king").animate([{ transform: "translateY(38%) scale(.3)", opacity: 0 }, { transform: "translateY(-5%) scale(1.08)", opacity: 1, offset: .65 }, { transform: "none", opacity: 1 }],
+  q(t, ".vx-king")?.animate([{ transform: "translateY(38%) scale(.3)", opacity: 0 }, { transform: "translateY(-5%) scale(1.08)", opacity: 1, offset: .65 }, { transform: "none", opacity: 1 }],
     { duration: 720, delay: 140, easing: "ease-out", fill: "backwards" });
   q(t, ".vx-mult").animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(1.3)", opacity: 1, offset: .7 }, { transform: "none", opacity: 1 }], { duration: 420, delay: 420, fill: "backwards" });
   const flash = div("vx-flash"); t.appendChild(flash);
@@ -800,14 +788,14 @@ const DUEL_T3 = [[150, 35], [200, 25], [250, 15], [300, 10], [500, 8], [750, 5],
 // value pools above are only used for the rolling badge animation
 // Before a duel the Ghost Pirate breaks out of the VS reel: he slams his hands against the glass left and right, it
 // cracks into lightning that runs out over the board, he gathers the energy and the reel bursts in a green flash.
-// Played from the clip (assets/vs-break.webp, retimed to VS_NORMAL) when it has arrived and turbo is off; otherwise the quick version.
+// Played from the clip (assets/vs-punch.webm) when it has arrived and turbo is off; otherwise the quick version.
 // The clip is fetched once after the intro; each duel plays it from a fresh object URL, since an animated image
 // only starts over under a new URL.
 let breakBlob = null;
 const vsBreakClip = () => breakBlob && URL.createObjectURL(breakBlob);
 async function breakOut(tall, vsSym) {
   tall.classList.add("dueling");
-  const king = q(tall, ".vx-king"), br = div("vx-break"), orb = div("vx-orb"), boom = div("vx-boom");
+  let king = q(tall, ".vx-king"); const br = div("vx-break"), orb = div("vx-orb"), boom = div("vx-boom");
   const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
   br.appendChild(svg); tall.append(br, orb, boom);
   const B = br.getBoundingClientRect(), T = tall.getBoundingClientRect(), u = T.width;
@@ -837,7 +825,7 @@ async function breakOut(tall, vsSym) {
     out.push([web(x, y, u * .22), .7], [web(x, y, u * .45), .5]);
     draw(out, 260); sound.crack(); shake(7, 260);
     fx.emit(cx - cw / 2 + cw * fx2, cy - ch / 2 + ch * fy2, { n: 18, kind: "spark", rgb: "150 255 225", scale: u / 110 });
-    king.animate([{ transform: "scale(1.06)" }, { transform: `translateX(${side * 4}%) rotate(${side * 1.6}deg) scale(1.1)`, offset: .3 }, { transform: "scale(1.07)" }], { duration: 360, fill: "forwards" });
+    king?.animate([{ transform: "scale(1.06)" }, { transform: `translateX(${side * 4}%) rotate(${side * 1.6}deg) scale(1.1)`, offset: .3 }, { transform: "scale(1.07)" }], { duration: 360, fill: "forwards" });
   };
   const flicker = () => br.animate([{ opacity: 1 }, { opacity: .5 }, { opacity: 1 }, { opacity: .7 }, { opacity: 1 }], { duration: 240, iterations: Infinity });
   // short bolts crackling round the ball of ghost fire at (fx, .44) of the reel
@@ -849,26 +837,24 @@ async function breakOut(tall, vsSym) {
   const grow = ms => orb.animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(.7)", opacity: .9, offset: .5 }, { transform: "scale(.6)", opacity: .8, offset: .7 }, { transform: "scale(1.15)", opacity: 1 }], { duration: ms, fill: "forwards", easing: "ease-in" });
   const clip = turbo ? null : vsBreakClip();
   if (clip) {
-    // the clip (2.75-8.96 s of the Gemini video at 1.6x, then 1.8x faster for VS_NORMAL) plays in the reel; the times here
-    // are at 1x and sleep() divides them by the pace: his hands on the glass until 1.38 s, then
-    // lightning at his hands, from 2.2 s he turns and charges at the left edge, and it bursts at 3.72 s. The cracks
-    // and the ball of ghost fire outside the frame keep to those times.
-    const v = new Image(); v.alt = ""; v.src = clip;
-    await v.decode().catch(() => {});
-    q(king, "img").replaceWith(v);
+    // the punch clip (assets/vs-punch.webm, Gemini Omni) plays in the reel at the duel's pace, like sleep() below: the
+    // skeleton pirate charges his fist and lands a huge punch at the centre at 2.2 s of the clip; the cracks run out
+    // from there to both sides, outside the frame
+    const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.src = clip;
+    // the arena has no pirate standing in it: the clip gets his window for as long as it plays (it fades out after)
+    if (!king) { const win = skullKing(); tall.insertBefore(win, q(tall, ".vx-crest")); king = q(win, ".vx-king"); }
+    king.classList.add("punch"); q(king, "img").replaceWith(v);
     br.classList.add("out"); // the clip is the show inside the frame: the lightning only runs outside it
     qa(tall, ".vx-swirl").forEach(e => e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: "forwards" }));
-    king.animate([{ filter: "brightness(1.6)" }, { filter: "brightness(1)" }], { duration: 300 }); shake(4, 300);
-    await sleep(1360);
-    impact(0, .42, -1); await sleep(120);
-    impact(1, .46, 1); flicker();
-    await sleep(720);
-    sound.charge(); shake(4, 1500);
-    Object.assign(orb.style, { left: "-35%", width: "90%" }); grow(1500); // at his hands, just outside the frame
-    for (let i = 0; i < 11; i++) { arcs(-.35); await sleep(138); }
+    v.playbackRate = pace(); await v.play().catch(() => {});
+    await sleep(1400);
+    sound.charge(); shake(3, 700); // his fist fills with ghost fire
+    await sleep(800);
+    impact(.5, .5, -1); impact(.5, .5, 1); flicker(); shake(12, 520); // the punch lands
+    await sleep(520);
     later(() => URL.revokeObjectURL(clip), 3000);
   } else {
-    king.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "scale(1.06)", filter: "brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3)" }], { duration: 200, fill: "forwards" });
+    king?.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "scale(1.06)", filter: "brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3)" }], { duration: 200, fill: "forwards" });
     await sleep(180);
     impact(.1, .4, -1); await sleep(200);
     impact(.9, .46, 1); flicker();
@@ -876,7 +862,7 @@ async function breakOut(tall, vsSym) {
     // he gathers the lightning into a ball of ghost fire
     sound.charge(); shake(5, 420);
     grow(380);
-    king.animate([{ transform: "scale(1.07)" }, { transform: "translateX(-1%) scale(1.08)" }, { transform: "translateX(1%) scale(1.07)" }, { transform: "scale(1.09)" }], { duration: 120, iterations: 3, fill: "forwards" });
+    king?.animate([{ transform: "scale(1.07)" }, { transform: "translateX(-1%) scale(1.08)" }, { transform: "translateX(1%) scale(1.07)" }, { transform: "scale(1.09)" }], { duration: 120, iterations: 3, fill: "forwards" });
     for (let i = 0; i < 3; i++) { arcs(.5); await sleep(125); }
   }
   // the reel bursts
@@ -897,6 +883,31 @@ async function reelDuel(d) {
   dueling = true;
   try { return await duelShow(d); } finally { dueling = false; }
 }
+// ---- the fighters' clash as a video (assets/fights/<a>-<b>.webm, one per pairing, made with Gemini Omni) in a panel
+// over the arena; a pairing's clip shows the first of FIGHT_ORDER on top
+const FIGHT_ORDER = ["devil", "pirate", "witch", "blue"], fightClips = new Map();
+function loadFight(a, b) {
+  if (!a || !b || a === b || RM) return Promise.resolve(null);
+  const [x, y] = [a, b].sort((p, q) => FIGHT_ORDER.indexOf(p) - FIGHT_ORDER.indexOf(q)), src = `assets/fights/${x}-${y}.webm`;
+  if (!fightClips.has(src)) fightClips.set(src, new Promise(res => {
+    const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = src;
+    const t = setTimeout(() => res(null), 6000); // not loaded in time: the duel bumps instead
+    v.oncanplaythrough = () => { clearTimeout(t); res(v); }; v.onerror = () => { clearTimeout(t); res(null); };
+  }));
+  return fightClips.get(src);
+}
+async function playFight(tall, v) {
+  const panel = div("fight-panel"), t = tall.getBoundingClientRect(), s = stage.getBoundingClientRect(), w = t.height * 9 / 16;
+  Object.assign(panel.style, { left: `${t.left - s.left + t.width / 2 - w / 2}px`, top: `${t.top - s.top}px`, width: `${w}px`, height: `${t.height}px` });
+  panel.appendChild(v); stage.appendChild(panel);
+  v.currentTime = 0; v.playbackRate = 1.25 * pace();
+  panel.animate([{ opacity: 0, transform: "scale(.92)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: "ease-out" });
+  await v.play().catch(() => {});
+  await new Promise(res => { const iv = setInterval(() => { if (v.ended || v.paused || slam) { clearInterval(iv); res(); } }, 50); });
+  await panel.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, fill: "forwards" }).finished;
+  v.pause(); panel.remove();
+}
+
 async function duelShow(d) {
   nextSequence();
   const reelIdx = d.reel, rl = reels[reelIdx], tall = rl.tall;
@@ -904,6 +915,10 @@ async function duelShow(d) {
   const ghostTop = d.top.symbol, ghostBot = d.bottom.symbol, topWins1 = d.topWins;
   const pirate = d.challengers.find(ch => ch.symbol === "pirate"), devil = d.challengers.find(ch => ch.symbol === "devil");
   const m2 = pirate?.mult, m3 = devil?.mult;
+  // every encounter's clip starts loading now (who faces whom follows from the round's results)
+  const champ1 = topWins1 ? ghostTop : ghostBot, champ2 = pirate?.wins ? "pirate" : champ1;
+  if (!turbo) { loadFight(ghostTop, ghostBot); if (pirate) loadFight(champ1, "pirate"); if (devil) loadFight(champ2, "devil"); }
+  const fightOr = async (a, b, bump) => { const v = turbo ? null : await loadFight(a, b); if (v && !slam) await playFight(tall, v); else await bump(); };
   let winner = topWins1 ? ghostTop : ghostBot, mult = topWins1 ? m1 : m1b;
   const vsSym = q(tall, ".vx-crest .sym") || q(tall, ".sym");
   say(i18n("Duell", "Duel") + `: ${SYM[ghostTop].name} vs ${SYM[ghostBot].name}`);
@@ -975,7 +990,7 @@ async function duelShow(d) {
   await slamVs();
   await Promise.all([rollBadge(top.bd, m1, 1000, DUEL_T1.map(v => v[0])), rollBadge(bot.bd, m1b, 1300, DUEL_T1.map(v => v[0]))]);
   await sleep(200);
-  await clash(3, 0);
+  await fightOr(ghostTop, ghostBot, () => clash(3, 0));
   let champ = topWins1 ? top : bot, loser = topWins1 ? bot : top;
   await knockOut(loser);
   say(`${SYM[champ.id].name} ${i18n("gewinnt", "wins")} · ×${mult}`); cheer(champ);
@@ -992,7 +1007,7 @@ async function duelShow(d) {
     await slamVs();
     await rollBadge(ch.bd, value, 1500 + power * 500, pool.map(v => v[0]));
     await sleep(250);
-    await clash(3 + power, power);
+    await fightOr(champ.id, challengerId, () => clash(3 + power, power));
     if (wins) { hero.react("laugh", 1800); await knockOut(champ); loser = champ; champ = ch; winner = ch.id; mult = value; say(`${SYM[ch.id].name} ${i18n("gewinnt", "wins")} · ×${value}`); cheer(ch); }
     else { await knockOut(ch); loser = ch; say(`${SYM[champ.id].name} ${i18n("hält stand", "holds on")} · ×${mult}`); cheer(champ); }
     await sleep(800);
@@ -2777,7 +2792,7 @@ const introDone = new Promise(resolve => {
 // the VS break-out clip (1.8 MB) loads behind the intro, not in the loading bar
 // the characters' win rigs load behind the intro too (about 60 KB each)
 if (!RM) introDone.then(() => CHARS.forEach(id => RigPlayer.load(`assets/sym-rigs/${id}`).then(r => { symRigs[id] = r; }, () => {})));
-if (!RM) introDone.then(() => fetch("assets/vs-break.webp").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
+if (!RM) introDone.then(() => fetch("assets/vs-punch.webm").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
 
 // the loading bar waits for the images of the first screen
 LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp", "assets/hud-bg.webp", "assets/bb-logo.webp",

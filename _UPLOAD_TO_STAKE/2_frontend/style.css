@@ -499,21 +499,23 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
   background: radial-gradient(closest-side, rgb(var(--c) / .5), rgb(var(--c) / .12) 70%, transparent); filter: blur(.5cqw); animation: vxGlow 2.6s ease-in-out infinite; }
 @keyframes vxGlow { 50% { opacity: .5; } }
 .vx-bg { position: absolute; inset: 0; border-radius: 8px; overflow: hidden; z-index: 0;
-  background: radial-gradient(95% 26% at 50% 46%, rgb(var(--c) / .42), transparent 72%), radial-gradient(130% 22% at 50% 100%, rgb(211 107 255 / .5), transparent 72%),
-    linear-gradient(180deg, #1f0f36 0%, #0b221c 40%, #0d2c22 62%, #1c0b2f 100%); }
+  background: radial-gradient(95% 26% at 50% 46%, rgb(var(--c) / .3), transparent 72%), url(assets/vs-field.webp) 50% 50% / cover, #07130f; }
+/* the arena's edges sink into darkness and creeping fog, instead of a clean rim */
+.vx-bg::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  box-shadow: inset 0 0 1.4cqw .5cqw rgb(2 8 6 / .92), inset 0 0 3.2cqw rgb(var(--c) / .25); }
 .vx-rays { position: absolute; left: 50%; top: 46%; width: 520%; aspect-ratio: 1; translate: -50% -50%;
-  background: repeating-conic-gradient(rgb(var(--c) / .2) 0 7deg, transparent 7deg 20deg);
+  background: repeating-conic-gradient(rgb(var(--c) / .1) 0 7deg, transparent 7deg 20deg); /* faint: the arena shows through */
   -webkit-mask: radial-gradient(closest-side, #000 12%, transparent 72%); mask: radial-gradient(closest-side, #000 12%, transparent 72%); animation: vxSpin 16s linear infinite; }
 @keyframes vxSpin { to { rotate: 360deg; } }
-.vx-smoke { position: absolute; inset: 0; background: url(assets/img36.webp) 0 0 / 24cqw 24cqw repeat; opacity: .5; mix-blend-mode: screen; animation: vxRise 9s linear infinite; }
-.vx-smoke.b { background-image: url(assets/img35.webp); background-size: 30cqw 30cqw; opacity: .55; animation-name: vxRiseB; animation-duration: 13s; }
+.vx-smoke { position: absolute; inset: 0; background: url(assets/img36.webp) 0 0 / 24cqw 24cqw repeat; opacity: .28; mix-blend-mode: screen; animation: vxRise 9s linear infinite; }
+.vx-smoke.b { background-image: url(assets/img35.webp); background-size: 30cqw 30cqw; opacity: .3; animation-name: vxRiseB; animation-duration: 13s; }
 @keyframes vxRise { to { background-position: 0 -24cqw; } }
 @keyframes vxRiseB { to { background-position: 4cqw -30cqw; } }
 .vx-fog { position: absolute; left: -30%; right: -30%; bottom: -4%; height: 30%; background: radial-gradient(ellipse at 50% 100%, rgb(215 255 235 / .45), transparent 70%); animation: vxFog 3.4s ease-in-out infinite; }
 @keyframes vxFog { 50% { opacity: .55; transform: scaleX(1.15); } }
 /* gold rim drawn as a ring, like the autoplay menu */
-.vx-frame { position: absolute; inset: 0; border-radius: 8px; padding: .3cqw; pointer-events: none; z-index: 2;
-  background: linear-gradient(175deg, #f6dd8f 0%, #c99a3e 18%, #8a6122 40%, #e2bb62 58%, #a77a2c 78%, #f0d184 100%);
+.vx-frame { position: absolute; inset: 0; border-radius: 8px; padding: .25cqw; pointer-events: none; z-index: 2; /* dark iron, lit green by the ghost fire */
+  background: linear-gradient(175deg, #4b5552 0%, #1d2422 22%, #0c100f 45%, #2f3a36 62%, #141a18 80%, #46524d 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
   filter: drop-shadow(0 0 .5cqw rgb(var(--c) / .8)); }
 /* the Ghost Pirate fills the reel between the VS crest and the multiplier, cropped to the frame's window: his eyes sit
@@ -1008,3 +1010,26 @@ body:has(#winTier:not([hidden]), #totalWin:not([hidden])) #buyBtn { opacity: 0; 
 
 /* every digit the same width, so counting numbers do not shift the text around */
 #winVal, #balVal, #betVal, .rtok .rv, .cr-plate, .badge { font-variant-numeric: tabular-nums; }
+/* a duel's clash as a video over the arena: soft, smoky edges, a green ghost light around it */
+.fight-panel { position: absolute; z-index: 9; pointer-events: none; border-radius: 1cqw; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent), linear-gradient(transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent), linear-gradient(transparent, #000 7%, #000 93%, transparent);
+  -webkit-mask-composite: source-in; mask-composite: intersect; filter: drop-shadow(0 0 1.2cqw rgb(120 255 180 / .45)); }
+.fight-panel video { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* the break-out punch fills the whole window; the duel's winner celebrates in the arena as a video loop */
+.vx-window .vx-king.vid.punch { top: 0; height: 100%; }
+.vx-king.punch video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tall-vid { position: absolute; inset: .25cqw; width: calc(100% - .5cqw); height: calc(100% - .5cqw); object-fit: cover; border-radius: 6px; z-index: 2;
+  opacity: 0; transition: opacity .35s; pointer-events: none; }
+.tall.has-vid > .tall-vid { opacity: 1; }
+.tall.has-vid > .sym { visibility: hidden; }
+/* runes, objects and the FS: their glowing parts as a light layer (faint at rest, flaring on a win), a shine that sweeps
+   across them, and the cracks that run through a winning rune */
+.sym-light { position: absolute; inset: 0; background: 50% 50% / 100% 100% no-repeat; mix-blend-mode: screen; opacity: .15; pointer-events: none; }
+.t-rune .sym-light, .s-fs .sym-light { animation: symLight 2.6s ease-in-out infinite; }
+@keyframes symLight { 50% { opacity: .45; } }
+.sym-shine { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / .75) 50%, transparent 65%) -120% 0 / 60% 100% no-repeat; }
+.rune-cracks { position: absolute; inset: 12%; width: 76%; height: 76%; overflow: visible; pointer-events: none; z-index: 3; }
+.rune-cracks path { fill: none; stroke: #fff; stroke-width: 5.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; filter: drop-shadow(0 0 1.5px rgb(var(--c))) drop-shadow(0 0 4px rgb(var(--c))); }
+@media (prefers-reduced-motion: reduce) { .t-rune .sym-light, .s-fs .sym-light { animation: none; } }
