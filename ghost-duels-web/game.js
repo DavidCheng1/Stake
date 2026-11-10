@@ -390,7 +390,10 @@ function showTallWinner(rl, id, mult, tier) {
   if (RM) return;
   const v = document.createElement("video"); v.className = "tall-vid"; v.muted = v.loop = v.playsInline = true; v.src = `assets/wins/${id}.webm`;
   v.addEventListener("playing", () => t.classList.add("has-vid"), { once: true });
-  t.insertBefore(v, badge); v.play().catch(() => {});
+  // a little brisker than the clip, and quicker still through its last part, where the pose winds back to the start
+  // (the clips are 4 s; a recorded WebM may not know its own length)
+  v.addEventListener("timeupdate", () => { v.playbackRate = v.currentTime > 2.6 ? 1.8 : 1.15; });
+  t.insertBefore(v, badge); v.playbackRate = 1.15; v.play().catch(() => {});
 }
 // the small VS has landed: it charges, then the frame shoots open, smoke blasts out and the king rises
 async function tallLanded(rl) {
