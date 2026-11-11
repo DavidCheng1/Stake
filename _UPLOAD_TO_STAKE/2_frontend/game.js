@@ -77,8 +77,6 @@ const BUYS = [
     text: i18n("Genau 4 FS: der Bonus startet mit 4 Kisten.", "Exactly 4 FS: the bonus starts with 4 crates.") },
   { mode: "BONUS5", cost: 650, rtp: 96.00, maxWin: 25000, fs: 5, name: i18n("Mega-Geisterkisten", "Mega Ghost Crates"),
     text: i18n("Genau 5 FS: 5 Kisten, öfter mit ×3.", "Exactly 5 FS: 5 crates, more often at ×3.") },
-  { mode: "VSSPIN", cost: 5, rtp: 96.00, maxWin: 25000, vs: true, name: i18n("VS-Spin", "VS Spin"),
-    text: i18n("Ein Spin mit mindestens einer VS-Walze: jede Gruppe, die sie erreicht, startet ein Duell.", "A spin with at least one VS reel: every group that reaches it starts a duel.") },
 ];
 const BASE_INFO = { mode: "BASE", cost: 1, rtp: 96.00, maxWin: 25000 };
 // FS Boost: bet variants switched on for every spin (math modes "boost" and "boost6", fs_weight in game_config.py); rtp
@@ -92,7 +90,14 @@ const BOOSTS = [
       "Every spin costs 6× the bet, and FS symbols land even more often: the Ghost Crates bonus comes about 15× as often.") },
 ];
 const BOOST_NAME = i18n("FS-Boost", "FS Boost");
-const modeInfo = mode => BOOSTS.find(b => b.mode === mode) || buyOf(mode);
+// VS Spin: switched on in the Bonus menu like the FS Boost and played on every spin until switched off (math mode
+// "vsspin", cost in game_config.py's buy_modes): every spin has at least one VS reel. One spin plays one mode, so
+// switching it on turns the FS Boost off and the other way round.
+const VS_SPIN = { mode: "VSSPIN", cost: 5, rtp: 96.00, maxWin: 25000, vs: true, level: i18n("An", "On"), name: i18n("VS-Spin", "VS Spin"),
+  text: i18n("Jeder Spin kostet 5× den Einsatz und hat mindestens eine VS-Walze: jede Gruppe, die sie erreicht, startet ein Duell.",
+    "Every spin costs 5× the bet and has at least one VS reel: every group that reaches it starts a duel.") };
+const VARIANTS = [...BOOSTS, VS_SPIN];
+const modeInfo = mode => VARIANTS.find(b => b.mode === mode) || buyOf(mode);
 const modeCost = mode => modeInfo(mode)?.cost || 1;
 const buyOf = mode => BUYS.find(b => b.mode === mode);
 // RTP of the published lookup table (math-sdk/games/ghost_duels, optimized to 96.00 %)
@@ -173,7 +178,7 @@ function charExpr(el, m) {
       { transform: "translateX(-4%) rotate(-6deg) scale(.95)", filter: "brightness(.65) saturate(.5)", offset: .85 }, { transform: "none", filter: "none" }], { duration: 1500 });
     return;
   }
-  if (m === "taunt") playSymRig(el, el.dataset.id);
+  if (m === "taunt" && !playSymAnim(el, "win")) playSymRig(el, el.dataset.id);
   flare(el);
 }
 const EXPR = {
@@ -202,6 +207,70 @@ function playSymRig(el, id) {
   const anim = RigPlayer.play(cv, rig, { intro: true });
   setTimeout(() => { anim.stop(); cv.remove(); el.classList.remove("rigging"); }, rig.intro * 1000 + 60);
 }
+// Filmed symbol animations (tools/sprites/symanim.py: Gemini Omni clips of each symbol's own picture, keyed and cut
+// into sprite sheets): an idle loop now and then, and a win as a cluster connects. A canvas over the symbol, its margin
+// as wide as the motion reaches, plays the sheet from its first frame (the still) while the still hides under it;
+// at the end it fades back onto the still. Sheets load after the intro; until then, and without one, the cut-out rig
+// and the light-layer effects play instead.
+const symAnim = { meta: {}, img: {} };
+function loadSymAnims() {
+  fetch("assets/sym-anim/anim.json").then(r => r.json()).then(m => {
+    symAnim.meta = m;
+    for (const id in m) for (const kind in m[id]) {
+      const im = new Image(); im.src = `assets/sym-anim/${id}-${kind}.webp`;
+      im.decode().then(() => { symAnim.img[id + "-" + kind] = im; }, () => {});
+    }
+  }).catch(() => {});
+}
+function playSymAnim(el, kind) {
+  const id = el?.dataset.id, m = symAnim.meta[id]?.[kind], im = symAnim.img[id + "-" + kind];
+  if (RM || !m || !im || el.classList.contains("rigging")) return false;
+  q(el, ".sym-anim")?.remove();
+  const cv = document.createElement("canvas"); cv.className = "sym-anim"; cv.width = cv.height = m.px;
+  const p = m.pad * 100; cv.style.left = cv.style.top = `${-p}%`; cv.style.width = cv.style.height = `${100 + 2 * p}%`;
+  const g = cv.getContext("2d"), step = m.px + 2, rate = kind === "win" ? pace() : 1;
+  const len = m.n / m.fps * 1000, hold = kind === "win" ? 650 : 0;
+  let last = -1;
+  const draw = f => { if (f === last) return; last = f; g.clearRect(0, 0, m.px, m.px); g.drawImage(im, (f % m.cols) * step + 1, Math.floor(f / m.cols) * step + 1, m.px, m.px, 0, 0, m.px, m.px); };
+  // the first frame is on the canvas before the still hides, so no frame shows neither
+  draw(0);
+  el.appendChild(cv); el.classList.add("animating", "anim-" + kind);
+  const t0 = performance.now();
+  const done = () => { if (q(el, ".sym-anim") === cv) el.classList.remove("animating", "anim-" + kind); };
+  const end = () => { done(); cv.remove(); };
+  // Settled sheets (symanim.py settle) start on the exact still, and an idle loop ends on it too: the canvas just goes.
+  // A win ends on its own last frame: held while the symbol is still part of a win (it bursts with that frame), or
+  // played backwards to its first frame, the still, when the symbol stays (an FS landing, a taunt in a duel).
+  const inWin = () => !!el.closest(".cell.win, .tall.win");
+  let rewind = 0;
+  const tick = now => {
+    if (!cv.isConnected) return done();
+    const t = (now - t0) * rate;
+    if (rewind) {
+      const k = Math.min(1, (now - rewind) / Math.min(420, len * .4));
+      draw(Math.round((m.n - 1) * (1 - k)));
+      if (k < 1) requestAnimationFrame(tick); else end();
+      return;
+    }
+    draw(Math.min(m.n - 1, Math.floor(t / 1000 * m.fps)));
+    if (t < len + (m.settled ? 0 : hold)) { requestAnimationFrame(tick); return; }
+    if (!m.settled) { // older sheets: the last frame fades away over the still
+      done(); cv.animate([{ opacity: 1 }, { opacity: 0 }], { duration: kind === "win" ? 320 : 200 }).finished.then(() => cv.remove());
+      return;
+    }
+    if (kind === "idle") return end();
+    if (inWin()) { requestAnimationFrame(tick); return; }
+    rewind = now; requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  return true;
+}
+// now and then a symbol on a calm board plays its idle loop
+setInterval(() => {
+  if (RM || document.hidden || stage.classList.contains("dropping") || q(reelsEl, ".cell.win") || qa(reelsEl, ".sym.anim-idle").length >= 2) return;
+  const all = qa(reelsEl, ".cell > .sym:not(.animating)").filter(s => symAnim.img[s.dataset.id + "-idle"]);
+  if (all.length) playSymAnim(pick(all), "idle");
+}, 700);
 // The win of a rune, an object or the FS: its light layer flares, a shine sweeps across it, and each kind adds its own
 // touch (cracks running through a rune, bubbles from the potion, wisps from the lantern and book, sparkles off the key
 // and the ring, a burst of light from the FS)
@@ -235,8 +304,9 @@ function animWin(el, mode = "win") {
   const id = el.dataset.id, d = SYM[id];
   if (RM) { el.animate([{ filter: "brightness(1)" }, { filter: "brightness(1.7)" }, { filter: "brightness(1)" }], { duration: 600 }); return; }
   if (mode === "win") {
-    playSymRig(el, id); symFx(el, id, d);
-    el.animate(POP[d.tier], { duration: d.tier === "rune" ? 900 : 1400, easing: "ease-out" });
+    // the filmed win carries the motion itself: the symbol only swells a little with it
+    if (playSymAnim(el, "win")) el.animate([{ transform: "scale(1)" }, { transform: "scale(1.1)", offset: .3 }, { transform: "scale(1.06)", offset: .8 }, { transform: "scale(1)" }], { duration: 1400, easing: "ease-out" });
+    else { playSymRig(el, id); symFx(el, id, d); el.animate(POP[d.tier], { duration: d.tier === "rune" ? 900 : 1400, easing: "ease-out" }); }
     const aura = q(el, ".aura");
     aura && aura.animate([{ opacity: .3, transform: "scale(.8)" }, { opacity: 1, transform: "scale(1.4)", offset: .3 }, { opacity: .3, transform: "scale(1)" }], { duration: 1200 });
   }
@@ -409,7 +479,15 @@ function vxSwirl(half) {
 function showTallVS(rl, small) {
   const t = rl.tall; t.hidden = false; t.className = "tall vsx" + (small ? " small" : ""); t.style.removeProperty("--c");
   const crest = div("vx-crest"), mult = div("vx-mult badge"); crest.appendChild(makeSym("vs")); mult.textContent = "×?";
-  t.replaceChildren(...vxBack(), vxSwirl("back"), vxSwirl("front"), crest, mult); // the arena (vs-field.webp) shows through
+  t.replaceChildren(...vxBack(), crest, mult);
+  // the waiting arena comes alive: a portal of ghost fire turns, lanterns and runes flicker (assets/vs-rest.webm: a Gemini
+  // Omni clip, imagegen-out/vs-portal, cropped to the reel and closed into a seamless 6.9 s loop by a 1 s crossfade); the
+  // still arena (vs-field.webp) shows until it plays, and with reduced motion
+  if (!RM) {
+    const v = document.createElement("video"); v.className = "vx-rest"; v.muted = v.loop = v.playsInline = true; v.src = "assets/vs-rest.webm";
+    v.addEventListener("playing", () => v.classList.add("on"), { once: true });
+    q(t, ".vx-bg").prepend(v); v.play().catch(() => {});
+  }
   rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = "hidden"; });
 }
 // duel winner: the character in the frame with its multiplier at the bottom
@@ -418,16 +496,20 @@ function showTallWinner(rl, id, mult, tier) {
   const badge = div("tall-badge badge" + (tier >= 2 ? " t" + tier : "")); badge.textContent = "×" + mult;
   t.replaceChildren(...vxBack(), makeSym(id), badge);
   rl.cells.forEach(cell => { cell.replaceChildren(); cell.style.visibility = "hidden"; });
-  // the winner celebrates in the arena (assets/wins/<id>.webm, a Gemini Omni loop) for as long as the reel stands;
-  // the still symbol shows until the clip plays, and with reduced motion
+  // the winner stands in the arena: assets/wins/<id>-still.webp, the first frame of its celebration loop, replaces the
+  // symbol as soon as it is loaded (also with reduced motion); the loop (assets/wins/<id>.webm, Gemini Omni, closed into
+  // a seamless loop by tools/video/loop.py) then starts on that same frame over it, so the switch cannot be seen
+  const still = new Image(); still.className = "tall-still"; still.alt = ""; still.draggable = false;
+  still.onload = () => { if (still.isConnected) t.classList.add("has-still"); };
+  still.src = winStillSrc(id); t.insertBefore(still, badge);
   if (RM) return;
   const v = document.createElement("video"); v.className = "tall-vid"; v.muted = v.loop = v.playsInline = true; v.src = `assets/wins/${id}.webm`;
   v.addEventListener("playing", () => t.classList.add("has-vid"), { once: true });
-  // a little brisker than the clip, and quicker still through its last part, where the pose winds back to the start
-  // (the clips are 4 s; a recorded WebM may not know its own length)
-  v.addEventListener("timeupdate", () => { v.playbackRate = v.currentTime > 2.6 ? 1.8 : 1.15; });
-  t.insertBefore(v, badge); v.playbackRate = 1.15; v.play().catch(() => {});
+  t.insertBefore(v, badge); v.play().catch(() => {});
 }
+// the four stills are small: they load with the game, so a winner's frame is there the moment it is revealed
+const winStillSrc = id => `assets/wins/${id}-still.webp`;
+["devil", "pirate", "witch", "blue"].forEach(id => { new Image().src = winStillSrc(id); });
 // the small VS has landed: it charges, then the frame shoots open, smoke blasts out and the king rises
 async function tallLanded(rl) {
   const t = rl.tall, crest = q(t, ".vx-crest");
@@ -637,23 +719,72 @@ function cellCenter([c, r]) { return centerOf(reels[c].cells[r]); }
 // ---------- Lit boxes: connected cells light up as one shape, outlined only along the group's outer edge ----------
 // delayOf(i, cell) staggers the light-up; joined(c, r) marks extra cells (a VS reel) that count as part of the group.
 // A cell that is already lit the same way stays as it is, so re-lighting a board (bonus spins) only animates what changed.
-function lightUp(cells, rgb, delayOf = () => 0, joined = () => false) {
-  const set = new Set(cells.map(([c, r]) => c + "," + r));
-  const inside = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS && (set.has(c + "," + r) || joined(c, r));
+// every cell of a group gets a frame of ghost-fire in the symbol's colour (assets/fx/ghost-frame.webp, a white Gemini
+// painting used as a mask) and a faint glow inside; it flares white-hot as it lights, then flickers while lit
+function lightUp(cells, rgb, delayOf = () => 0) {
   cells.forEach(([c, r], i) => {
-    const sides = [!inside(c, r - 1), !inside(c + 1, r), !inside(c, r + 1), !inside(c - 1, r)], key = rgb + sides.join();
     const cell = reels[c].cells[r]; let lit = q(cell, ":scope > .lit");
-    if (lit && lit.dataset.key === key) { lit.classList.remove("stale"); return; }
-    lit?.remove(); lit = div("lit"); lit.dataset.key = key; lit.style.setProperty("--c", rgb);
-    const [t, rt, b, l] = sides;
-    lit.style.borderWidth = sides.map(s => s ? "var(--lw)" : "0").join(" ");
-    lit.style.borderRadius = [t && l, t && rt, b && rt, b && l].map(k => k ? "var(--lr)" : "0").join(" ");
-    cell.appendChild(lit);
-    if (!RM) lit.animate([{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1.08)", offset: .5 }, { opacity: 1, transform: "none" }],
-      { duration: 460, delay: delayOf(i, [c, r]), easing: "ease-out", fill: "backwards" });
+    if (lit && lit.dataset.key === rgb) { lit.classList.remove("stale"); return; }
+    lit?.remove(); lit = div("lit"); lit.dataset.key = rgb; lit.style.setProperty("--c", rgb);
+    const fire = document.createElement("i"); fire.style.animationDelay = `${-Math.random() * 1.4}s`;
+    lit.appendChild(fire); cell.appendChild(lit);
+    if (!RM) lit.animate([{ opacity: 0, transform: "scale(.6)", filter: "brightness(3)" }, { opacity: 1, transform: "scale(1.1)", filter: "brightness(2.2)", offset: .45 },
+      { opacity: 1, transform: "none", filter: "none" }], { duration: 520, delay: delayOf(i, [c, r]), easing: "ease-out", fill: "backwards" });
   });
 }
-const clearLit = () => qa(reelsEl, ".lit").forEach(e => e.remove());
+const clearLit = () => { qa(reelsEl, ".lit, .rune-ring").forEach(e => e.remove()); qa(floatsEl, ".links").forEach(e => e.remove()); };
+// The order a connection travels through a group: breadth-first from its first cell, each cell linked to the
+// neighbour it was reached from. at: "c,r" -> { depth, index (order reached), parent "c,r" }; depth: the deepest step.
+function linkOrder(cells) {
+  const set = new Set(cells.map(([c, r]) => c + "," + r)), at = new Map();
+  let depth = 0, index = 0;
+  for (const [c0, r0] of cells) {
+    const k0 = c0 + "," + r0; if (at.has(k0)) continue;
+    at.set(k0, { depth: 0, index: index++, parent: null });
+    const queue = [[c0, r0]];
+    while (queue.length) {
+      const [c, r] = queue.shift(), d = at.get(c + "," + r).depth;
+      for (const [dc, dr] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+        const k = (c + dc) + "," + (r + dr);
+        if (!set.has(k) || at.has(k)) continue;
+        at.set(k, { depth: d + 1, index: index++, parent: c + "," + r }); depth = Math.max(depth, d + 1);
+        queue.push([c + dc, r + dr]);
+      }
+    }
+  }
+  return { at, depth };
+}
+// ectoplasm strands between the cells of a group (assets/fx/ghost-strand.webp as a mask, in the symbol's colour), in
+// the float layer (stage coordinates). Each one shoots from the cell the connection came from to the next as the
+// connection travels, flashes as it lands, then dims to a flicker so the symbols under it stay readable.
+function drawLinks(links, rgb, step) {
+  if (RM) return;
+  const box = div("links"); box.style.setProperty("--c", rgb);
+  for (const [k, n] of links.at) {
+    if (!n.parent) continue;
+    const [x1, y1, w] = cellCenter(n.parent.split(",").map(Number)), [x2, y2] = cellCenter(k.split(",").map(Number));
+    const s = div("strand"), ink = document.createElement("i");
+    s.style.left = x1 + "px"; s.style.top = y1 + "px"; s.style.width = Math.hypot(x2 - x1, y2 - y1) + "px"; s.style.height = w * .95 + "px";
+    s.style.transform = `translateY(-50%) rotate(${Math.atan2(y2 - y1, x2 - x1)}rad) scaleY(${Math.random() < .5 ? -1 : 1})`;
+    ink.style.animationDelay = `${-Math.random()}s`;
+    s.appendChild(ink); box.appendChild(s);
+    const dur = step * 1.05 / pace(), delay = (n.depth - 1) * step / pace();
+    s.animate([{ clipPath: "inset(-50% 100% -50% 0)" }, { clipPath: "inset(-50% -10% -50% 0)" }], { duration: dur, delay, easing: "ease-out", fill: "backwards" });
+    s.style.opacity = ".75";
+    const shadow = `drop-shadow(0 0 .3cqw rgb(${rgb}))`;
+    s.animate([{ opacity: 1, filter: `${shadow} brightness(2.2)` }, { opacity: .75, filter: `${shadow} brightness(1)` }], { duration: 650, delay: delay + dur, easing: "ease-out", fill: "backwards" });
+  }
+  floatsEl.appendChild(box);
+}
+// a rune circle in the symbol's colour turns up behind a cell the connection reaches (assets/fx/rune-ring.webp, a
+// white Gemini painting used as a mask, so one picture serves every colour)
+function runeRing(cell, rgb) {
+  q(cell, ":scope > .rune-ring")?.remove();
+  const ring = div("rune-ring"); ring.style.setProperty("--c", rgb); ring.appendChild(document.createElement("i"));
+  cell.prepend(ring);
+  if (!RM) ring.animate([{ opacity: 0, transform: "scale(.35) rotate(-90deg)" }, { opacity: 1, transform: "scale(1.18) rotate(-10deg)", offset: .55 }, { opacity: 1, transform: "scale(1) rotate(0)" }],
+    { duration: 420, easing: "cubic-bezier(.2,.9,.3,1.2)" });
+}
 function floatText(x, y, text, rgb, big, small) {
   const f = div("float" + (small ? " small" : "")); f.style.left = x + "px"; f.style.top = y + "px"; f.style.setProperty("--c", rgb);
   // multipliers ("×5") get the spooky lettering
@@ -698,15 +829,22 @@ async function showWins(clusters, before) {
   clusters.sort((a, b) => a.win - b.win);
   let total = before;
   for (const cl of clusters) {
-    lightUp(cl.cells, SYM[cl.id].rgb, i => i * 60, c => cl.vsCols.includes(c));
+    // the connection travels through the group: from its first cell, a spectral link jumps to each neighbour in turn,
+    // and every cell it reaches pops (rune ring, the symbol's win, a rising pop sound)
+    const links = linkOrder(cl.cells), step = Math.min(95, 760 / Math.max(1, links.depth));
+    const delayOf = ([c, r]) => (links.at.get(c + "," + r)?.depth || 0) * step;
+    lightUp(cl.cells, SYM[cl.id].rgb, (i, cr) => delayOf(cr) / pace());
+    drawLinks(links, SYM[cl.id].rgb, step);
     sound.win(cl.cells.length || 4, SYM[cl.id].tier);
     cl.vsCols.forEach(c => { const t = reels[c].tall; t.classList.add("win"); t.style.setProperty("--wc", SYM[cl.id].rgb); animWin(q(t, ".sym")); });
-    cl.cells.forEach(([c, r], k) => later(() => {
+    cl.cells.forEach(([c, r]) => later(() => {
       const cell = reels[c].cells[r], el = q(cell, ".sym");
       cell.classList.add("win"); cell.style.setProperty("--wc", SYM[cl.id].rgb); animWin(el);
+      runeRing(cell, SYM[cl.id].rgb);
+      sound.connect(links.at.get(c + "," + r)?.index || 0);
       const [x, y, w] = centerOf(el);
       fx.emit(x, y, { n: SYM[cl.id].tier === "rune" ? 8 : 18, scale: w / 120, rgb: SYM[cl.id].rgb, kind: cl.id === "potion" ? "bubble" : "wisp" });
-    }, k * 60));
+    }, delayOf([c, r])));
     const pts = (cl.cells.length ? cl.cells : cl.wilds).map(cellCenter), cx = pts.reduce((s2, p) => s2 + p[0], 0) / pts.length, cy = pts.reduce((s2, p) => s2 + p[1], 0) / pts.length;
     later(() => floatText(cx, cy, cl.mult > 1 ? `${money(cl.base)} ×${cl.mult}` : money(cl.win), SYM[cl.id].rgb), 300);
     total += cl.win; countTo(total);
@@ -883,12 +1021,12 @@ async function reelDuel(d) {
   dueling = true;
   try { return await duelShow(d); } finally { dueling = false; }
 }
-// ---- the fighters' clash as a video (assets/fights/<a>-<b>.webm, one per pairing, made with Gemini Omni) in a panel
-// over the arena; a pairing's clip shows the first of FIGHT_ORDER on top
+// ---- the fighters' clash as a video in a panel over the arena: assets/fights/<a>-<b>-<winner>.webm, one per pairing
+// and outcome (made with Gemini Omni), so the clip shows who wins; a pairing's clip has the first of FIGHT_ORDER on top
 const FIGHT_ORDER = ["devil", "pirate", "witch", "blue"], fightClips = new Map();
-function loadFight(a, b) {
+function loadFight(a, b, w) {
   if (!a || !b || a === b || RM) return Promise.resolve(null);
-  const [x, y] = [a, b].sort((p, q) => FIGHT_ORDER.indexOf(p) - FIGHT_ORDER.indexOf(q)), src = `assets/fights/${x}-${y}.webm`;
+  const [x, y] = [a, b].sort((p, q) => FIGHT_ORDER.indexOf(p) - FIGHT_ORDER.indexOf(q)), src = `assets/fights/${x}-${y}-${w}.webm`;
   if (!fightClips.has(src)) fightClips.set(src, new Promise(res => {
     const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = src;
     const t = setTimeout(() => res(null), 6000); // not loaded in time: the duel bumps instead
@@ -917,8 +1055,9 @@ async function duelShow(d) {
   const m2 = pirate?.mult, m3 = devil?.mult;
   // every encounter's clip starts loading now (who faces whom follows from the round's results)
   const champ1 = topWins1 ? ghostTop : ghostBot, champ2 = pirate?.wins ? "pirate" : champ1;
-  if (!turbo) { loadFight(ghostTop, ghostBot); if (pirate) loadFight(champ1, "pirate"); if (devil) loadFight(champ2, "devil"); }
-  const fightOr = async (a, b, bump) => { const v = turbo ? null : await loadFight(a, b); if (v && !slam) await playFight(tall, v); else await bump(); };
+  const champ3 = devil?.wins ? "devil" : champ2;
+  if (!turbo) { loadFight(ghostTop, ghostBot, champ1); if (pirate) loadFight(champ1, "pirate", champ2); if (devil) loadFight(champ2, "devil", champ3); }
+  const fightOr = async (a, b, w, bump) => { const v = turbo ? null : await loadFight(a, b, w); if (v && !slam) await playFight(tall, v); else await bump(); };
   let winner = topWins1 ? ghostTop : ghostBot, mult = topWins1 ? m1 : m1b;
   const vsSym = q(tall, ".vx-crest .sym") || q(tall, ".sym");
   say(i18n("Duell", "Duel") + `: ${SYM[ghostTop].name} vs ${SYM[ghostBot].name}`);
@@ -990,7 +1129,7 @@ async function duelShow(d) {
   await slamVs();
   await Promise.all([rollBadge(top.bd, m1, 1000, DUEL_T1.map(v => v[0])), rollBadge(bot.bd, m1b, 1300, DUEL_T1.map(v => v[0]))]);
   await sleep(200);
-  await fightOr(ghostTop, ghostBot, () => clash(3, 0));
+  await fightOr(ghostTop, ghostBot, champ1, () => clash(3, 0));
   let champ = topWins1 ? top : bot, loser = topWins1 ? bot : top;
   await knockOut(loser);
   say(`${SYM[champ.id].name} ${i18n("gewinnt", "wins")} · ×${mult}`); cheer(champ);
@@ -1007,7 +1146,7 @@ async function duelShow(d) {
     await slamVs();
     await rollBadge(ch.bd, value, 1500 + power * 500, pool.map(v => v[0]));
     await sleep(250);
-    await fightOr(champ.id, challengerId, () => clash(3 + power, power));
+    await fightOr(champ.id, challengerId, wins ? challengerId : champ.id, () => clash(3 + power, power));
     if (wins) { hero.react("laugh", 1800); await knockOut(champ); loser = champ; champ = ch; winner = ch.id; mult = value; say(`${SYM[ch.id].name} ${i18n("gewinnt", "wins")} · ×${value}`); cheer(ch); }
     else { await knockOut(ch); loser = ch; say(`${SYM[champ.id].name} ${i18n("hält stand", "holds on")} · ×${mult}`); cheer(champ); }
     await sleep(800);
@@ -1033,6 +1172,53 @@ async function banner(title, sub, hold = 1700) {
   await sleep(hold);
   await bannerEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).finished;
   bannerEl.hidden = true;
+}
+
+// ---------- The way into the free spins: a fullscreen clip (assets/fs-trove.webm, Gemini Omni, 6 s, VP9 by ffmpeg): the camera rushes
+// through the crypt to a rune vault door that bursts open in light (brightest at 3.2 s) and flies into the treasure vault.
+// Under the flash the board turns into the bonus board (swap), over the vault the title lands, then the clip dissolves
+// into the bonus. Its sound (assets/sfx/trove.mp3) hits at 2.3 s, so it starts 0.9 s into the clip. Off in turbo and
+// with reduced motion, or while the clip has not arrived: then the banner plays instead (returns false).
+let troveBlob = null;
+const TROVE_FLASH = 3.15, TROVE_TITLE = 4.3;
+async function troveEntrance(title, sub, note, swap) {
+  if (RM || turbo || !troveBlob) return false;
+  nextSequence();
+  const url = URL.createObjectURL(troveBlob), box = div("trove"), v = document.createElement("video");
+  v.muted = v.playsInline = true; v.preload = "auto"; v.src = url;
+  const t = div("trove-title");
+  t.innerHTML = `<h2></h2><p></p><small></small>`;
+  q(t, "h2").textContent = title; q(t, "p").textContent = sub; q(t, "small").textContent = note;
+  box.append(v, div("trove-shade"), t);
+  box.addEventListener("pointerdown", () => skip());
+  const ready = await Promise.race([new Promise(r => { v.oncanplay = () => r(true); v.onerror = () => r(false); }), new Promise(r => setTimeout(() => r(false), 1500))]);
+  if (!ready) { URL.revokeObjectURL(url); return false; }
+  document.body.appendChild(box);
+  box.animate([{ opacity: 0, transform: "scale(1.06)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: "ease-out" });
+  await v.play().catch(() => {});
+  sound.trove(.9);
+  let swapped = false, titled = false;
+  const doSwap = () => { if (swapped) return; swapped = true; swap(); };
+  const showTitle = () => {
+    if (titled) return; titled = true; box.classList.add("titled");
+    q(t, "h2").animate([{ opacity: 0, transform: "scale(1.7)", filter: "blur(14px) brightness(3)" }, { opacity: 1, transform: "scale(.96)", filter: "blur(0) brightness(1.6)", offset: .6 },
+      { opacity: 1, transform: "none", filter: "none" }], { duration: 700, easing: "cubic-bezier(.2,.8,.3,1)", fill: "backwards" });
+    for (const [el, d] of [[q(t, "p"), 380], [q(t, "small"), 560]])
+      el.animate([{ opacity: 0, transform: "translateY(40%)" }, { opacity: 1, transform: "none" }], { duration: 420, delay: d, easing: "ease-out", fill: "backwards" });
+  };
+  await new Promise(res => {
+    const iv = setInterval(() => {
+      if (v.currentTime >= TROVE_FLASH) doSwap();
+      if (v.currentTime >= TROVE_TITLE) showTitle();
+      if (v.ended || slam) { clearInterval(iv); res(); }
+    }, 30);
+  });
+  doSwap();
+  if (!slam) { showTitle(); await sleep(2600); } // the title stands over the vault's last frame
+  await box.animate([{ opacity: 1, transform: "none", filter: "none" }, { opacity: 0, transform: "scale(1.08)", filter: "blur(6px) brightness(1.4)" }],
+    { duration: slam ? 260 : 700, easing: "ease-in", fill: "forwards" }).finished;
+  v.pause(); box.remove(); URL.revokeObjectURL(url);
+  return true;
 }
 
 // ---------- Win tiers after the free spins, before the Total Win: the bonus win counts up while the title steps up
@@ -1353,9 +1539,14 @@ async function harvest(start, spinEvents, end) {
   runeStep = 0;
   const fsCells = start.crates.map(k => [k.reel, k.row]), n = Math.min(7, fsCells.length);
   say(`${n} FS · ${i18n("Freispiele!", "Free Spins!")}`);
-  stage.classList.add("bonus"); game.classList.add("bonus"); sound.music("bonus");
   preloadTotalWin(); preloadWinTiers();
-  await banner(n === 3 ? i18n("Geisterkisten", "Ghost Crates") : `${n} ${i18n("Geisterkisten", "Ghost Crates")}`, i18n(`3 Leben · Nur Runen in ${MIN_LINK}er-Gruppen an einer Kiste zählen`, `3 lives · Only groups of ${MIN_LINK}+ runes touching a crate count`), 2100);
+  const intoBonus = () => { stage.classList.add("bonus"); game.classList.add("bonus"); sound.music("bonus"); };
+  const crates = n === 3 ? i18n("Geisterkisten", "Ghost Crates") : `${n} ${i18n("Geisterkisten", "Ghost Crates")}`;
+  const rule = i18n(`Nur Runen in ${MIN_LINK}er-Gruppen an einer Kiste zählen`, `Only groups of ${MIN_LINK}+ runes touching a crate count`);
+  if (!(await troveEntrance(i18n("Betritt den Heiligen Hort", "Enter the Sacred Trove"), `${crates} · ${i18n("3 Leben", "3 lives")}`, rule, intoBonus))) {
+    intoBonus();
+    await banner(crates, `${i18n("3 Leben", "3 lives")} · ${rule}`, 2100);
+  }
   K = reels.map(() => Array(ROWS).fill(null));
   reels.forEach(rl => { rl.tall.hidden = true; rl.tall.replaceChildren(); rl.cells.forEach(c => c.style.visibility = ""); });
   const isFs = (c, r) => fsCells.some(p => p[0] === c && p[1] === r);
@@ -1483,7 +1674,7 @@ async function showCascade(duels, ev, rounds) {
   if (duels.length) {
     const cols = duels.map(d => d.reel);
     // the groups that reach a VS reel light up before the duel starts
-    clusters.filter(cl => cl.vsCols.some(c => cols.includes(c))).forEach(cl => lightUp(cl.cells, SYM[cl.id].rgb, i => i * 40, c => cl.vsCols.includes(c)));
+    clusters.filter(cl => cl.vsCols.some(c => cols.includes(c))).forEach(cl => lightUp(cl.cells, SYM[cl.id].rgb, i => i * 40));
     say(clusters.some(cl => cl.wildOnly) ? i18n("VS-Walzen nebeneinander · Duell!", "VS reels side by side · Duel!") : i18n("VS verbunden · Duell!", "VS connected · Duel!")); await sleep(RM ? 200 : 1000); clearLit();
     if (duels.length > 1) await banner(MULTI_NAME[duels.length], i18n(`${duels.length} VS-Walzen verbunden · Multiplikatoren werden addiert`, `${duels.length} VS reels connected · multipliers add up`), 1300);
     for (const d of duels) {
@@ -1699,7 +1890,7 @@ document.getElementById("spin").addEventListener("click", () => busy ? skip() : 
 // take the key, so its own Space click is held back on keyup. Inside an open menu or dialog and on the volume sliders
 // Space keeps its usual job.
 const spaceBets = e => e.code === "Space" && !RGS.jurisdiction.disabledSpacebar
-  && !e.target.closest?.("input, select, textarea, #autoMenu, #sndMenu, #buyDlg, #rules, #errDlg, #replayBar, #replayDlg, #intro");
+  && !e.target.closest?.("input, select, textarea, #autoMenu, #sndMenu, #buyDlg, #buyAsk, #rules,#errDlg, #replayBar, #replayDlg, #intro");
 addEventListener("keydown", e => { if (!spaceBets(e)) return; e.preventDefault(); if (!e.repeat) busy ? skip() : play(); });
 addEventListener("keyup", e => { if (spaceBets(e)) e.preventDefault(); });
 game.addEventListener("pointerdown", e => { if (busy && !e.target.closest("button, .auto-menu, #intro, #rules")) skip(); });
@@ -1735,56 +1926,92 @@ const buyCards = BUYS.map(b => {
   price.append(amount, times);
   go.type = "button"; go.className = "am-start"; go.textContent = i18n("Kaufen", "Buy");
   const foot = div("am-foot buy-foot"); foot.appendChild(go);
-  go.addEventListener("click", () => { openBuy(false); play(b.mode); });
+  go.addEventListener("click", () => { openBuy(false, true); askBuy(b); });
   card.append(buyArt(b), h, p, price, foot);
   document.getElementById("buyOpts").appendChild(card);
   return { b, amount, times, go };
 });
 // ---------- FS Boost: chosen in the Bonus menu, Off / 3× / 6×. [31] a mode over 2× the bet is never one press away
 // from a bet; choosing only changes the next spins, each choice shows their real price, and Buy Bonus shows the state ----------
-let boost = null; // off on every visit, so nobody plays at 3× or 6× by accident
+// The spin variant that is on: an FS Boost level or VS Spin (null: the base game). Off on every visit, so nobody plays
+// at 3×, 5× or 6× by accident. The Bonus menu has a switch row for each family; only one variant is on at a time.
+let boost = null;
 const bbBoost = document.getElementById("bbBoost");
-const boostOpts = (() => {
-  const row = document.getElementById("buyBoost"), info = div("bst-info"), h = document.createElement("h3"), p = document.createElement("p"), seg = div("bst-seg");
-  h.textContent = BOOST_NAME;
-  p.textContent = i18n("FS-Symbole landen in jedem Spin öfter. Bleibt an, bis du ihn ausschaltest; Autoplay spielt mit ihm.",
-    "FS symbols land more often on every spin. Stays on until you switch it off; Autoplay uses it.");
-  seg.setAttribute("role", "group"); seg.setAttribute("aria-label", BOOST_NAME);
-  info.append(h, p); row.append(info, seg);
-  return [null, ...BOOSTS].map(b => {
+function switchRow(rowId, title, desc, family, cls) {
+  const row = document.getElementById(rowId), info = div("bst-info"), h = document.createElement("h3"), p = document.createElement("p"), seg = div("bst-seg");
+  h.textContent = title; p.textContent = desc;
+  seg.setAttribute("role", "group"); seg.setAttribute("aria-label", title);
+  info.append(h, p); row.append(info, seg); if (cls) row.classList.add(cls);
+  return [null, ...family].map(b => {
     const btn = document.createElement("button"), lv = document.createElement("span"), pr = document.createElement("span");
-    btn.type = "button"; btn.className = "bst-opt" + (b === BOOSTS[1] ? " six" : ""); lv.className = "bst-lv"; pr.className = "bst-pr";
+    btn.type = "button"; btn.className = "bst-opt" + (b === BOOSTS[1] ? " six" : "") + (b?.vs ? " vs" : ""); lv.className = "bst-lv"; pr.className = "bst-pr";
     btn.append(lv, pr); seg.appendChild(btn);
     btn.addEventListener("click", () => {
-      if (btn.disabled || boost === b) return;
-      boost = b; showBoost(); sound.click();
-      say(boost ? i18n(`${boost.name} an · ${money(bet * boost.cost)} pro Spin`, `${boost.name} on · ${money(bet * boost.cost)} per spin`) : i18n("FS-Boost aus", "FS Boost off"));
+      if (btn.disabled) return;
+      const prev = boost;
+      if (b) { if (boost === b) return; boost = b; }
+      else { if (!family.includes(boost)) return; boost = null; } // "Off" of the row whose variant is on
+      showBoost(); sound.click();
+      const was = prev && prev !== boost && boost ? i18n(` · ${prev.name} aus`, ` · ${prev.name} off`) : "";
+      say(boost ? i18n(`${boost.name} an · ${money(bet * boost.cost)} pro Spin`, `${boost.name} on · ${money(bet * boost.cost)} per spin`) + was
+        : i18n(`${prev.name} aus`, `${prev.name} off`));
     });
-    return { b, btn, lv, pr };
+    return { b, btn, lv, pr, family };
   });
-})();
+}
+const switchOpts = [
+  ...switchRow("buyBoost", BOOST_NAME, i18n("FS-Symbole landen in jedem Spin öfter. Bleibt an, bis du ihn ausschaltest; Autoplay spielt mit ihm.",
+    "FS symbols land more often on every spin. Stays on until you switch it off; Autoplay uses it."), BOOSTS),
+  ...switchRow("buyVs", VS_SPIN.name, i18n("Jeder Spin hat mindestens eine VS-Walze: jede Gruppe, die sie erreicht, startet ein Duell. Bleibt an, bis du ihn ausschaltest; Autoplay spielt mit ihm.",
+    "Every spin has at least one VS reel: every group that reaches it starts a duel. Stays on until you switch it off; Autoplay uses it."), [VS_SPIN], "vs-row"),
+];
 function showBoost() {
   const perSpin = i18n("pro Spin", "per spin"), off = i18n("Aus", "Off");
-  for (const o of boostOpts) {
-    const on = o.b === boost;
+  for (const o of switchOpts) {
+    const on = o.b ? o.b === boost : !o.family.includes(boost);
     o.btn.classList.toggle("on", on); o.btn.setAttribute("aria-pressed", String(on));
     o.lv.textContent = o.b ? o.b.level : off;
     o.pr.textContent = `${money(bet * (o.b ? o.b.cost : 1))} ${perSpin}`;
   }
-  buyBtn.classList.toggle("boosted", !!boost); buyBtn.classList.toggle("six", boost === BOOSTS[1]);
-  // the bet field shows what the next spin costs: the bet times the boost (3× or 6×)
+  const six = boost === BOOSTS[1], vs = boost === VS_SPIN;
+  buyBtn.classList.toggle("boosted", !!boost); buyBtn.classList.toggle("six", six); buyBtn.classList.toggle("vs", vs);
+  // the bet field shows what the next spin costs: the bet times the variant (3×, 5× or 6×)
   betVal.textContent = fmtV(bet * (boost ? boost.cost : 1));
-  betVal.classList.toggle("boosted", !!boost); betVal.classList.toggle("six", boost === BOOSTS[1]);
-  bbBoost.textContent = `${BOOST_NAME} ${boost ? boost.level : off}`;
-  buyBtn.setAttribute("aria-label", i18n("Bonus kaufen", "Buy Bonus") + ` · ${BOOST_NAME}: ` + (boost ? `${boost.level}, ${money(bet * boost.cost)} ${perSpin}` : off));
+  betVal.classList.toggle("boosted", !!boost); betVal.classList.toggle("six", six); betVal.classList.toggle("vs", vs);
+  bbBoost.textContent = vs ? VS_SPIN.name : `${BOOST_NAME} ${boost ? boost.level : off}`;
+  buyBtn.setAttribute("aria-label", i18n("Bonus kaufen", "Buy Bonus") + " · " + (boost ? `${boost.name}, ${money(bet * boost.cost)} ${perSpin}` : `${BOOST_NAME}: ${off}`));
 }
 function updateBuy() {
   buyBtn.disabled = busy || autoOn || loading || RGS.replay;
-  for (const o of boostOpts) o.btn.disabled = buyBtn.disabled;
+  for (const o of switchOpts) o.btn.disabled = buyBtn.disabled;
 }
-function openBuy(open) {
+// ---------- Buying a bonus takes two steps: Buy on its card opens this confirmation with the price at the current bet
+// and the balance after it; only its Buy plays the round ----------
+const buyAsk = document.getElementById("buyAsk"), askYes = document.getElementById("askYes"), askNo = document.getElementById("askNo");
+askYes.textContent = i18n("Kaufen", "Buy"); askNo.textContent = i18n("Abbrechen", "Cancel");
+let asking = null;
+function askBuy(b) {
+  asking = b;
+  const cost = bet * b.cost;
+  q(buyAsk, ".ask-art").replaceChildren(buyArt(b));
+  document.getElementById("askTitle").textContent = i18n(`${b.name} kaufen?`, `Buy ${b.name}?`);
+  document.getElementById("askText").textContent = b.text;
+  document.getElementById("askCost").textContent = money(cost);
+  document.getElementById("askNote").textContent = `${num(b.cost)}× ${i18n("Einsatz", "bet")} · ${i18n("Guthaben danach", "Balance after")} ${money(balance - cost)}`;
+  buyAsk.hidden = false; askYes.focus();
+  if (!RM) q(buyAsk, ".msg-card").animate([{ opacity: 0, transform: "scale(.9)" }, { opacity: 1, transform: "none" }], { duration: 240, easing: "cubic-bezier(.2,.9,.3,1.2)" });
+}
+function closeAsk(go) {
+  const b = asking; asking = null; buyAsk.hidden = true;
+  if (go && b) { sound.click(); play(b.mode); } else openBuy(true); // Cancel goes back to the Bonus menu
+}
+askYes.addEventListener("click", () => closeAsk(true));
+askNo.addEventListener("click", () => closeAsk(false));
+buyAsk.addEventListener("click", e => { if (e.target === buyAsk) closeAsk(false); });
+addEventListener("keydown", e => { if (e.key === "Escape" && !buyAsk.hidden) closeAsk(false); });
+function openBuy(open, keepFocus) {
   buyDlg.hidden = !open;
-  if (!open) return buyBtn.focus();
+  if (!open) return keepFocus || buyBtn.focus();
   showBoost();
   for (const { b, amount, times, go } of buyCards) {
     const short = balance < bet * b.cost;
@@ -1980,6 +2207,8 @@ const sound = (() => {
       hiss(t, { f: 2200, f2: 260, q: .9, a: .02, d: .4, vol: .17, rev: .35 });
       for (let i = 0; i < 4; i++) hiss(t + .05 + i * .045, { f: 900 + Math.random() * 900, q: 3, d: .03, vol: .06, type: "lowpass" });
     },
+    // a connection reaching a cell (synth fallback for assets/sfx/connect.mp3): a short bell, a scale step higher each cell
+    connect(k = 0) { const t = at(); if (t == null) return; bell(t, NOTE(SCALE[Math.min(k, SCALE.length - 1)]) * 2, .07, .6); },
     // the win counter climbing: quiet bone ticks
     tick() { const t = at(); if (t == null) return; tone(t, { type: "triangle", f: 2300 + Math.random() * 600, d: .018, vol: .03 }); },
     // a multiplier badge rolling, then a bell when it lands
@@ -2032,6 +2261,12 @@ const sound = (() => {
     },
     refill() { const t = at(); if (t == null) return; [7, 12, 15].forEach((n, i) => bell(t + i * .08, NOTE(n) * 2, .05, .9)); },
     // banners: a rising whoosh and a bell
+    // the way into the free spins (synth fallback for assets/sfx/trove.mp3): a rush of air rising into a deep toll and a bell
+    trove(delay = 0) {
+      const t = at(delay); if (t == null) return; duck(4.5);
+      hiss(t, { f: 250, f2: 2600, q: .7, a: 2, d: .3, vol: .12, rev: .5 });
+      bell(t + 2.3, NOTE(-12), .16, 3.4, .7); bell(t + 2.3, NOTE(12), .08, 2.6);
+    },
     banner() { const t = at(); if (t == null) return; duck(2); hiss(t, { f: 300, f2: 3000, q: .8, a: .25, d: .2, vol: .13, rev: .4 }); bell(t + .25, NOTE(12), .1, 2.2); },
     // a big win (20× bet or more): toll, organ and a cascade of bells; max win adds the devil
     bigWin(max = false) {
@@ -2072,7 +2307,7 @@ const sound = (() => {
   // ---- designed sounds (tools/sound_design.py -> assets/sfx/*.mp3) replace the synth voices above once loaded;
   // until a file is decoded, or if it fails, the synthesized version plays. Pitched samples are recorded at A5 (880 Hz).
   const SFX = ["click", "spin", "land", "land_heavy", "chime", "crystal", "tumble", "charge", "burst", "clash", "wail", "toll",
-    "sting", "sting_devil", "fanfare", "bigwin", "totalwin", "heartbeat", "crumble", "challenger", "banner", "fs_land", "edge"];
+    "sting", "sting_devil", "fanfare", "bigwin", "totalwin", "heartbeat", "crumble", "challenger", "banner", "fs_land", "edge", "connect", "trove"];
   const raw = Object.fromEntries(SFX.map(k => [k, fetch(`assets/sfx/${k}.mp3`).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)]));
   const buf = {};
   loadSfx = async () => { for (const k of SFX) { try { const ab = await raw[k]; if (ab) buf[k] = await ctx.decodeAudioData(ab); } catch (err) { console.warn("sfx " + k, err); } } };
@@ -2093,13 +2328,24 @@ const sound = (() => {
   use("charge", null, t => smp("charge", t, .45));
   use("burst", null, t => smp("burst", t, .8));
   use("win", null, (t, size = 4, tier = "obj") => {
+    // with the connection pops (one per cell, sound.connect) the bell run would only crowd them: characters keep their toll
+    if (buf.connect) { if (tier === "char") smp("toll", t, .22, 2); return true; }
     if (!buf.chime) return false;
     const start = { rune: 0, obj: 2, char: 4, special: 5 }[tier] ?? 2, notes = Math.min(5, 2 + Math.floor((size - 4) / 2));
     for (let i = 0; i < notes; i++) smp("chime", t + i * .085, tier === "rune" ? .22 : .32, pitch(SCALE[start + i * 2]));
     if (tier === "char") smp("toll", t, .22, 2);
     return true;
   });
-  use("tumble", null, t => smp("tumble", t, .4));
+  // the winning symbols burst and vanish (a spirit-fire burst since 2026-11-11, a little louder than the old soft poof)
+  use("tumble", null, t => smp("tumble", t, .55));
+  // the connection climbs a melody cell by cell: the sharp pop (no clear note, so it only rises a little) and, under it,
+  // the chime (exactly A5) a scale step higher per cell, from A4 up to A6
+  use("connect", null, (t, k = 0) => {
+    const step = SCALE[Math.min(k, SCALE.length - 1)];
+    if (!smp("connect", t, .34, .9 * 2 ** (Math.min(step, 12) / 24))) return false;
+    smp("chime", t, .2, .5 * 2 ** (step / 12));
+    return true;
+  });
   use("slam", null, t => smp("burst", t, .55, 1.15));
   use("clash", null, (t, power = 0) => smp("clash", t, .45 + power * .1, 1 - power * .05));
   use("knockout", null, t => smp("wail", t, .55, .94 + Math.random() * .12));
@@ -2134,6 +2380,7 @@ const sound = (() => {
     return true;
   });
   use("totalWin", null, t => { duck(3.5); return smp("totalwin", t, .8); });
+  use("trove", 0, t => { duck(4.5); return smp("trove", t, .9); });
   use("bigWin", null, (t, max = false) => { duck(max ? 4 : 3); if (!smp("bigwin", t, .8)) return false; if (max) smp("sting_devil", t + .3, .45); return true; });
 
   return {
@@ -2596,7 +2843,7 @@ q(document, "#paytable .hint").textContent = i18n("Gewinne für den aktuellen Ei
 // ---------- Game rules (Info button) ----------
 // RTP and max win per mode, from the published lookup tables (math-sdk library/stats_base.json and stats_bonus.json).
 // Update these after rerunning run.py.
-const MODE_INFO = [{ ...BASE_INFO, name: i18n("Basisspiel", "Base game") }, ...BOOSTS, ...BUYS];
+const MODE_INFO = [{ ...BASE_INFO, name: i18n("Basisspiel", "Base game") }, ...BOOSTS, VS_SPIN, ...BUYS];
 const rulesEl = document.getElementById("rules"), rulesBody = document.getElementById("rulesBody");
 const num = v => v.toLocaleString(RGS.lang === "de" ? "de" : "en");
 // a rules section: a heading, then paragraphs (strings) and bullet lists (arrays)
@@ -2632,9 +2879,13 @@ rulesSection(BOOST_NAME, [
   BOOSTS.map(b => [`${b.name} (${num(b.cost)}× ${i18n("Einsatz", "bet")}):`, b.text]),
   i18n("Den FS-Boost wählst du im Bonusmenü („Bonus kaufen“): Aus, 3× oder 6×, jeweils mit dem Preis pro Spin für den aktuellen Einsatz. Der Knopf „Bonus kaufen“ zeigt, ob er an ist. Der Boost bleibt an, bis du ihn ausschaltest; Autoplay spielt mit ihm.",
     "Choose the FS Boost in the Bonus menu (Buy Bonus): Off, 3× or 6×, each with its price per spin at the current bet. The Buy Bonus button shows whether it is on. The boost stays on until you switch it off; Autoplay uses it.")]);
+rulesSection(VS_SPIN.name, [
+  [[`${VS_SPIN.name} (${num(VS_SPIN.cost)}× ${i18n("Einsatz", "bet")}):`, VS_SPIN.text]],
+  i18n("VS-Spin schaltest du im Bonusmenü („Bonus kaufen“) an und aus; dort steht sein Preis pro Spin für den aktuellen Einsatz. Er bleibt an, bis du ihn ausschaltest, und Autoplay spielt mit ihm. Der Knopf „Bonus kaufen“ zeigt, ob er an ist. VS-Spin und FS-Boost sind nie zugleich an: Wer einen anschaltet, schaltet den anderen aus.",
+    "Switch VS Spin on and off in the Bonus menu (Buy Bonus), which shows its price per spin at the current bet. It stays on until you switch it off, and Autoplay uses it. The Buy Bonus button shows whether it is on. VS Spin and the FS Boost are never on together: switching one on switches the other off.")]);
 rulesSection(i18n("Bonuskauf", "Bonus buy"), [
-  i18n("„Bonus kaufen“ öffnet ein Menü mit diesen Optionen und ihrem Preis für den aktuellen Einsatz. Gekauft wird erst, wenn du bei einer Option auf Kaufen drückst. Jede Runde beginnt auf einem normalen Spielfeld.",
-    "Buy Bonus opens a menu with these options and their price at the current bet. Nothing is bought until you press Buy on an option. Every round starts on a normal board."),
+  i18n("„Bonus kaufen“ öffnet ein Menü mit diesen Optionen und ihrem Preis für den aktuellen Einsatz. Kaufen bei einer Option öffnet eine Bestätigung mit dem Preis und deinem Guthaben danach; gekauft wird erst, wenn du dort Kaufen drückst. Jede Runde beginnt auf einem normalen Spielfeld.",
+    "Buy Bonus opens a menu with these options and their price at the current bet. Buy on an option opens a confirmation with the price and your balance after it; nothing is bought until you press Buy there. Every round starts on a normal board."),
   BUYS.map(b => [`${b.name} (${num(b.cost)}× ${i18n("Einsatz", "bet")}):`, b.text]),
 ]);
 {
@@ -2732,7 +2983,7 @@ addEventListener("resize", () => FIT.forEach(fitVal));
 // sized for the phone; turning the phone back puts everything where it was.
 const PANEL = [["msg", "hMsg"], ["balVal", "hBal"], ["betMinus", "hBetL"], ["betVal", "hBet"], ["betPlus", "hBetR"], ["winVal", "hWin"], ["multChip", "hWin"],
   ["turboBtn", "hTurbo"], ["autoBtn", "hAuto"], ["spin", "hSpin"], ["infoBtn", "hInfo"], ["musicBtn", "hSound"], ["buyBtn", "hBuy"]];
-const LAYER = ["autoMenu", "sndMenu", "buyDlg", "rules", "replayBar", "replayDlg", "errDlg", "intro"];
+const LAYER = ["autoMenu", "sndMenu", "buyDlg", "buyAsk", "rules", "replayBar", "replayDlg", "errDlg", "intro"];
 const homes = new Map(); // a comment marks each element's place in the landscape layout
 for (const id of [...PANEL.map(p => p[0]), ...LAYER]) { const el = document.getElementById(id), mark = document.createComment(id); el.before(mark); homes.set(id, mark); }
 if (RGS.social) document.getElementById("hBetLbl").textContent = "Play";
@@ -2791,8 +3042,10 @@ const introDone = new Promise(resolve => {
 });
 // the VS break-out clip (1.8 MB) loads behind the intro, not in the loading bar
 // the characters' win rigs load behind the intro too (about 60 KB each)
+if (!RM) introDone.then(loadSymAnims);
 if (!RM) introDone.then(() => CHARS.forEach(id => RigPlayer.load(`assets/sym-rigs/${id}`).then(r => { symRigs[id] = r; }, () => {})));
 if (!RM) introDone.then(() => fetch("assets/vs-punch.webm").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
+if (!RM) introDone.then(() => fetch("assets/fs-trove.webm").then(r => r.ok ? r.blob() : null).then(b => { troveBlob = b; }).catch(() => {}));
 
 // the loading bar waits for the images of the first screen
 LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp", "assets/hud-bg.webp", "assets/bb-logo.webp",

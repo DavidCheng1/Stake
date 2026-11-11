@@ -1,0 +1,272 @@
+{
+ "blue": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.0,
+   "px": 128,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "book": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "devil": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.0,
+   "px": 128,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.4,
+   "px": 230,
+   "settled": true
+  }
+ },
+ "fs": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.15,
+   "px": 166,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  }
+ },
+ "key": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "lantern": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.05,
+   "px": 141,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "pirate": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.05,
+   "px": 141,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "potion": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.3,
+   "px": 205,
+   "settled": true
+  }
+ },
+ "ring": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  }
+ },
+ "rune_blue": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "rune_fire": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "rune_green": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.15,
+   "px": 166,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "rune_pink": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.1,
+   "px": 154,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.35,
+   "px": 218,
+   "settled": true
+  }
+ },
+ "rune_purple": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "witch": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.0,
+   "px": 128,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.3,
+   "px": 205,
+   "settled": true
+  }
+ }
+}
