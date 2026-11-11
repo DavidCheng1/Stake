@@ -927,10 +927,8 @@ const DUEL_T3 = [[150, 35], [200, 25], [250, 15], [300, 10], [500, 8], [750, 5],
 // Before a duel the Ghost Pirate breaks out of the VS reel: he slams his hands against the glass left and right, it
 // cracks into lightning that runs out over the board, he gathers the energy and the reel bursts in a green flash.
 // Played from the clip (assets/vs-punch.webm) when it has arrived and turbo is off; otherwise the quick version.
-// The clip is fetched once after the intro; each duel plays it from a fresh object URL, since an animated image
-// only starts over under a new URL.
-let breakBlob = null;
-const vsBreakClip = () => breakBlob && URL.createObjectURL(breakBlob);
+// The clip is loaded once after the intro (preloadClip) and plays from its own URL.
+const vsBreakClip = () => clipReady["vs-punch"] && "assets/vs-punch.webm";
 async function breakOut(tall, vsSym) {
   tall.classList.add("dueling");
   let king = q(tall, ".vx-king"); const br = div("vx-break"), orb = div("vx-orb"), boom = div("vx-boom");
@@ -990,7 +988,6 @@ async function breakOut(tall, vsSym) {
     await sleep(800);
     impact(.5, .5, -1); impact(.5, .5, 1); flicker(); shake(12, 520); // the punch lands
     await sleep(520);
-    later(() => URL.revokeObjectURL(clip), 3000);
   } else {
     king?.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "scale(1.06)", filter: "brightness(1.35) drop-shadow(0 0 .6cqw #6dffb3)" }], { duration: 200, fill: "forwards" });
     await sleep(180);
@@ -1179,12 +1176,11 @@ async function banner(title, sub, hold = 1700) {
 // Under the flash the board turns into the bonus board (swap), over the vault the title lands, then the clip dissolves
 // into the bonus. Its sound (assets/sfx/trove.mp3) hits at 2.3 s, so it starts 0.9 s into the clip. Off in turbo and
 // with reduced motion, or while the clip has not arrived: then the banner plays instead (returns false).
-let troveBlob = null;
 const TROVE_FLASH = 3.15, TROVE_TITLE = 4.3;
 async function troveEntrance(title, sub, note, swap) {
-  if (RM || turbo || !troveBlob) return false;
+  if (RM || turbo || !clipReady["fs-trove"]) return false;
   nextSequence();
-  const url = URL.createObjectURL(troveBlob), box = div("trove"), v = document.createElement("video");
+  const url = "assets/fs-trove.webm", box = div("trove"), v = document.createElement("video");
   v.muted = v.playsInline = true; v.preload = "auto"; v.src = url;
   const t = div("trove-title");
   t.innerHTML = `<h2></h2><p></p><small></small>`;
@@ -1192,7 +1188,7 @@ async function troveEntrance(title, sub, note, swap) {
   box.append(v, div("trove-shade"), t);
   box.addEventListener("pointerdown", () => skip());
   const ready = await Promise.race([new Promise(r => { v.oncanplay = () => r(true); v.onerror = () => r(false); }), new Promise(r => setTimeout(() => r(false), 1500))]);
-  if (!ready) { URL.revokeObjectURL(url); return false; }
+  if (!ready) return false;
   document.body.appendChild(box);
   box.animate([{ opacity: 0, transform: "scale(1.06)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: "ease-out" });
   await v.play().catch(() => {});
@@ -1217,7 +1213,7 @@ async function troveEntrance(title, sub, note, swap) {
   if (!slam) { showTitle(); await sleep(2600); } // the title stands over the vault's last frame
   await box.animate([{ opacity: 1, transform: "none", filter: "none" }, { opacity: 0, transform: "scale(1.08)", filter: "blur(6px) brightness(1.4)" }],
     { duration: slam ? 260 : 700, easing: "ease-in", fill: "forwards" }).finished;
-  v.pause(); box.remove(); URL.revokeObjectURL(url);
+  v.pause(); box.remove();
   return true;
 }
 
@@ -2526,6 +2522,19 @@ if (RM) hero.still(); else hero.start();
 // torch fire and smoke, smoke over the table, glowing runes, gems, halos, light rays, pillar glows and mists.
 // It runs in a Web Worker on an OffscreenCanvas where supported, so the reels never wait for it.
 const GLOWS = {"runesP": {"x": 4.00390625, "y": 35.13986013986014, "w": 10.83984375, "h": 37.23776223776224, "src": "assets/glow_runesP.webp"}, "runesB": {"x": -1.3671875, "y": 67.48251748251748, "w": 9.5703125, "h": 25.874125874125873, "src": "assets/glow_runesB.webp"}, "runeBtn": {"x": 13.28125, "y": 88.46153846153845, "w": 5.859375, "h": 11.888111888111888, "src": "assets/glow_runeBtn.webp"}, "gemTop": {"x": 46.2890625, "y": 12.937062937062937, "w": 7.421875, "h": 13.286713286713287, "src": "assets/glow_gemTop.webp"}, "gemRed": {"x": 21.38671875, "y": 10.314685314685315, "w": 7.03125, "h": 13.461538461538462, "src": "assets/glow_gemRed.webp"}, "gemGreen": {"x": 71.6796875, "y": 10.314685314685315, "w": 7.2265625, "h": 13.461538461538462, "src": "assets/glow_gemGreen.webp"}, "bldGem": {"x": 85.3515625, "y": 31.293706293706293, "w": 6.54296875, "h": 13.461538461538462, "src": "assets/glow_bldGem.webp"}, "torchL": {"x": 18.359375, "y": 45.97902097902098, "w": 10.546875, "h": 19.755244755244757, "src": "assets/glow_torchL.webp", "cx": 242, "cy": 332}, "torchR": {"x": 70.60546875, "y": 45.97902097902098, "w": 10.546875, "h": 19.755244755244757, "src": "assets/glow_torchR.webp", "cx": 777, "cy": 332}};
+// A worker from inline code, or null where the page does not allow one (a blob: worker can be refused by the page's
+// content security policy, and only asynchronously): it has to answer within 1.5 s before a canvas is handed to it,
+// so a refused worker leaves the drawing on the main thread instead of a blank canvas.
+function inlineWorker(code) {
+  return new Promise(res => {
+    let w;
+    try { w = new Worker(URL.createObjectURL(new Blob([code + ";postMessage('up');"], { type: "text/javascript" }))); } catch (e) { return res(null); }
+    const fail = () => { clearTimeout(t); w.terminate(); res(null); }, t = setTimeout(fail, 1500);
+    w.onerror = fail;
+    w.addEventListener("message", e => { if (e.data === "up") { clearTimeout(t); w.onerror = null; res(w); } }, { once: true });
+  });
+}
+
 (() => {
   const canvasEl = document.getElementById("amb");
   const RENDERER = function () {
@@ -2696,7 +2705,7 @@ const GLOWS = {"runesP": {"x": 4.00390625, "y": 35.13986013986014, "w": 10.83984
   const names = ["fogA", "fogB", "fogM", "smoke", "allow"].concat(Object.keys(GLOWS).map(n => "gl_" + n));
   const srcs = ["assets/img35.webp", "assets/img36.webp", "assets/img37.webp", "assets/img38.webp", "assets/img39.webp"].concat(Object.values(GLOWS).map(g => g.src));
   const glowMeta = {}; for (const [n, g] of Object.entries(GLOWS)) glowMeta[n] = { x: g.x, y: g.y, w: g.w, h: g.h };
-  Promise.all(srcs.map(loadBitmap)).then(list => {
+  Promise.all(srcs.map(loadBitmap)).then(async list => {
     if (list.some(x => !x)) return;
     const bitmaps = {}; names.forEach((n, i) => bitmaps[n] = list[i]);
     const r0 = () => game.getBoundingClientRect();
@@ -2706,12 +2715,14 @@ const GLOWS = {"runesP": {"x": 4.00390625, "y": 35.13986013986014, "w": 10.83984
           "const raf = self.requestAnimationFrame ? f => self.requestAnimationFrame(f) : f => setTimeout(() => f(performance.now()), 16);" +
           "let run = true, still = false; function loop(t) { if (run) R.frame(t); if (!still) raf(loop); }" +
           "self.onmessage = e => { const m = e.data; if (m.type === 'init') { R.init(m.canvas, m.bitmaps, m.glows, m.w, m.h, m.dpr); if (m.still) { still = true; R.frame(1000); R.frame(1016); } else raf(loop); } else if (m.type === 'resize') { R.resize(m.w, m.h, m.dpr); if (still) { R.frame(2000); R.frame(2016); } } else if (m.type === 'vis') run = !m.hidden; };";
-        const worker = new Worker(URL.createObjectURL(new Blob([code], { type: "text/javascript" })));
+        const worker = await inlineWorker(code);
+        if (worker) {
         const off = canvasEl.transferControlToOffscreen(), r = r0();
         worker.postMessage({ type: "init", canvas: off, bitmaps, glows: glowMeta, w: r.width, h: r.height, dpr: devicePixelRatio || 1, still: RM }, [off].concat(list.filter(x => x instanceof ImageBitmap)));
         addEventListener("resize", () => { const r2 = r0(); worker.postMessage({ type: "resize", w: r2.width, h: r2.height, dpr: devicePixelRatio || 1 }); });
         document.addEventListener("visibilitychange", () => worker.postMessage({ type: "vis", hidden: document.hidden }));
         return;
+        }
       }
     } catch (e) {}
     const R = RENDERER(), r = r0();
@@ -2776,7 +2787,7 @@ const MOTES = function () {
     }
   };
 };
-(() => {
+(async () => {
   if (RM) return;
   const cv = document.getElementById("motes"), r0 = () => game.getBoundingClientRect();
   try {
@@ -2785,12 +2796,14 @@ const MOTES = function () {
         "const raf = self.requestAnimationFrame ? f => self.requestAnimationFrame(f) : f => setTimeout(() => f(performance.now()), 16);" +
         "let run = true, odd = false; function loop(t) { odd = !odd; if (run && odd) R.frame(t); raf(loop); }" +
         "self.onmessage = e => { const m = e.data; if (m.type === 'init') { R.init(m.canvas, m.w, m.h); raf(loop); } else if (m.type === 'resize') R.resize(m.w, m.h); else if (m.type === 'vis') run = !m.hidden; };";
-      const wk = new Worker(URL.createObjectURL(new Blob([code], { type: "text/javascript" })));
+      const wk = await inlineWorker(code);
+      if (wk) {
       const off = cv.transferControlToOffscreen(), r = r0();
       wk.postMessage({ type: "init", canvas: off, w: r.width, h: r.height }, [off]);
       addEventListener("resize", () => { const r2 = r0(); wk.postMessage({ type: "resize", w: r2.width, h: r2.height }); });
       document.addEventListener("visibilitychange", () => wk.postMessage({ type: "vis", hidden: document.hidden }));
       return;
+      }
     }
   } catch (e) {}
   const R = MOTES(), r = r0(); R.init(cv, r.width, r.height);
@@ -3044,8 +3057,18 @@ const introDone = new Promise(resolve => {
 // the characters' win rigs load behind the intro too (about 60 KB each)
 if (!RM) introDone.then(loadSymAnims);
 if (!RM) introDone.then(() => CHARS.forEach(id => RigPlayer.load(`assets/sym-rigs/${id}`).then(r => { symRigs[id] = r; }, () => {})));
-if (!RM) introDone.then(() => fetch("assets/vs-punch.webm").then(r => r.ok ? r.blob() : null).then(b => { breakBlob = b; }).catch(() => {}));
-if (!RM) introDone.then(() => fetch("assets/fs-trove.webm").then(r => r.ok ? r.blob() : null).then(b => { troveBlob = b; }).catch(() => {}));
+// Clips that must start the moment they are called for (the punch break-out, the way into the free spins) load after
+// the intro and play from their own URL, like every other video: Stake's page does not allow blob: media, so a clip
+// played from a downloaded copy stayed blank there. A clip counts as ready once its download is in the cache or a
+// hidden video has buffered it, whichever comes first (some browsers buffer only one way).
+const clipReady = {};
+function preloadClip(name) {
+  const url = `assets/${name}.webm`, mark = () => { clipReady[name] = true; };
+  fetch(url).then(r => r.ok && r.arrayBuffer()).then(b => b && mark()).catch(() => {});
+  const v = document.createElement("video"); v.muted = v.playsInline = true; v.preload = "auto";
+  v.addEventListener("canplaythrough", mark, { once: true }); v.src = url; v.load();
+}
+if (!RM) introDone.then(() => { preloadClip("vs-punch"); preloadClip("fs-trove"); });
 
 // the loading bar waits for the images of the first screen
 LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp", "assets/hud-bg.webp", "assets/bb-logo.webp",
