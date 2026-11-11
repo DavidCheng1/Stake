@@ -109,12 +109,16 @@ def frames(path):
     return out
 
 
-def key(rgb, bg):
-    """Alpha from how far a pixel leans to the backdrop colour, the colour unmixed from it: C = a F + (1 - a) B."""
+def key(rgb, warm=False):
+    """Alpha from how far a pixel leans to the backdrop colour, the colour unmixed from it: C = a F + (1 - a) B.
+    The backdrop (green or magenta) is read off the frame's edge, so takes on either key right. warm: the symbol is
+    gold (red >= green >= blue everywhere), so each pixel is given the gold hue, and the faint
+    halo a flash casts on the backdrop thins out."""
     r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
-    lean = g - np.maximum(r, b) if bg == "green" else np.minimum(r, b) - g
     edge = np.concatenate([rgb[:8].reshape(-1, 3), rgb[-8:].reshape(-1, 3), rgb[:, :8].reshape(-1, 3), rgb[:, -8:].reshape(-1, 3)])
     B = np.median(edge, axis=0)  # this frame's backdrop, as filmed
+    bg = "green" if B[1] > max(B[0], B[2]) else "magenta"
+    lean = g - np.maximum(r, b) if bg == "green" else np.minimum(r, b) - g
     full = (B[1] - max(B[0], B[2])) if bg == "green" else (min(B[0], B[2]) - B[1])
     lo, hi = .22 * full, .86 * full  # leaning this little is the symbol's own colour; this much is backdrop
     a = np.clip((hi - lean) / (hi - lo), 0, 1)
@@ -130,6 +134,11 @@ def key(rgb, bg):
         cut_ = np.where(soft, np.maximum(m, 0), 0)
         F[..., 0] -= cut_
         F[..., 2] -= cut_
+    if warm:  # each pixel takes the gold hue, its brightness and saturation kept: pink or lime spill turns gold
+        hi_, lo_ = F.max(axis=2), F.min(axis=2)
+        off = (F[..., 1] > F[..., 0]) | (F[..., 2] > F[..., 1])  # only where the order is broken: gold and orange stay
+        F = np.where(off[..., None], np.dstack([hi_, lo_ + .7 * (hi_ - lo_), lo_]), F)
+        a = np.where(a < 1, a ** 1.6, a)  # and the faint halo of a flash thins out instead of veiling the frame
     F[a == 0] = 0
     return np.dstack([F, a * 255]).clip(0, 255).astype(np.uint8)
 
@@ -145,7 +154,6 @@ def build(ids, picks):
     meta_path = os.path.join(OUT, "anim.json")
     meta = json.load(open(meta_path, encoding="utf-8")) if os.path.exists(meta_path) else {}
     for i in ids:
-        bg = S[i]["bg"]
         sheets = {}
         for kind in ("idle", "win"):
             d = os.path.join(TAKES, f"anim-{i}-{kind}")
@@ -160,7 +168,7 @@ def build(ids, picks):
             else:
                 step = 24 / IDLE_FPS
                 fr = [fr[int(round(k * step))] for k in range(int(len(fr) / step))]
-            rgba = [key(f, bg) for f in fr]
+            rgba = [key(f, S[i].get("warm", False)) for f in fr]
             # the symbol's box in the clip, and the margin the motion reaches out to (the same on every side, so the
             # game can lay the canvas out round the symbol evenly)
             x0, y0 = (FW - SYM_PX) / 2, (FH - SYM_PX) / 2

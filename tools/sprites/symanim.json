@@ -19,7 +19,7 @@
     "ring":   { "bg": "green", "what": "the golden ring with a big purple gem, wrapped in purple ghost smoke",
       "idle": "The purple gem sparkles, the purple ghost smoke curls slowly around the ring.",
       "win": "The ring rocks, the gem flashes bright with a star glint, purple ghost flames whirl up around it." },
-    "key":    { "bg": "magenta", "what": "the golden skull key wrapped in golden mist",
+    "key":    { "bg": "magenta", "warm": true, "what": "the golden skull key wrapped in golden mist",
       "idle": "The skull's eye sockets glint, the golden mist curls gently around the key.",
       "win": "The key gives a turn as if unlocking and back, the skull's eyes flash bright gold, golden sparkles burst from it." },
     "lantern":{ "bg": "magenta", "what": "the old iron lantern with green ghost fire inside and green ghost smoke around it",

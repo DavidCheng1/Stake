@@ -28,6 +28,14 @@
   }
  },
  "key": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  },
   "win": {
    "cols": 6,
    "fps": 24,
