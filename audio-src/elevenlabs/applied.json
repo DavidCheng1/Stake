@@ -1,140 +1,140 @@
 {
   "click": {
-    "take": "click_t6.mp3",
-    "version": 3,
+    "take": "click_t2.mp3",
+    "version": 4,
     "backup": "click_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "spin": {
-    "take": "spin_t2.mp3",
-    "version": 3,
+    "take": "spin_t3.mp3",
+    "version": 4,
     "backup": "spin_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "land": {
-    "take": "land_t4.mp3",
-    "version": 4,
+    "take": "land_t5.mp3",
+    "version": 6,
     "backup": "land_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "land_heavy": {
-    "take": "land_heavy_t1.mp3",
-    "version": 3,
+    "take": "land_heavy_t4.mp3",
+    "version": 4,
     "backup": "land_heavy_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "clash": {
-    "take": "restored from 39c4def",
-    "version": 4,
+    "take": "clash_t1.mp3",
+    "version": 5,
     "backup": "clash_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "wail": {
-    "take": "restored from 39c4def",
-    "version": 4,
+    "take": "wail_t1.mp3",
+    "version": 5,
     "backup": "wail_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "crumble": {
-    "take": "crumble_t1.mp3",
-    "version": 3,
+    "take": "crumble_t2.mp3",
+    "version": 4,
     "backup": "crumble_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "banner": {
-    "take": "banner_t2.mp3",
-    "version": 3,
+    "take": "banner_t1.mp3",
+    "version": 4,
     "backup": "banner_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "bigwin": {
-    "take": "bigwin_t6.mp3",
-    "version": 5,
+    "take": "bigwin_t5.mp3",
+    "version": 7,
     "backup": "bigwin_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "sting_devil": {
     "take": "sting_devil_t2.mp3",
-    "version": 3,
+    "version": 4,
     "backup": "sting_devil_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "challenger": {
-    "take": "restored from 39c4def",
-    "version": 4,
+    "take": "challenger_t1.mp3",
+    "version": 5,
     "backup": "challenger_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "charge": {
-    "take": "restored from 39c4def",
-    "version": 6,
+    "take": "charge_t12.mp3",
+    "version": 7,
     "backup": "charge_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "burst": {
-    "take": "restored from 39c4def",
-    "version": 6,
+    "take": "burst_t8.mp3",
+    "version": 7,
     "backup": "burst_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "sting": {
-    "take": "sting_t3.mp3",
-    "version": 2,
+    "take": "sting_t2.mp3",
+    "version": 3,
     "backup": "sting_old.mp3",
-    "date": "2026-10-29",
-    "source": {
-      "prompt": "Win stinger for a slot game: an instant bright chime hit, a fast ascending bell arpeggio and a big major chord with a sparkle tail. Triumphant, rewarding, exciting, loud, punchy, clean.",
-      "duration_s": 3.0,
-      "prompt_influence": 0.5,
-      "model_id": "eleven_text_to_sound_v2",
-      "output_format": "mp3_44100_128",
-      "generated": "2026-10-29T20:09:55",
-      "score": 90,
-      "notes": [
-        "weak A major (-0.21), sounds like F minor"
-      ]
-    }
+    "date": "2026-11-11"
   },
   "fanfare": {
-    "take": "fanfare_t9.mp3",
-    "version": 7,
+    "take": "fanfare_t16.mp3",
+    "version": 9,
     "backup": "fanfare_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "edge": {
-    "take": "edge_t1.mp3",
-    "version": 3,
+    "take": "edge_t4.mp3",
+    "version": 5,
     "backup": "edge_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "fs_land": {
-    "take": "fs_land_t1.mp3",
-    "version": 3,
+    "take": "fs_land_t7.mp3",
+    "version": 5,
     "backup": "fs_land_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "chime": {
-    "take": "chime_t2.mp3",
-    "version": 3,
+    "take": "chime_t10.mp3",
+    "version": 4,
     "backup": "chime_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "tumble": {
-    "take": "tumble_t1.mp3",
-    "version": 2,
+    "take": "tumble_t6.mp3",
+    "version": 4,
     "backup": "tumble_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "heartbeat": {
-    "take": "heartbeat_t10.mp3",
-    "version": 2,
+    "take": "heartbeat_t2.mp3",
+    "version": 3,
     "backup": "heartbeat_old.mp3",
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   },
   "totalwin": {
-    "take": "totalwin_t3.mp3",
+    "take": "totalwin_t2.mp3",
+    "version": 2,
+    "backup": null,
+    "date": "2026-11-11"
+  },
+  "connect": {
+    "take": "connect_t7.mp3",
+    "version": 2,
+    "backup": null,
+    "date": "2026-11-11"
+  },
+  "trove": {
+    "take": "trove_t1.mp3",
     "version": 1,
     "backup": null,
-    "date": "2026-11-08"
+    "date": "2026-11-11"
   }
 }

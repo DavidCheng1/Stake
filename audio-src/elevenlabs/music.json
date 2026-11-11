@@ -8,27 +8,29 @@
   "tracks": [
     {
       "name": "base",
-      "role": "Base game background music, loops for as long as the game is open.",
+      "role": "Base game background music, loops for as long as the game is open. v4 (2026-11-10): polished cinematic slot score for the adult-cartoon crypt with the duels, replacing the carousel waltz.",
       "file": "ghost-duels-web/assets/spooky-carousel.mp3",
-      "length_ms": 90000,
+      "length_ms": 120000,
       "takes": 2,
-      "prompt": "Loopable background music for a cozy-spooky pirate ghost slot game, 90 seconds, A minor, 96 BPM, 3/4 waltz feel like a haunted carnival carousel aboard a ghost ship. Lead: music box and celesta playing a simple, memorable minor melody; under it pizzicato strings, a soft accordion or concertina, warm tuba or bass clarinet on the downbeats, light brushed hand drum. Now and then a wordless ghost choir 'ooh' and a soft pipe organ chord, creaking ship wood and faint wind as texture. Mysterious and charming, never scary or tense, no big build-ups, no drops, constant medium-low energy so it can play for an hour without tiring. Leaves room in the upper mids for game chimes. Seamless loop: the end flows back into the beginning. Instrumental only."
+      "prompt": "Loopable background music for a premium online slot game set in a torch-lit pirate crypt where ghost captains duel, 120 seconds, A minor, 100 BPM, 4/4. Polished cinematic adventure score with a dark-fantasy pirate swagger: a memorable minor-key hook on celesta and plucked harp, answered by a low cello and bass-clarinet line; steady low taiko and frame-drum groove with soft shakers; warm pizzicato strings; now and then a short French horn phrase, a soft pipe organ chord and a wordless ghost choir 'ooh'. Spooky and mysterious but classy and fun, never horror, never scary. Constant medium energy, no big build-ups, no drops, so it can loop for an hour without tiring. Clean modern mix, leaves room in the upper mids for game chimes. Seamless loop: the end flows back into the beginning. Instrumental only."
     },
     {
-      "name": "freespins",
-      "role": "Ghost Crates free spins: the game crossfades to it when the bonus starts and back to the base music when it ends. Casino style (v2 of the track: the sea shanty was too goofy): a polished online-slot bonus groove, clearly more driving than the calm base waltz, in its key. Made with the sound-effects model as a seamless 30 s loop, because ElevenLabs Music needs a paid plan; on one, drop engine, model_id and prompt_influence and set length_ms to 60000.",
       "file": "ghost-duels-web/assets/music-bonus.mp3",
-      "engine": "sound-generation",
-      "model_id": "eleven_text_to_sound_v3",
-      "length_ms": 30000,
-      "prompt_influence": 0.6,
+      "length_ms": 60000,
       "takes": 2,
       "match": "base",
-      "prompt": "Polished casino slot bonus-round music loop, A minor, 126 BPM, exciting and driving: punchy four-on-the-floor drums with claps and shaker, a deep pulsing synth bass, bright plucked synth arpeggios and a catchy celesta hook, dark cinematic strings and brass stabs, a mysterious Halloween choir pad. Glossy modern online-slot style, spooky but classy, not cartoonish: no tuba, no accordion. Instrumental only, seamless loop.",
-      "soften_above_hz": 4000,
-      "soften_db_per_octave": 6,
-      "limit_db": 4,
-      "seam_ms": 15
+      "name": "freespins",
+      "role": "Ghost Crates free spins, v5 direction A (2026-11-10): acoustic orchestral, the base track's world, more exciting. The v4 take sounded like a rave.",
+      "prompt": "Loopable free-spins music for a premium pirate ghost crypt slot game, 60 seconds, A minor, 6/8 swashbuckling gallop at about 116 BPM. A thrilling orchestral treasure hunt through a haunted crypt: driving string ostinato in the cellos and violas, bold French horn and trumpet melody with a catchy minor-key hook, galloping taiko and orchestral snare, celesta and harp sparkles answering the horns, a wordless ghost choir swelling on the big phrases, a short pipe organ chord at the turnarounds. Exciting and rewarding, full of adventure and anticipation, steady high energy without breakdowns. No electronic music: no synths, no synth bass, no EDM or four-on-the-floor kick, no claps, no dance beat, nothing like a rave. Not cartoonish: no tuba, no accordion. Spooky but classy, never horror. Clean modern film-score mix with room for game sounds. Seamless loop: the end flows back into the beginning. Instrumental only."
+    },
+    {
+      "file": "ghost-duels-web/assets/music-bonus.mp3",
+      "length_ms": 60000,
+      "takes": 2,
+      "match": "base",
+      "name": "freespins_b",
+      "role": "Ghost Crates free spins, v5 direction B (2026-11-10): mischievous magical heist, acoustic, more tension than the base track.",
+      "prompt": "Loopable free-spins music for a premium pirate ghost crypt slot game, 60 seconds, A minor, 120 BPM, 4/4. A mischievous magical heist in a haunted treasure vault: tight pizzicato and staccato string ostinatos, col legno ticks like a clock, a sly celesta and harpsichord melody with a catchy minor hook, frame drums, low toms and a shaker driving it forward, muted brass stabs, a whispering wordless ghost choir and a low pipe organ pedal underneath. Playful tension that keeps building excitement, clever and sneaky, constant momentum without breakdowns. No electronic music: no synths, no synth bass, no EDM or four-on-the-floor kick, no claps, no dance beat, nothing like a rave. Not cartoonish: no tuba, no accordion. Spooky but classy, never horror. Clean modern film-score mix with room for game sounds. Seamless loop: the end flows back into the beginning. Instrumental only."
     }
   ]
 }

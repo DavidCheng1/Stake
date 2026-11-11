@@ -4,7 +4,7 @@
     "model_id": "eleven_text_to_sound_v2",
     "output_format": "mp3_44100_128",
     "key": "A minor (game scale: A Phrygian; music: Spooky Carousel, A minor, ~96 BPM); wins resolve to A major",
-    "style": "Playful-spooky pirate ghost crypt (direction v3, README.md): hand-made and organic - old wood, bone, iron chains, brass, glass and crystal, soft pipe organ, a distant ghost choir, green spectral shimmer. Cartoon-gothic, never horror: no screams, no harsh noise. One room for everything: a small torch-lit stone crypt, short dark reverb (about 1 s). Musical parts on A (A minor; wins resolve to A major). No sub rumble, no piercing highs, soft attacks on frequent sounds. The tool sends prompts as written, so every prompt carries this palette itself."
+    "style": "Cinematic orchestral (direction v4, 2026-11-11, README.md), matching the cinematic adventure score in A minor: celesta, harp, glockenspiel, plucked and tremolo strings, warm French horns and brass, taiko and timpani, a soft wordless choir, glassy spectral shimmer. Polished and premium, never horror. One room for everything: a torch-lit stone crypt with a short dark reverb (about 1 s). Musical parts on A (A minor; wins resolve to A major). No synths, no electronic or arcade sounds, no sub rumble, no piercing highs. Duels keep their fighting-game punch in orchestral textures. The tool sends prompts as written, so every prompt carries this palette itself."
   },
   "sounds": [
     {
@@ -21,16 +21,18 @@
       "gen": {
         "duration_s": 0.5,
         "prompt_influence": 0.7,
-        "takes": 6,
+        "takes": 4,
         "prompts": [
-          "Tiny UI click: an instant sharp tap of a brass compass lid snapping shut with a faint wooden tick. A hard transient at the very first millisecond, extremely short, dry, no fade-in, no reverb, no tail.",
-          "Tiny UI click: an instant sharp tap of a brass compass lid snapping shut with a faint wooden tick. A hard transient at the very first millisecond, extremely short, dry, no fade-in, no reverb, no tail."
+          "Tiny premium UI click: an instant soft wooden tick with a tiny bright celesta glint on top. A hard transient at the very first millisecond, extremely short, dry, no fade-in, no reverb, no tail. Clean and polished.",
+          "Tiny premium UI click: an instant crisp tap of a small brass latch with a faint glassy ping. Starts at the very first millisecond, extremely short, dry, no reverb, no tail. Clean and polished."
         ]
       },
       "judge": {
         "max_audible_s": 0.15,
         "max_attack_ms": 12
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "spin",
@@ -46,19 +48,19 @@
       "gen": {
         "duration_s": 1.2,
         "prompt_influence": 0.55,
-        "takes": 12,
+        "takes": 4,
         "prompts": [
-          "Slot spin start for a playful-spooky pirate ghost game: an instant soft wooden thud, then a quick downward whoosh as old bone and wooden tiles tumble away, the creak of a ship's wheel and a faint green spectral swirl. Warm, tight, not bright, short, organic, cartoon-gothic.",
-          "Spin start in a haunted pirate crypt: an instant muffled thump of a wooden crate, a short airy whoosh falling downward and a soft rattle of bones and chain. Warm, round, short, not harsh, made to repeat thousands of times.",
-          "Clean, minimal slot spin: a single soft wooden click at the very first moment, then one smooth airy whoosh sweeping downward. Crisp and clear, no rattles, no crackle, no rumble, nothing muddy, about half a second, dry with a tiny stone-room reverb.",
-          "Clean spin start for a pirate ghost slot game: one crisp, light swish like a ship's sail snapping, with a tiny wooden tick on top. Simple, clear, airy, no low boom, no noise, very short, gentle enough to repeat thousands of times."
+          "Slot spin start in a cinematic orchestral pirate crypt game: an instant soft taiko tap and a quick downward whoosh of air as the old symbols fall away, a light harp glissando downwards and a faint glassy spectral swirl. Warm, tight, under one second, not bright. Clean, polished, premium slot-game sound; one torch-lit stone crypt with a short dark reverb; no synths, no electronic or arcade bleeps, no harsh noise, no voices with words.",
+          "Slot spin start: an instant low muffled frame-drum hit, a short smooth downward whoosh and a quick descending pizzicato string run, soft and warm, under one second, not bright, subtle because it repeats every spin. Clean, polished, premium slot-game sound; one torch-lit stone crypt with a short dark reverb; no synths, no electronic or arcade bleeps, no harsh noise, no voices with words."
         ]
       },
       "judge": {
         "max_audible_s": 1.1,
         "max_attack_ms": 15,
         "note": "not too bright: it repeats every spin"
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "land",
@@ -74,11 +76,10 @@
       "gen": {
         "duration_s": 0.5,
         "prompt_influence": 0.65,
-        "takes": 9,
+        "takes": 8,
         "prompts": [
-          "One single clean wooden 'tock': a soft, round knock of a small wooden block, one hit only, no second click, no rattle, no noise. Warm mid-range, slightly tonal like a woodblock, very short, dry, starts instantly. A slot symbol settling into place.",
-          "A slot symbol landing: one soft, rounded knock of a wooden chest lid closing gently, a single clean hit with a warm hollow body. No clicks, no rattles, no crackle, very short, dry, starts instantly, pleasant to hear seven times in a row.",
-          "One muted wooden tap like a soft marimba bar hit with a felt mallet: a single clean, round, warm knock, very short, dry, starts instantly. Nothing else, no click, no noise."
+          "A LOUD, close-up single knock of a hard wooden block struck with a mallet: one strong hit at full volume, warm mid-range tone like a woodblock or a low marimba bar, no second click, no rattle, very short, dry, starts instantly. Clean, punchy, clearly audible.",
+          "One single loud, punchy wooden thunk recorded close: a mallet hitting a thick hardwood slab, strong mid-range body around 400 Hz, one hit only, starts at the first millisecond and stops within a quarter of a second. Dry, clean, clearly audible."
         ]
       },
       "judge": {
@@ -86,6 +87,13 @@
         "max_attack_ms": 10,
         "single_hit": true,
         "note": "clean: one round knock, no second click (v3 round 2); needs mid-range, phone speakers drop the low thud"
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1,
+      "v4_round2_first_take": 5,
+      "finish": {
+        "max_s": 0.26,
+        "_why": "v4 take 5 rings for 0.47 s; the old reel stop lasted 0.24 s and 7 play per spin"
       }
     },
     {
@@ -102,13 +110,18 @@
       "gen": {
         "duration_s": 0.9,
         "prompt_influence": 0.55,
-        "takes": 6,
-        "prompt": "A heavy iron-bound treasure chest dropping onto crypt stone: an instant deep wooden thud with a short iron chain rattle and a small puff of green spectral sparks. Punchy, warm, short, small stone room reverb, cartoon-gothic not horror."
+        "takes": 4,
+        "prompts": [
+          "A heavy iron-bound treasure chest slamming onto crypt stone: an instant deep taiko and timpani hit with a short iron clank and a quick glassy spectral sparkle. Punchy, warm, under one second. Clean, polished, premium slot-game sound; one torch-lit stone crypt with a short dark reverb; no synths, no electronic or arcade bleeps, no harsh noise, no voices with words.",
+          "A huge carved stone reel slamming down: an instant orchestral bass drum and low brass stab with a short stone thud and a puff of shimmering spectral air. Punchy, cinematic, under one second. Clean, polished, premium slot-game sound; one torch-lit stone crypt with a short dark reverb; no synths, no electronic or arcade bleeps, no harsh noise, no voices with words."
+        ]
       },
       "judge": {
         "max_audible_s": 0.9,
         "max_attack_ms": 10
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "chime",
@@ -128,11 +141,10 @@
       "gen": {
         "duration_s": 1.6,
         "prompt_influence": 0.6,
-        "takes": 6,
+        "takes": 10,
         "prompts": [
-          "One single clear glass bell note, pitch A5, soft attack, warm and round with a gentle ghostly shimmer in the tail, small stone room reverb. One note only, no melody, clean.",
-          "One single note on an old music box, pitch A5: a pure, warm ringing tone with a faint airy shimmer in the tail. One note only, no melody, clean, gentle.",
-          "One single celesta note, pitch A5: soft, round and magical, a short natural ring-out in a small stone room. One note only, no melody, clean."
+          "One single clear celesta and glockenspiel note, pitch A5, soft attack, warm and round with a gentle glassy shimmer in the tail, short crypt reverb. One note only, no melody, clean, premium.",
+          "One single soft harp and glass-bell note together, pitch A5, round and sweet, gentle shimmering tail, short stone room reverb. One note only, no melody, clean, premium."
         ]
       },
       "judge": {
@@ -145,7 +157,9 @@
           2000
         ],
         "pitch_exact": true
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 7
     },
     {
       "name": "crystal",
@@ -162,7 +176,7 @@
     },
     {
       "name": "tumble",
-      "role": "Winning symbols vanish (every cascade step).",
+      "role": "Winning symbols burst and vanish (every cascade step). Since 2026-11-11 a real burst: punchy and satisfying, but it plays on every win.",
       "use": {
         "vol": 0.4,
         "rates": [
@@ -173,17 +187,21 @@
       },
       "gen": {
         "duration_s": 0.8,
-        "prompt_influence": 0.55,
-        "takes": 6,
+        "prompt_influence": 0.6,
+        "takes": 10,
         "prompts": [
-          "Winning symbols dissolving into green ghost dust: an instant soft pop, a sandy sparkling whoosh and a tiny glass shimmer. Playful-spooky pirate ghost slot game, warm, short, satisfying, not harsh.",
-          "Winning tiles crumbling like old bone and wood into spectral dust: an instant soft crunch with a bright little sparkle tail. Short, satisfying, gentle, cartoon-gothic."
+          "Winning symbols burst apart: an instant punchy magical explosion of spectral energy at the very first millisecond, a crisp crackle and a spray of glassy shards and sparkles flying outwards, a quick whoosh, gone in half a second. Satisfying, rewarding, exciting. Clean, polished, premium slot-game sound in a small stone crypt, short tail; no synths, no electronic bleeps, no voices.",
+          "A glowing gem shatters in a burst of light: an instant sharp crack and a soft deep thump together, bright crystal fragments scattering with a sparkle, a short airy whoosh. Punchy, satisfying, half a second. Clean, polished, premium slot-game sound in a small stone crypt, short tail; no synths, no electronic bleeps, no voices.",
+          "Ghost symbols explode into green spirit fire: an instant snappy fireball pop with a crackle of embers, a glittering sparkle burst and a fast whoosh outwards, under one second. Punchy, rewarding, clean. Clean, polished, premium slot-game sound in a small stone crypt, short tail; no synths, no electronic bleeps, no voices."
         ]
       },
       "judge": {
         "max_audible_s": 0.7,
-        "max_attack_ms": 15
-      }
+        "max_attack_ms": 8
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1,
+      "burst_first_take": 5
     },
     {
       "name": "charge",
@@ -199,17 +217,20 @@
       "gen": {
         "duration_s": 1.0,
         "prompt_influence": 0.6,
-        "takes": 10,
+        "takes": 14,
         "prompts": [
-          "Fighting game power-up charge: a fast rising electric energy whine over a deep bass swell, building for one second with crackling sparks and a rush of wind, cut off sharply at its loudest. Intense, punchy arcade fighting game, no voices.",
-          "Arcade fighter charging a special move: a reversed cymbal and a rising synth riser surging from silence to a full peak in one second, electric crackle on top, ending abruptly at its loudest. Tense and powerful, no voices."
+          "A one-second crescendo that starts almost silent and grows steadily louder and higher until the very last moment: a string tremolo rising in pitch, a timpani roll getting faster and louder, a choir swelling, then cut off instantly at its loudest point. Cinematic orchestral fighting-game charge-up, no synths, no words.",
+          "Rising tension swell for one second: from near silence to full volume, a fast ascending harp and string run over a building drum roll and a rushing wind that grows stronger, the loudest moment is the very end, where it stops abruptly. Cinematic orchestral, no synths, no words."
         ]
       },
       "judge": {
         "max_audible_s": 1.0,
         "rising": true,
         "note": "must end at its loudest, the burst follows"
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 7,
+      "v4_round2_first_take": 11
     },
     {
       "name": "burst",
@@ -227,14 +248,16 @@
         "prompt_influence": 0.5,
         "takes": 10,
         "prompts": [
-          "Fighting game VS screen impact: an instant massive punchy boom with a sharp metallic sword shing on top, a shockwave whoosh and a short big-hall reverb tail. Epic, aggressive, arcade versus screen, no voices.",
-          "Arcade fighter versus slam: an instant heavy bass-drop hit with a cymbal crash and a crackle of electric energy, a short big-hall tail. Powerful and exciting, no voices, no music."
+          "Cinematic fighting-game VS impact: an instant massive taiko and orchestral bass-drum boom with a bright steel sword ring on top, a full brass and choir stab and a shockwave whoosh, short big crypt reverb tail. Epic, aggressive, no synths, no words.",
+          "Huge versus-screen slam: an instant thunderous timpani and low brass hit, a sharp metallic shing, a burst of shimmering spectral air and a short dark reverb tail. Epic cinematic orchestral, no electronic sounds, no words."
         ]
       },
       "judge": {
         "max_audible_s": 1.8,
         "max_attack_ms": 15
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 7
     },
     {
       "name": "clash",
@@ -255,14 +278,16 @@
         "prompt_influence": 0.45,
         "takes": 4,
         "prompts": [
-          "Two swords clashing hard in a fighting game: an instant bright steel-on-steel shing with a heavy body-punch impact underneath and a short whoosh, punchy and dry with a short tail. Aggressive, satisfying hit, no voices.",
-          "Fighting game heavy hit: a meaty punch impact and a metallic cutlass clang with sparks at the same instant, a short whoosh and a tight tail. Intense arcade combat, no voices."
+          "Two cursed blades clashing hard in a cinematic duel: an instant bright steel-on-steel ring over a heavy taiko body hit and a short whoosh, punchy with a short tail. Aggressive, satisfying, no voices.",
+          "Duel impact: an instant heavy punch of a low orchestral drum layered with a ringing sword clang and a quick spark crackle, dry and punchy, short tail. Cinematic fighting-game hit, no voices."
         ]
       },
       "judge": {
         "max_audible_s": 1.0,
         "max_attack_ms": 10
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "wail",
@@ -280,14 +305,16 @@
         "prompt_influence": 0.5,
         "takes": 4,
         "prompts": [
-          "Fighting game knockout: an instant huge final punch impact with a deep slow-motion boom and a sword shattering, a short rushing whoosh fading away, short dark tail. Decisive K.O. moment, epic, not comic, no voices.",
-          "K.O. finishing blow in an arcade fighting game: an instant crushing hit with a bass drop and a glassy shatter, then a slow-motion whoosh trailing off. Heavy and final, not funny, no voices."
+          "Cinematic knockout: an instant huge final impact of taiko, timpani and low brass, a sword shattering, a slow-motion boom and a short ghostly breath of wind fading away, dark crypt tail. Decisive, epic, not comic, no words.",
+          "Final K.O. blow: an instant colossal orchestral hit with a cracking stone impact, a descending string swipe and a fading spectral wail made of wind (not a voice), short dark tail. Epic, decisive, no words."
         ]
       },
       "judge": {
         "max_audible_s": 2.3,
         "max_attack_ms": 20
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "toll",
@@ -331,17 +358,19 @@
       "gen": {
         "duration_s": 3.0,
         "prompt_influence": 0.5,
-        "takes": 10,
+        "takes": 4,
         "prompts": [
-          "Victory sting with root note A, in A major: an instant brass hit on an A major chord, a celesta arpeggio A, C sharp, E, A, a warm ghost choir 'ahh' on A major and a sprinkle of coins. Triumphant, playful, short, clean.",
-          "Short win sting in A major, root note A: an instant bright bell on A, a music box run up the A major chord and a warm accordion and choir chord of A major, coins sparkling. Joyful, cartoon-gothic, clean."
+          "Victory sting in A major, root note A: an instant bright French horn and trumpet hit on an A major chord, a fast celesta and harp run up A, C sharp, E, A, a warm wordless choir ah and a sprinkle of gold coins, short crypt reverb. Triumphant, cinematic, short, clean.",
+          "Short heroic win sting in A major: a snare flam into a full brass and strings A major chord, a glockenspiel sparkle on top, a soft choir swell and a few coins clinking. Rewarding, cinematic orchestral, clean, no words."
         ]
       },
       "judge": {
         "max_audible_s": 2.9,
         "max_attack_ms": 20,
         "tonal": "A major"
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "sting_devil",
@@ -360,16 +389,18 @@
       "gen": {
         "duration_s": 4.5,
         "prompt_influence": 0.5,
-        "takes": 6,
+        "takes": 4,
         "prompts": [
-          "The devil arrives: an instant low brass and pipe organ sting in A minor, a deep ominous gong and a mischievous breathy chuckle (no words), short dark crypt tail. Big and dramatic but cartoon-gothic, fun, not horror.",
-          "Devilish jackpot sting: an instant warm brass-and-choir hit in A minor, a deep organ pedal, a rolling timpani and a sly laugh made of breath (no words). Dramatic, exciting, playful-spooky, no screams."
+          "The devil arrives, in A minor: an instant low brass and pipe organ stab, a deep tam-tam swell, a dark cello and contrabassoon line and a breathy wicked chuckle (no words), short dark crypt tail. Big, cinematic, villainous but fun, not horror.",
+          "Villain entrance in A minor: a thunderous timpani hit, menacing low horns and trombones in a descending figure, a sinister wordless choir and a crackle of fire, dark crypt reverb. Dramatic cinematic orchestral, fun, not horror, no words."
         ]
       },
       "judge": {
         "max_audible_s": 4.3,
         "max_attack_ms": 25
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "fanfare",
@@ -385,10 +416,10 @@
       "gen": {
         "duration_s": 2.5,
         "prompt_influence": 0.55,
-        "takes": 10,
+        "takes": 22,
         "prompts": [
-          "Free spins sting with root note A, in A minor: starts instantly with a soft thunder boom, a music box and celesta run ending on a low A, a ghost choir 'ooh' on an A minor chord and one deep bell on A. Mysterious, exciting, short.",
-          "Bonus reveal in A minor, root note A: an instant creaking chest lid and soft boom, an accordion and pizzicato flourish landing on an A minor chord, a ghost choir 'ooh' and a warm low bell on A. Spooky but inviting, short."
+          "Free spins triggered, root note A, A minor: starts instantly with a big timpani and taiko hit, a sweeping harp and celesta run, bold French horns on an A minor chord and a wordless choir swell, ending on a deep bell on A. Exciting, mysterious, cinematic, about two seconds.",
+          "Bonus unlocked, A minor: an instant orchestral cymbal swell and bass-drum boom into a fast rising string run, a heroic horn call ending on A and a glittering glockenspiel and choir sparkle. Epic, rewarding, cinematic, about two seconds, no words."
         ]
       },
       "judge": {
@@ -399,7 +430,9 @@
       "finish": {
         "close_gaps_s": 0.15,
         "_why": "the chosen take has half a second of silence between the explosion and the bells"
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 19
     },
     {
       "name": "bigwin",
@@ -415,17 +448,19 @@
       "gen": {
         "duration_s": 4.5,
         "prompt_influence": 0.45,
-        "takes": 6,
+        "takes": 14,
         "prompts": [
-          "Big win in a haunted pirate crypt: starts instantly with a warm pipe organ and brass chord in A major, a ghost choir rising in joy, bells ringing and a cascade of gold coins pouring onto stone. Euphoric, rewarding, spooky-fun, no screams.",
-          "Pirate treasure payout: an instant chest lid flung open, a shower of gold coins on stone, an accordion and music-box fanfare in A major, a ghost choir swelling and a hearty breathy pirate laugh (no words). Joyful, cartoon-gothic.",
-          "Spooky jackpot in A major: an instant bright bell and brass hit, a celesta and pizzicato run climbing, a warm choir chord and coins spilling. Rewarding, euphoric, friendly-spooky."
+          "Big win, A major: starts at full volume at the very first millisecond with a huge orchestral hit (cymbal crash, timpani and brass on an A major chord), then soaring French horns, a joyful wordless choir, ringing bells and a long cascade of gold coins pouring onto stone. Euphoric, cinematic, premium, no words, no synths.",
+          "Huge slot win celebration in A major: an instant loud brass and orchestra stab with a bass drum hit right at the start, then sparkling celesta and glockenspiel runs, a triumphant horn melody and a shower of clinking gold coins, crypt reverb. Triumphant, cinematic, no words, no synths."
         ]
       },
       "judge": {
         "max_audible_s": 4.4,
         "max_attack_ms": 25
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 7,
+      "v4_round2_first_take": 11
     },
     {
       "name": "totalwin",
@@ -441,11 +476,10 @@
       "gen": {
         "duration_s": 4.0,
         "prompt_influence": 0.5,
-        "takes": 6,
+        "takes": 4,
         "prompts": [
-          "Happy total win celebration in a playful-spooky pirate crypt: starts instantly with a bright brass and accordion fanfare in A major, a cheerful music box and celesta melody climbing up, a joyful wordless ghost choir 'aah' on a big A major chord, sparkling bells and a shower of gold coins, ending on a warm, satisfied A major chord. Triumphant, warm and friendly, cartoon-gothic, never dark.",
-          "Victory jingle in A major for a cozy-spooky pirate ghost game: an instant cheerful accordion and pizzicato fanfare, a celesta melody rising to a happy high A, a warm brass chord with a jolly tuba, a joyful ghost choir and a soft cymbal swell with tinkling coins. Bright, celebratory, fun, short crypt reverb, no screams.",
-          "Treasure found: a happy pirate fanfare in A major, an instant brass and fiddle flourish, a music box melody bouncing upward, a glockenspiel sparkle, gold coins clinking, a warm pipe organ and ghost choir resolving to a bright A major chord. Joyful, rewarding, playful-spooky, never menacing."
+          "Total win celebration after the bonus, A major: starts instantly with a bright brass fanfare, sweeping strings climbing up, a joyful wordless choir on a big A major chord, harp and celesta sparkles and gold coins, ending on a warm resolved chord. Happy, grand, cinematic, no words.",
+          "Treasure counted, A major: an instant orchestral hit into a heroic horn melody, bright glockenspiel and harp flourishes, a swelling choir and a final big A major chord with a cymbal swell and coins. Warm, rewarding, cinematic, no words."
         ]
       },
       "judge": {
@@ -456,7 +490,9 @@
       "finish": {
         "match": "fanfare",
         "_why": "new: the Total Win played the fanfare before, so it starts at that loudness"
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "heartbeat",
@@ -472,16 +508,18 @@
       "gen": {
         "duration_s": 1.6,
         "prompt_influence": 0.55,
-        "takes": 10,
+        "takes": 4,
         "prompts": [
-          "A life lost: two heartbeat knocks played as a mid-range wooden drum thump with a clear knock, bright enough for phone speakers, a soft crack of glass and a short descending airy whoosh. Dramatic but gentle, not sad, short.",
-          "Two quick knocks on a wooden coffin lid like a heartbeat, crisp mid-range, a small glass crack and a falling whisper. Clear on small speakers, short, not sad."
+          "A life lost in the bonus: two heartbeat knocks as a mid-range frame-drum and low tom thump, bright enough for phone speakers, a short descending pizzicato string figure and a soft breath of spectral air. Dramatic but gentle, not sad, short. Clean, polished, premium slot-game sound; one torch-lit stone crypt with a short dark reverb; no synths, no electronic or arcade bleeps, no harsh noise, no voices with words.",
+          "Lost a life: two muted timpani heartbeats, a quick descending harp glissando and a faint glassy crack, short and clean. Tense but gentle, not sad. Clean, polished, premium slot-game sound; one torch-lit stone crypt with a short dark reverb; no synths, no electronic or arcade bleeps, no harsh noise, no voices with words."
         ]
       },
       "judge": {
         "max_audible_s": 1.5,
         "max_attack_ms": 15
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "crumble",
@@ -497,13 +535,18 @@
       "gen": {
         "duration_s": 1.0,
         "prompt_influence": 0.55,
-        "takes": 2,
-        "prompt": "Old rune stones crumbling to dust: a short dry grinding crumble with falling grit and a soft low thud, quiet and understated, small stone room."
+        "takes": 4,
+        "prompts": [
+          "Old rune stones crumbling to dust: a short dry stone crumble with falling grit, a soft low drum thud and a fading glassy shimmer, quiet and understated. Clean, polished, premium slot-game sound; one torch-lit stone crypt with a short dark reverb; no synths, no electronic or arcade bleeps, no harsh noise, no voices with words.",
+          "Runes falling apart: a brief gritty crackle of stone, a soft descending celesta trickle and a quiet thud, understated, under one second. Clean, polished, premium slot-game sound; one torch-lit stone crypt with a short dark reverb; no synths, no electronic or arcade bleeps, no harsh noise, no voices with words."
+        ]
       },
       "judge": {
         "max_audible_s": 0.9,
         "max_attack_ms": 20
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "challenger",
@@ -521,14 +564,16 @@
         "prompt_influence": 0.5,
         "takes": 4,
         "prompts": [
-          "A new challenger enters in a fighting game: an instant dramatic brass and orchestra hit, a fast drum roll into a heavy impact and an electric energy surge, a short ominous choir chord. Intense arcade fighting game, wordless.",
-          "Fighting game challenger alert: an instant heavy impact with a metallic sword draw, a pounding taiko hit and a rising surge of dark energy, a short dramatic orchestral stab. Exciting and tense, no voices."
+          "A new challenger enters a cinematic duel: an instant dramatic full-orchestra brass hit, a fast snare and taiko roll into a heavy impact, a ship's horn blast and a short ominous wordless choir chord. Intense, epic, no words, no synths.",
+          "Challenger appears: a thunderous timpani and low brass call, rattling chains, a sweeping string rise and a heavy orchestral hit, short dark crypt tail. Epic cinematic fighting-game entrance, no words, no synths."
         ]
       },
       "judge": {
         "max_audible_s": 2.8,
         "max_attack_ms": 40
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "banner",
@@ -544,20 +589,22 @@
       "gen": {
         "duration_s": 2.2,
         "prompt_influence": 0.45,
-        "takes": 3,
+        "takes": 4,
         "prompts": [
-          "Announcement: a soft rising gust of ghostly wind into a bright bell and celesta hit in A major with a little green sparkle. Inviting, playful-spooky, short.",
-          "A rolled parchment banner unfurling with a soft whoosh, ending on a warm music-box and bell chord in A major. Friendly, magical, short."
+          "Announcement: a soft rising swell of strings and spectral air into a bright harp, celesta and bell accent in A major with a little glittering sparkle. Inviting, cinematic, short. Clean, polished, premium slot-game sound; one torch-lit stone crypt with a short dark reverb; no synths, no electronic or arcade bleeps, no harsh noise, no voices with words.",
+          "Feature announcement: a quick airy whoosh rising into a warm French horn and glockenspiel chord in A major, a small wordless choir and a sparkle. Inviting, cinematic, short. Clean, polished, premium slot-game sound; one torch-lit stone crypt with a short dark reverb; no synths, no electronic or arcade bleeps, no harsh noise, no voices with words."
         ]
       },
       "judge": {
         "max_audible_s": 2.0,
         "tonal": "A major"
-      }
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1
     },
     {
       "name": "fs_land",
-      "role": "An FS (scatter) symbol lands; the loudest effect, each further FS in a spin 2 semitones higher (up to an octave).",
+      "role": "An FS (scatter) symbol lands; the loudest effect, each further FS in a spin 2 semitones higher (up to an octave). v4 (2026-11-10): orchestral, to match the new cinematic music.",
       "use": {
         "vol": 1.0,
         "rates": [
@@ -570,15 +617,16 @@
       "gen": {
         "duration_s": 1.4,
         "prompt_influence": 0.55,
-        "takes": 6,
+        "takes": 12,
         "prompts": [
-          "Bonus symbol lands: an instant soft wooden thump with one clear magical bell note on A, celesta on the same pitch, a quick upward green sparkle and a short ring-out. Bright but warm, rewarding, musical, clean, not harsh in the highs.",
-          "Special symbol appears: an instant music box and harp pluck on one note (A) over a deep soft boom, a ghost choir 'ah' blooming for half a second and a glitter sparkle. Magical, mysterious, rewarding, clean."
+          "Bonus symbol slams onto the reel: an instant hard, sharp strike at the very first millisecond, a bright glockenspiel and anvil-like metal hit on the note A layered over a tight orchestral bass-drum and taiko impact, then a short shimmering ring on A. Crisp, punchy, exciting, clean, premium slot game, no synths, no voices.",
+          "Scatter symbol lands: a crack-sharp orchestral hit with a snare-like snap and a timpani punch at the very first millisecond, a ringing tubular bell and celesta note on A on top, short bright sparkle tail, dry crypt room. Exciting, crisp, clean, no synths, no voices.",
+          "A treasure symbol hits the reel hard: an instant bright metallic clang and glass bell ping on A, a punchy low drum hit underneath, a fast sparkle of celesta, about one second, tight and dry. Sharp, rewarding, premium, no synths, no voices."
         ]
       },
       "judge": {
         "max_audible_s": 1.5,
-        "max_attack_ms": 12,
+        "max_attack_ms": 6,
         "note": "must still sound good an octave up: not too much extreme high end"
       },
       "finish": {
@@ -587,7 +635,8 @@
           -6
         ],
         "_why": "the game plays it up to an octave higher; the bright top would turn shrill"
-      }
+      },
+      "sharp_first_take": 7
     },
     {
       "name": "edge",
@@ -603,10 +652,10 @@
       "gen": {
         "duration_s": 3.5,
         "prompt_influence": 0.5,
-        "takes": 6,
+        "takes": 8,
         "prompts": [
-          "Suspense riser for a pirate ghost slot game: quiet at first and growing louder and higher for two and a half seconds, pizzicato strings speeding up, a soft heartbeat and a rising glass-harmonica shimmer, then a sudden stop and a short dark tail. Anticipation, eerie but playful.",
-          "Tension build-up: a ticking pocket watch and an accordion tremolo rising in pitch and loudness for two and a half seconds over a soft ghostly choir swell, then a sudden cut and a short crypt tail. Exciting, mysterious, cartoon-gothic."
+          "A slow suspense crescendo for a slot game near-miss, three and a half seconds: very quiet at the start, growing louder and higher steadily, string tremolo and violins rising, a timpani roll accelerating, the loudest moment at two and a half seconds, then a sudden stop with a short shimmer. Mid-range orchestral strings, bright enough for phone speakers, no bass rumble, no synths.",
+          "Near-miss tension: a rising violin and viola tremolo that climbs in pitch and volume for two and a half seconds, pizzicato strings accelerating, a soft choir rising, peaking at two and a half seconds then cutting off into a faint glassy shimmer. Cinematic, mid-range, clear on small speakers, no bass rumble, no synths."
         ]
       },
       "judge": {
@@ -616,6 +665,73 @@
           2.0,
           2.6
         ]
+      },
+      "direction": "v4 (2026-11-11): cinematic orchestral, matches the v4 music",
+      "v4_first_take": 1,
+      "v4_round2_first_take": 5
+    },
+    {
+      "name": "connect",
+      "role": "A winning group connects: one pop per symbol as the link reaches it, rising along the group (new, 2026-11-10).",
+      "use": {
+        "vol": [
+          0.25,
+          0.4
+        ],
+        "rates": [
+          0.7,
+          2.2
+        ],
+        "frequency": "every win, once per winning symbol"
+      },
+      "note": "Unpitched sharp pop (2026-11-11: no take came out with a clear note): the game raises its rate cell by cell and plays the chime (exact A5) under it, a scale step higher per cell, so the connection climbs a melody.",
+      "gen": {
+        "duration_s": 0.6,
+        "prompt_influence": 0.7,
+        "takes": 12,
+        "prompts": [
+          "One single sharp, bright plucked note at A5: a crisp pizzicato violin and celesta struck together with a tiny glass ping on the attack, the hit starts at the very first millisecond, short clean ring of a quarter second. One note only, no melody, no reverb wash. Premium slot-game win sound, clear and punchy.",
+          "One single crisp glockenspiel and harp note at A5, struck hard with a bright metallic attack at the very first millisecond, short sparkling ring, dry. One note only, no melody. Sharp, clean, satisfying, premium.",
+          "One single bright crystal bell ping at A5 with a hard click of the mallet at the very start, very short and clean ring, dry, no reverb tail. One note only. Sharp, sparkling, satisfying slot-game connection sound."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 0.45,
+        "max_attack_ms": 5,
+        "single_hit": true
+      },
+      "finish": {
+        "match": "tumble",
+        "_why": "a short pop like the tumble poof, played often"
+      },
+      "sharp_first_take": 7
+    },
+    {
+      "name": "trove",
+      "role": "The free spins begin: under the fullscreen 'Enter the Sacred Trove' clip (assets/fs-trove.webm, 6 s): the camera rushes through the crypt, a rune vault door bursts open in light at about 2 s, then the treasure vault is revealed (new, 2026-11-11).",
+      "use": {
+        "vol": 0.9,
+        "rates": [
+          1,
+          1
+        ],
+        "frequency": "once per bonus"
+      },
+      "gen": {
+        "duration_s": 6.0,
+        "prompt_influence": 0.5,
+        "takes": 4,
+        "prompts": [
+          "Cinematic orchestral transition, 6 seconds: a rising rush of wind and ghostly whispers with a swelling string tremolo for two seconds, then a huge deep stone-door boom and a bright burst of shimmering light with a cymbal swell, then a majestic wordless choir 'ah' chord in A major with harp glissando, sparkling celesta and the glitter of gold coins, ringing out in a big crypt reverb. Epic, magical, rewarding. No synths, no words.",
+          "Haunted treasure vault opens, 6 seconds: a whooshing rush through swirling ghost wind building fast, an ancient heavy stone door cracking open with a deep timpani and taiko hit at two seconds, a blast of magical shimmer, then a glorious choir and brass swell in A major with tinkling coins and celesta sparkles, long cathedral reverb tail. Cinematic, spooky but triumphant, clean. No synths, no voices with words."
+        ]
+      },
+      "judge": {
+        "max_audible_s": 6.6
+      },
+      "finish": {
+        "match": "fanfare",
+        "_why": "a celebration like the free-spin fanfare, which it follows"
       }
     }
   ]

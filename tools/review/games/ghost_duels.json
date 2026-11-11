@@ -25,7 +25,7 @@
     "buyCards": "#buyOpts > *",
     "buyClose": "#buyClose",
     "toggles": [],
-    "modeSwitches": "#buyBoost .bst-opt",
+    "modeSwitches": "#buyBoost .bst-opt, #buyVs .bst-opt",
     "info": "#infoBtn",
     "rules": "#rulesBody",
     "rulesClose": "#rulesClose",

@@ -385,7 +385,7 @@ def src_img(name, which):
 def current_file(name):
     """The sound the game uses before any ElevenLabs take: the backup if one was applied, else assets/sfx."""
     applied = load_json(APPLIED, {})
-    if name in applied:
+    if applied.get(name, {}).get("backup"):  # a sound that was new when first applied has no backup: the game's file
         return os.path.join(OLD, applied[name]["backup"])
     return os.path.join(SFX, name + ".mp3")
 
@@ -487,6 +487,8 @@ def finish(x, sound, old_loud):
         r = measure(x, sound)
     start = max(0, int((r["lead_ms"] - 3) / 1000 * SR))  # keep 3 ms before the first sound
     keep = j.get("max_audible_s", r["audible_s"]) + .12
+    if opt.get("max_s"):  # a hard cap, for a take whose ring would smear into the next hit (e.g. 7 reel stops a spin)
+        keep = min(keep, opt["max_s"])
     x = x[:, start:start + int(min(r["audible_s"] + .1, keep) * SR)]
     fade = min(int(SR * .15), x.shape[1] // 6)
     x[:, -fade:] *= np.linspace(1, 0, fade) ** 2

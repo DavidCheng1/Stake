@@ -28,7 +28,6 @@ import subprocess
 import sys
 import time
 
-import cv2
 import numpy as np
 from PIL import Image
 
@@ -99,6 +98,7 @@ def gen(ids, kinds, yes):
 
 
 def frames(path):
+    import cv2  # only reading clips needs OpenCV; settle works without it
     c = cv2.VideoCapture(path)
     out = []
     while True:
@@ -187,22 +187,150 @@ def build(ids, picks):
                 a = np.asarray(c).copy()
                 a[..., 3] = (a[..., 3] * ramp).astype(np.uint8)
                 crops[k] = Image.fromarray(a, "RGBA")
+            crops, h = settle_frames(crops, still_frame(i, fpx, pad), kind)
             n = len(crops)
-            cols = int(np.ceil(np.sqrt(n)))
-            rows = int(np.ceil(n / cols))
-            g = fpx + 2
-            sheet = Image.new("RGBA", (cols * g, rows * g), (0, 0, 0, 0))
-            for k, c in enumerate(crops):
-                sheet.paste(c, ((k % cols) * g + 1, (k // cols) * g + 1))
-            dst = os.path.join(OUT, f"{i}-{kind}.webp")
-            sheet.save(dst, quality=72, method=6, alpha_quality=70)
+            cols, dst = write_sheet(i, kind, crops)
             fps = 24 if kind == "win" else IDLE_FPS
-            meta.setdefault(i, {})[kind] = {"n": n, "cols": cols, "px": fpx, "pad": round(float(pad), 3), "fps": fps}
+            meta.setdefault(i, {})[kind] = {"n": n, "cols": cols, "px": fpx, "pad": round(float(pad), 3), "fps": fps, "settled": True}
             sheets[kind] = crops
-            print(f"{i} {kind}: {take}, {n} frames, pad {pad:.2f}, {fpx}px, {os.path.getsize(dst) // 1024} KB")
+            print(f"{i} {kind}: {take}, {n} frames, pad {pad:.2f}, {fpx}px, halo r{h[1]} x{h[2]:.1f}, "
+                  f"{os.path.getsize(dst) // 1024} KB")
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(meta, f, indent=1, sort_keys=True)
         preview(i, sheets)
+
+
+# ---------------------------------------------------------------- clean hand-over between the still and the clip
+# The game shows the still symbol, swaps to the sheet, and swaps back. Any difference between the still and the
+# sheet's first or last frame shows as a jump, and the clip's frames lack the colour halo painted into the still.
+# So every frame gets the still's halo (fitted to it), the first frames blend out of the exact still, and an idle
+# loop's last frames blend back into it. A win keeps its own end: the game holds that frame until the symbol bursts,
+# or plays the win backwards to its first frame (the still) when the symbol stays.
+SETTLE_IN = {"idle": 4, "win": 3}  # frames that blend from the still into the clip
+SETTLE_OUT = {"idle": 6, "win": 0}  # frames that blend from the clip back into the still
+
+
+def still_frame(i, fpx, pad):
+    """The still symbol as the game shows it, on a sheet frame: its box in the middle, the margin round it."""
+    box = round(fpx / (1 + 2 * pad))
+    sym = Image.open(os.path.join(WEB, "assets", f"{i}.webp")).convert("RGBA").resize((box, box), Image.LANCZOS)
+    c = Image.new("RGBA", (fpx, fpx), (0, 0, 0, 0))
+    c.alpha_composite(sym, ((fpx - box) // 2, (fpx - box) // 2))
+    return c
+
+
+def _f(im):
+    return np.asarray(im, np.float32) / 255
+
+
+def _im(a):
+    return Image.fromarray((np.clip(a, 0, 1) * 255 + .5).astype(np.uint8), "RGBA")
+
+
+def _over(top, bottom):
+    """Straight-alpha 'top over bottom'."""
+    ta, ba = top[..., 3:], bottom[..., 3:]
+    a = ta + ba * (1 - ta)
+    rgb = (top[..., :3] * ta + bottom[..., :3] * ba * (1 - ta)) / np.maximum(a, 1e-6)
+    return np.concatenate([rgb, a], -1)
+
+
+def _halo(alpha, rgb, r, s):
+    from PIL import ImageFilter
+    b = _f(Image.fromarray((alpha * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(r)))
+    h = np.zeros(alpha.shape + (4,), np.float32)
+    h[..., :3] = rgb
+    h[..., 3] = np.clip(b * s, 0, 1)
+    return h
+
+
+def fit_halo(still, first):
+    """The halo painted into the still, as colour, blur radius and strength, fitted against the clip's first frame
+    (the same picture without the halo)."""
+    S, F = _f(still), _f(first)
+    ring = (S[..., 3] > .04) & (F[..., 3] < .03)
+    if ring.sum() < 20:
+        return None
+    w = S[..., 3][ring][:, None]
+    rgb = (S[..., :3][ring] * w).sum(0) / w.sum()
+    zone = (S[..., 3] > .02) | (F[..., 3] > .02)
+    best = None
+    for r in (2, 3, 4, 6, 8, 11, 14):
+        for s in np.arange(.3, 2.01, .1):
+            C = _over(F, _halo(F[..., 3], rgb, r, s))
+            d = np.abs(C[..., :3] * C[..., 3:] - S[..., :3] * S[..., 3:]).sum(-1)[zone].mean() \
+                + np.abs(C[..., 3] - S[..., 3])[zone].mean()
+            if best is None or d < best[0]:
+                best = (d, r, float(s))
+    return rgb, best[1], best[2]
+
+
+def _smooth(x):
+    x = np.clip(x, 0, 1)
+    return x * x * (3 - 2 * x)
+
+
+def _mix(a, b, w):
+    """Blend a into b by w in premultiplied colour, so edges don't darken."""
+    pa, pb = a[..., :3] * a[..., 3:], b[..., :3] * b[..., 3:]
+    al = a[..., 3:] * (1 - w) + b[..., 3:] * w
+    return np.concatenate([(pa * (1 - w) + pb * w) / np.maximum(al, 1e-6), al], -1)
+
+
+def settle_frames(frames, still, kind):
+    """Halo on every frame, first frames out of the still, (idle) last frames back into it. Returns the frames and
+    the fitted halo (colour, radius, strength), or None for the halo when the still has none."""
+    S = _f(still)
+    h = fit_halo(still, frames[0])
+    out = []
+    for f in frames:
+        F = _f(f)
+        out.append(_over(F, _halo(F[..., 3], *h)) if h else F)
+    n, k_in, k_out = len(out), SETTLE_IN[kind], SETTLE_OUT[kind]
+    for k in range(n):
+        w = 1.0
+        if k < k_in:
+            w = min(w, _smooth(k / k_in))
+        if k_out and k >= n - k_out:
+            w = min(w, _smooth((n - 1 - k) / k_out))
+        if w < 1:
+            out[k] = _mix(S, out[k], w)
+    return [_im(f) for f in out], (h[0] if h else None, h[1] if h else 0, h[2] if h else 0)
+
+
+def write_sheet(i, kind, crops):
+    n = len(crops)
+    fpx = crops[0].width
+    cols = int(np.ceil(np.sqrt(n)))
+    rows = int(np.ceil(n / cols))
+    g = fpx + 2
+    sheet = Image.new("RGBA", (cols * g, rows * g), (0, 0, 0, 0))
+    for k, c in enumerate(crops):
+        sheet.paste(c, ((k % cols) * g + 1, (k // cols) * g + 1))
+    dst = os.path.join(OUT, f"{i}-{kind}.webp")
+    sheet.save(dst, quality=72, method=6, alpha_quality=70)
+    return cols, dst
+
+
+def settle(ids):
+    """Rework sheets already in the game (when their clips are not on this computer): halo, blend in and out."""
+    meta_path = os.path.join(OUT, "anim.json")
+    meta = json.load(open(meta_path, encoding="utf-8"))
+    for i in ids:
+        for kind, m in meta.get(i, {}).items():
+            if m.get("settled"):
+                print(f"{i} {kind}: already settled")
+                continue
+            sheet = Image.open(os.path.join(OUT, f"{i}-{kind}.webp")).convert("RGBA")
+            g = m["px"] + 2
+            crops = [sheet.crop(((k % m["cols"]) * g + 1, (k // m["cols"]) * g + 1,
+                                 (k % m["cols"]) * g + 1 + m["px"], (k // m["cols"]) * g + 1 + m["px"])) for k in range(m["n"])]
+            crops, h = settle_frames(crops, still_frame(i, m["px"], m["pad"]), kind)
+            cols, dst = write_sheet(i, kind, crops)
+            m.update(cols=cols, settled=True)
+            print(f"{i} {kind}: halo r{h[1]} x{h[2]:.1f}, {os.path.getsize(dst) // 1024} KB")
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=1, sort_keys=True)
 
 
 def preview(i, sheets):
@@ -233,7 +361,7 @@ def preview(i, sheets):
 
 def main():
     a = sys.argv[1:]
-    if not a or a[0] not in ("start", "gen", "build"):
+    if not a or a[0] not in ("start", "gen", "build", "settle"):
         sys.exit(__doc__)
     picks, kinds, yes = {}, ["idle", "win"], "--yes" in a
     rest = []
@@ -251,6 +379,8 @@ def main():
         start(ids)
     elif a[0] == "gen":
         gen(ids, kinds, yes)
+    elif a[0] == "settle":
+        settle(ids)
     else:
         build(ids, picks)
 

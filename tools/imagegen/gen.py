@@ -291,8 +291,9 @@ def render_video(body):
             continue  # a dropped poll is retried
         if res.get("status") == "completed" and find_video(res):
             break
-    if res.get("status") == "failed":
-        raise RuntimeError("failed: " + json.dumps(res)[:600])
+    if res.get("status") == "failed":  # the reason, without the echoed prompt and pictures that would bury it
+        why = {**res, "steps": [s for s in res.get("steps", []) if s.get("type") != "user_input"]}
+        raise RuntimeError("failed: " + json.dumps(why)[:1500])
     return res
 
 

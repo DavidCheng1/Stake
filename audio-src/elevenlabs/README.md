@@ -11,6 +11,15 @@ Musical frame:
 - Wins resolve to **A major**.
 - Palette: haunted bells, ghost choir, pipe organ, bone and wood, chains, thunder, green spectral magic.
 
+## Sound direction v4 (2026-11-11)
+
+The music moved to a polished cinematic adventure score on 2026-11-10 (`music.json` v4/v5: celesta and harp hook, cello and bass clarinet, taiko and frame drums, brass, A minor at 100 BPM), and the v3 effects (hand-made, playful-spooky: wood, bone, accordion, music box) no longer sat in its world. v4 moves the effects into the music's orchestra. `fs_land` (v4), `connect` and `trove` were already made in it; `crystal` and `toll` stay (exact pitch). The other 20 sounds get new prompts in `sfx.json` (two directions each, four takes; `v4_first_take` marks the first v4 take of a sound, older takes stay for comparison).
+
+Shared rules (every prompt carries them):
+- **Instruments:** celesta, harp, glockenspiel, plucked and tremolo strings, warm French horns and brass, taiko and timpani, a soft wordless choir, glassy spectral shimmer. No synths, no electronic or arcade sounds.
+- **Feel:** polished and premium, cinematic, never horror. The duel sounds keep the fighting-game punch the game asked for in October (impacts, sword rings, K.O.), made of orchestral drums, brass and steel.
+- **Room, key, limits:** as v3: one torch-lit stone crypt with a short dark reverb (about 1 s), musical parts on A (A minor, wins in A major), no sub rumble, no piercing highs, soft attacks on the frequent sounds.
+
 ## Sound direction v3 (2026-11-08)
 
 Some sounds did not fit together: they came from different "rooms" (reverbs), sat in different keys, and some were much brighter or louder than their neighbours. Version 3 gives every sound and the music one shared direction. It replaces the palette above; the timings and the judge's limits stay as they were. All prompts in `sfx.json` are rewritten in it. `crystal` and `toll` stay, because they need an exact pitch.
@@ -140,6 +149,15 @@ ElevenLabs gives a different result every time, so a deleted take can't be made 
 
 ## Replacement log
 
+**v4 (2026-11-11):** 20 sounds from the sound-direction-v4 prompts (cinematic orchestral), 96 takes in two rounds, about 1,300 credits. Picks were made among the v4 takes only (older takes stay in `takes/` and still score high in `compare.html`).
+- **Second round** for `land` (every first-round take was nearly silent, peaks around −35 dB), `charge` (none built up to its end), `edge` (peaked too early or had no phone range) and `bigwin` (slow attacks, clipping).
+- **Known compromises:** `burst` attacks in 45 ms (the judge wants 15); `sting` reads as C major (the relative major of the music's A minor, so it sits fine over it); `land` is a quiet take raised to the old loudness and capped at 0.26 s (`finish.max_s`), because it rang for half a second.
+- **Best score over all takes (asked for the same day):** `fanfare` → `fanfare_t16` (100), `bigwin` → `bigwin_t5` (100) and `edge` → `edge_t4` (85) replaced the v4 picks; these three are takes from earlier directions. `edge_t4` has almost nothing in the phone range (300 Hz–5 kHz), so it may be faint on phone speakers; `edge_t6` (80) was the v4 alternative.
+- **Sharper `connect` and `fs_land` (same day):** six new takes each with harder attacks. `fs_land_t7` (5 ms attack, crest 22 dB, the punchiest) and `connect_t7` (0 ms attack, 0.32 s). No `connect` take had a clear note, so the game now layers the chime (exact A5) under each pop, a scale step higher per cell: the connection climbs a melody while the pop itself only rises a little.
+- **`tumble` as a burst (same day):** the winning symbols now burst when they vanish instead of a soft poof: `tumble_t6` (green spirit-fire explosion, 2 ms attack), played at volume .55 instead of .4.
+- **Kept:** `trove` (made in the v4 direction on 2026-11-11), `crystal` and `toll` (exact pitch).
+- **Rollback:** every replaced file is in `audio-src/sfx-old/` (the newest `<name>_old*.mp3` is the v3 sound; `land_old5.mp3` is the uncapped first v4 apply).
+
 **v3 (2026-11-08):** 19 sounds from the sound-direction-v3 prompts, 120 takes in two rounds, about 2,000 credits.
 - **Kept:** `sting` (no take came out clearly in A major; an off-key sting is what v3 is meant to remove), `toll` (the designed bell, exactly A2) and `crystal`.
 - **Licence:** these takes were generated on the **ElevenLabs free plan**. The free plan is generally for non-commercial use; check the licence before release, and generate again on a paid plan if needed.
@@ -203,6 +221,36 @@ ElevenLabs gives a different result every time, so a deleted take can't be made 
 | `clash` | v4 | the file of commit `39c4def` (0.66 s), restored | VS duel in a fighting-game style again: the Oct 29 battle-arena clash (blades, shockwave boom, ringing metal) | `audio-src/sfx-old/clash_old3.mp3` (the v3 sound) |
 | `wail` | v4 | the file of commit `39c4def` (2.02 s), restored | VS duel in a fighting-game style again: the Oct 29 knockout (heavy punchy hit, then the banished ghost) | `audio-src/sfx-old/wail_old3.mp3` (the v3 sound) |
 | `challenger` | v4 | the file of commit `39c4def` (1.93 s), restored | VS duel in a fighting-game style again: the Oct 29 challenger entrance (cannon boom, ship horn, chains, organ) | `audio-src/sfx-old/challenger_old3.mp3` (the v3 sound) |
+| `fs_land` | v4 | `fs_land_t2.mp3` (0.66 s): "Treasure chest symbol slams down: an instant heavy wooden and iron thud with a timpani hit…" | (score 100, fits its job) | `audio-src/sfx-old/fs_land_old3.mp3` |
+| `connect` | v1 | `connect_t2.mp3` (0.51 s): "One single plucked harp and celesta note at A5 with a soft bubble pop on the attack and a …" | (score 100, fits its job) | new sound (as loud as `tumble`) |
+| `trove` | v1 | `trove_t1.mp3` (4.4 s): "Cinematic orchestral transition, 6 seconds: a rising rush of wind and ghostly whispers wit…" | (score 90: 113 clipped samples) | new sound (as loud as `fanfare`) |
+| `click` | v4 | `click_t2.mp3` (0.03 s): "Tiny premium UI click: an instant crisp tap of a small brass latch with a faint glassy pin…" | (score 90: harsh at the game's top pitch (x1)) | `audio-src/sfx-old/click_old3.mp3` |
+| `spin` | v4 | `spin_t3.mp3` (0.84 s): "Slot spin start in a cinematic orchestral pirate crypt game: an instant soft taiko tap and…" | (score 85: slow attack 18 ms (max 15)) | `audio-src/sfx-old/spin_old3.mp3` |
+| `land` | v5 | `land_t5.mp3` (0.3 s): "A LOUD, close-up single knock of a hard wooden block struck with a mallet: one strong hit …" | (score 92: long: 0.48 s audible (fits 0.3 s, gets faded)) | `audio-src/sfx-old/land_old4.mp3` |
+| `land_heavy` | v4 | `land_heavy_t4.mp3` (0.39 s): "A huge carved stone reel slamming down: an instant orchestral bass drum and low brass stab…" | (score 100, fits its job) | `audio-src/sfx-old/land_heavy_old3.mp3` |
+| `chime` | v4 | `chime_t10.mp3` (1.33 s): "One single soft harp and glass-bell note together, pitch A5, round and sweet, gentle shimm…" | (score 100, fits its job) | `audio-src/sfx-old/chime_old3.mp3` |
+| `tumble` | v3 | `tumble_t1.mp3` (0.53 s): "Winning symbols dissolving into glowing spectral dust: an instant soft airy pop, a short s…" | (score 100, fits its job) | `audio-src/sfx-old/tumble_old2.mp3` |
+| `charge` | v7 | `charge_t12.mp3` (0.77 s): "Rising tension swell for one second: from near silence to full volume, a fast ascending ha…" | (score 100: 175 ms silence before it (trimmed when applied)) | `audio-src/sfx-old/charge_old6.mp3` |
+| `burst` | v7 | `burst_t8.mp3` (0.84 s): "Huge versus-screen slam: an instant thunderous timpani and low brass hit, a sharp metallic…" | (score 74: slow attack 45 ms (max 15)) | `audio-src/sfx-old/burst_old6.mp3` |
+| `clash` | v5 | `clash_t1.mp3` (0.92 s): "Two cursed blades clashing hard in a cinematic duel: an instant bright steel-on-steel ring…" | (score 100, fits its job) | `audio-src/sfx-old/clash_old4.mp3` |
+| `wail` | v5 | `wail_t1.mp3` (2.07 s): "Cinematic knockout: an instant huge final impact of taiko, timpani and low brass, a sword …" | (score 82: slow attack 32 ms (max 20)) | `audio-src/sfx-old/wail_old4.mp3` |
+| `sting` | v3 | `sting_t2.mp3` (2.19 s): "Short heroic win sting in A major: a snare flam into a full brass and strings A major chor…" | (score 80: 43 clipped samples; weak A major (-0.19), sounds like C major) | `audio-src/sfx-old/sting_old2.mp3` |
+| `sting_devil` | v4 | `sting_devil_t2.mp3` (3.37 s): "Villain entrance in A minor: a thunderous timpani hit, menacing low horns and trombones in…" | (score 100, fits its job) | `audio-src/sfx-old/sting_devil_old3.mp3` |
+| `fanfare` | v8 | `fanfare_t19.mp3` (1.34 s): "Free spins triggered, root note A, A minor: starts instantly with a big timpani and taiko …" | (score 90: 97 clipped samples) | `audio-src/sfx-old/fanfare_old7.mp3` |
+| `bigwin` | v6 | `bigwin_t11.mp3` (2.1 s): "Big win, A major: starts at full volume at the very first millisecond with a huge orchestr…" | (score 90: 104 clipped samples) | `audio-src/sfx-old/bigwin_old4.mp3` |
+| `totalwin` | v2 | `totalwin_t2.mp3` (1.84 s): "Treasure counted, A major: an instant orchestral hit into a heroic horn melody, bright glo…" | (score 90: 81 clipped samples) | `audio-src/sfx-old/totalwin_old.mp3` |
+| `heartbeat` | v3 | `heartbeat_t2.mp3` (0.95 s): "Lost a life: two muted timpani heartbeats, a quick descending harp glissando and a faint g…" | (score 100, fits its job) | `audio-src/sfx-old/heartbeat_old2.mp3` |
+| `crumble` | v4 | `crumble_t2.mp3` (0.53 s): "Runes falling apart: a brief gritty crackle of stone, a soft descending celesta trickle an…" | (score 100, fits its job) | `audio-src/sfx-old/crumble_old3.mp3` |
+| `challenger` | v5 | `challenger_t1.mp3` (1.63 s): "A new challenger enters a cinematic duel: an instant dramatic full-orchestra brass hit, a …" | (score 90: 132 clipped samples) | `audio-src/sfx-old/challenger_old4.mp3` |
+| `banner` | v4 | `banner_t1.mp3` (1.57 s): "Announcement: a soft rising swell of strings and spectral air into a bright harp, celesta …" | (score 100, fits its job) | `audio-src/sfx-old/banner_old3.mp3` |
+| `edge` | v4 | `edge_t6.mp3` (2.33 s): "Near-miss tension: a rising violin and viola tremolo that climbs in pitch and volume for t…" | (score 80: 15 clipped samples; peaks at 1.95 s (wanted 2.0-2.6 s); 197 ms silence before it (trimmed when applied)) | `audio-src/sfx-old/edge_old3.mp3` |
+| `land` | v6 | `land_t5.mp3` (0.24 s): "A LOUD, close-up single knock of a hard wooden block struck with a mallet: one strong hit …" | (score 92: long: 0.48 s audible (fits 0.3 s, gets faded)) | `audio-src/sfx-old/land_old5.mp3` |
+| `fanfare` | v9 | `fanfare_t16.mp3` (2.0 s): "Spooky ghost sting: an instant deep thunder crack, a chilling ghost wail sweeping overhead…" | (score 100, fits its job) | `audio-src/sfx-old/fanfare_old8.mp3` |
+| `bigwin` | v7 | `bigwin_t5.mp3` (2.99 s): "Spooky jackpot: an instant thunder crack and a big pipe organ fanfare in A major, haunted …" | (score 100, fits its job) | `audio-src/sfx-old/bigwin_old5.mp3` |
+| `edge` | v5 | `edge_t4.mp3` (3.02 s): "Near-miss tension riser: a slow crescendo of tremolo strings and choir rising in pitch for…" | (score 85: mostly outside phone range (0% in 300 Hz-5 kHz)) | `audio-src/sfx-old/edge_old4.mp3` |
+| `connect` | v2 | `connect_t7.mp3` (0.35 s): "One single sharp, bright plucked note at A5: a crisp pizzicato violin and celesta struck t…" | (score 80: no clear pitch) | `audio-src/sfx-old/connect_old.mp3` |
+| `fs_land` | v5 | `fs_land_t7.mp3` (0.83 s): "Bonus symbol slams onto the reel: an instant hard, sharp strike at the very first millisec…" | (score 100, fits its job) | `audio-src/sfx-old/fs_land_old4.mp3` |
+| `tumble` | v4 | `tumble_t6.mp3` (0.59 s): "Ghost symbols explode into green spirit fire: an instant snappy fireball pop with a crackl…" | (score 100, fits its job) | `audio-src/sfx-old/tumble_old3.mp3` |
 
 v1 is the original designed sound (`tools/sound_design.py`; `fs_land` is an ElevenLabs sample processed there). v2 is the first ElevenLabs replacement.
 
