@@ -641,16 +641,21 @@ body::before { content: ""; position: fixed; inset: -8%; z-index: -1; pointer-ev
 .banner { position: absolute; inset: 0; z-index: 9; display: grid; place-content: center; text-align: center; gap: 6px; background: rgb(3 10 9 / .8); padding-inline: 4cqw; }
 .banner h3 { font-family: var(--display); font-weight: 400; font-size: 8cqw; margin: 0; line-height: 1; color: #ff7de0; text-shadow: 0 0 2.4cqw rgb(255 79 210 / .6), 0 .4cqw 0 #3a0636; }
 .banner p { margin: 0; font-size: 2.6cqw; font-weight: 700; color: var(--gold); letter-spacing: .06em; }
-/* the way into the free spins (troveEntrance): the clip fills the whole window, the title lands over the treasure vault */
-.trove { position: fixed; inset: 0; z-index: 900; background: #000; overflow: hidden; container-type: size; cursor: pointer;
-  -webkit-tap-highlight-color: transparent; }
-.trove video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.trove-shade { position: absolute; inset: 0; opacity: 0; transition: opacity .8s;
-  background: radial-gradient(ellipse 60% 42% at 50% 46%, rgb(8 4 18 / .62), rgb(8 4 18 / .25) 60%, transparent 85%); }
-.trove.titled .trove-shade { opacity: 1; }
+/* the way into the free spins (troveEntrance): a vortex clip on black over the board, screen-blended so only its light
+   shows (the board is no stacking context of its own, so the clip blends with the board and the crypt behind it), and
+   the title over the board after its flash */
+.vortex { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 7; mix-blend-mode: screen; pointer-events: none; border-radius: 8px; }
+.stage.vortexing { cursor: pointer; }
+.vortex-title { position: absolute; inset: -6% -10%; z-index: 9; container-type: size; pointer-events: none; }
+.vortex-title::before { content: ""; position: absolute; inset: 22% 6%; border-radius: 50%; animation: vtxShade .5s ease-out backwards; /* a soft dark backing, so the title reads over the FS symbols */
+  background: radial-gradient(closest-side, rgb(3 8 12 / .82), rgb(3 8 12 / .55) 55%, transparent); }
+@keyframes vtxShade { from { opacity: 0; } }
+.vortex-title .trove-title { visibility: visible; gap: 2.4cqmin; }
+.vortex-title .trove-title h2 { font-size: min(10cqw, 15cqh); }
+.vortex-title .trove-title p { font-size: min(4cqw, 6cqh); }
+.vortex-title .trove-title small { font-size: min(2.6cqw, 4cqh); }
 .trove-title { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; text-align: center; gap: 1.6cqmin;
   padding-inline: 5cqw; pointer-events: none; visibility: hidden; }
-.trove.titled .trove-title { visibility: visible; }
 .trove-title h2 { margin: 0; font-family: var(--display); font-weight: 400; line-height: .95; font-size: min(11cqw, 17cqh); letter-spacing: .02em;
   color: transparent; background: linear-gradient(180deg, #fff6cf 8%, #ffd76a 42%, #e39a22 70%, #8a4d10 100%); -webkit-background-clip: text; background-clip: text;
   filter: drop-shadow(0 .5cqmin 0 #2a0f05) drop-shadow(0 0 2.4cqmin rgb(110 230 255 / .75)) drop-shadow(0 0 6cqmin rgb(211 107 255 / .5));

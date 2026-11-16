@@ -1172,32 +1172,58 @@ async function banner(title, sub, hold = 1700) {
   bannerEl.hidden = true;
 }
 
-// ---------- The way into the free spins: a fullscreen clip (assets/fs-trove.webm, Gemini Omni, 6 s, VP9 by ffmpeg): the camera rushes
-// through the crypt to a rune vault door that bursts open in light (brightest at 3.2 s) and flies into the treasure vault.
-// Under the flash the board turns into the bonus board (swap), over the vault the title lands, then the clip dissolves
-// into the bonus. Its sound (assets/sfx/trove.mp3) hits at 2.3 s, so it starts 0.9 s into the clip. Off in turbo and
-// with reduced motion, or while the clip has not arrived: then the banner plays instead (returns false).
-const TROVE_FLASH = 3.15, TROVE_TITLE = 4.3;
+// ---------- The way into the free spins, on the board itself: a vortex of ghost fire (assets/fs-vortex.webm, Gemini
+// Omni on black, laid over the board with screen blending, so only its light shows) opens in the middle of the board and
+// pulls the symbols in, the nearest first; the FS symbols hold on. At its flash (VORTEX_FLASH) the board turns into the
+// bonus board (swap), the FS symbols flare up, the title lands over the board and the vortex dies away into sparks.
+// Its sound (assets/sfx/trove.mp3) hits 2.3 s in, so it starts that long before the flash. Off in turbo and with
+// reduced motion, or while the clip has not arrived: then the banner plays instead (returns false).
+const VORTEX_FLASH = 3.42;
 async function troveEntrance(title, sub, note, swap) {
-  if (RM || turbo || !clipReady["fs-trove"]) return false;
-  nextSequence();
-  const url = "assets/fs-trove.webm", box = div("trove"), v = document.createElement("video");
-  v.muted = v.playsInline = true; v.preload = "auto"; v.src = url;
-  const t = div("trove-title");
-  t.innerHTML = `<h2></h2><p></p><small></small>`;
-  q(t, "h2").textContent = title; q(t, "p").textContent = sub; q(t, "small").textContent = note;
-  box.append(v, div("trove-shade"), t);
-  box.addEventListener("pointerdown", () => skip());
+  if (RM || turbo || !clipReady["fs-vortex"]) return false;
+  const v = document.createElement("video"); v.className = "vortex"; v.muted = v.playsInline = true; v.preload = "auto"; v.src = "assets/fs-vortex.webm";
   const ready = await Promise.race([new Promise(r => { v.oncanplay = () => r(true); v.onerror = () => r(false); }), new Promise(r => setTimeout(() => r(false), 1500))]);
   if (!ready) return false;
-  document.body.appendChild(box);
-  box.animate([{ opacity: 0, transform: "scale(1.06)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: "ease-out" });
+  nextSequence();
+  const onTap = () => skip(); stage.addEventListener("pointerdown", onTap);
+  stage.appendChild(v); stage.classList.add("vortexing");
   await v.play().catch(() => {});
-  sound.trove(.9);
-  let swapped = false, titled = false;
-  const doSwap = () => { if (swapped) return; swapped = true; swap(); };
+  sound.trove(VORTEX_FLASH - 2.3);
+  // every symbol but the FS spirals into the eye: it swings round the middle as it falls in, shrinks and fades
+  const S = stage.getBoundingClientRect(), mx = S.left + S.width / 2, my = S.top + S.height / 2, far = Math.hypot(S.width, S.height) / 2;
+  const pulls = [];
+  const pull = el => {
+    const r = el.getBoundingClientRect(), dx = mx - (r.left + r.width / 2), dy = my - (r.top + r.height / 2), d = Math.hypot(dx, dy) / far;
+    // on its way in, the symbol's offset from the eye turns 2.4 rad and shrinks to nothing
+    const kf = [0, .25, .5, .75, 1].map(t => {
+      const a = t * 2.4, k = 1 - t;
+      const x = dx - k * (dx * Math.cos(a) - dy * Math.sin(a)), y = dy - k * (dx * Math.sin(a) + dy * Math.cos(a));
+      return { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${Math.round(t * 540)}deg) scale(${(1 - t * t).toFixed(3)})`,
+        opacity: t < .8 ? 1 : 0, filter: `brightness(${(1 + t * 2).toFixed(2)})`, offset: t };
+    });
+    const an = el.animate(kf, { duration: 1300, delay: 900 + d * 1000, easing: "cubic-bezier(.5,0,.8,.6)", fill: "forwards" });
+    pulls.push(an); return an;
+  };
+  reels.forEach(rl => {
+    if (!rl.tall.hidden) { pull(rl.tall); return; }
+    rl.cells.forEach(cell => { const el = cell.firstElementChild; if (el && el.dataset.id !== "fs") pull(el).finished.then(() => el.isConnected && el.remove(), () => {}); });
+  });
+  let swapped = false;
+  const flash = () => {
+    if (swapped) return; swapped = true;
+    swap(); shake(12, 600);
+    const [x, y, w] = centerOf(stage);
+    fx.emit(x, y, { n: 60, kind: "spark", rgb: SYM.fs.rgb, scale: w / 360 });
+    qa(reelsEl, '.cell > .sym[data-id="fs"]').forEach(f => f.animate([{ filter: "brightness(1)", transform: "scale(1)" }, { filter: "brightness(3) drop-shadow(0 0 1.4cqw #fff)", transform: "scale(1.3)", offset: .3 }, { filter: "brightness(1)", transform: "scale(1)" }], { duration: 900, easing: "ease-out" }));
+  };
+  // the title lands over the board just after the flash, while the vortex dissolves
+  const box = div("vortex-title"), t = div("trove-title");
+  t.innerHTML = `<h2></h2><p></p><small></small>`;
+  q(t, "h2").textContent = title; q(t, "p").textContent = sub; q(t, "small").textContent = note;
+  box.appendChild(t);
+  let titled = false;
   const showTitle = () => {
-    if (titled) return; titled = true; box.classList.add("titled");
+    if (titled) return; titled = true; stage.appendChild(box);
     q(t, "h2").animate([{ opacity: 0, transform: "scale(1.7)", filter: "blur(14px) brightness(3)" }, { opacity: 1, transform: "scale(.96)", filter: "blur(0) brightness(1.6)", offset: .6 },
       { opacity: 1, transform: "none", filter: "none" }], { duration: 700, easing: "cubic-bezier(.2,.8,.3,1)", fill: "backwards" });
     for (const [el, d] of [[q(t, "p"), 380], [q(t, "small"), 560]])
@@ -1205,16 +1231,20 @@ async function troveEntrance(title, sub, note, swap) {
   };
   await new Promise(res => {
     const iv = setInterval(() => {
-      if (v.currentTime >= TROVE_FLASH) doSwap();
-      if (v.currentTime >= TROVE_TITLE) showTitle();
+      if (v.currentTime >= VORTEX_FLASH - .05) flash();
+      if (v.currentTime >= VORTEX_FLASH + .35) showTitle();
       if (v.ended || slam) { clearInterval(iv); res(); }
     }, 30);
   });
-  doSwap();
-  if (!slam) { showTitle(); await sleep(2600); } // the title stands over the vault's last frame
-  await box.animate([{ opacity: 1, transform: "none", filter: "none" }, { opacity: 0, transform: "scale(1.08)", filter: "blur(6px) brightness(1.4)" }],
-    { duration: slam ? 260 : 700, easing: "ease-in", fill: "forwards" }).finished;
-  v.pause(); box.remove();
+  // skipped: everything still on its way into the eye is gone at once
+  pulls.forEach(an => an.finish());
+  flash();
+  if (!slam) { showTitle(); await sleep(1500); }
+  await Promise.all([box, v].map(e => e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: slam ? 200 : 600, fill: "forwards" }).finished));
+  box.remove(); v.remove(); stage.classList.remove("vortexing"); stage.removeEventListener("pointerdown", onTap);
+  // the VS reels went into the eye too: hidden for the bonus, and their pull let go, so they show again after it
+  reels.forEach(rl => { if (!rl.tall.hidden) { rl.tall.hidden = true; rl.tall.replaceChildren(); } });
+  pulls.forEach(an => an.cancel());
   return true;
 }
 
@@ -3073,7 +3103,7 @@ function preloadClip(name) {
   const v = document.createElement("video"); v.muted = v.playsInline = true; v.preload = "auto";
   v.addEventListener("canplaythrough", mark, { once: true }); v.src = url; v.load();
 }
-if (!RM) introDone.then(() => { preloadClip("vs-punch"); preloadClip("fs-trove"); });
+if (!RM) introDone.then(() => { preloadClip("vs-punch"); preloadClip("fs-vortex"); });
 
 // the loading bar waits for the images of the first screen
 LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp", "assets/hud-bg.webp", "assets/bb-logo.webp",
