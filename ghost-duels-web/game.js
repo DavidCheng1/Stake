@@ -927,7 +927,8 @@ const DUEL_T3 = [[150, 35], [200, 25], [250, 15], [300, 10], [500, 8], [750, 5],
 // value pools above are only used for the rolling badge animation
 // Before a duel the Ghost Pirate breaks out of the VS reel: he slams his hands against the glass left and right, it
 // cracks into lightning that runs out over the board, he gathers the energy and the reel bursts in a green flash.
-// Played from the clip (assets/vs-punch.webm) when it has arrived and turbo is off; otherwise the quick version.
+// Played from the clip (assets/vs-punch.webm) when it has arrived, in turbo too (at the duel's turbo pace); otherwise
+// the quick version.
 // The clip is loaded once after the intro (preloadClip) and plays from its own URL.
 const vsBreakClip = () => clipReady["vs-punch"] && "assets/vs-punch.webm";
 async function breakOut(tall, vsSym) {
@@ -972,7 +973,7 @@ async function breakOut(tall, vsSym) {
     draw(out, 90).forEach(p => p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, delay: 90, fill: "forwards" }));
   };
   const grow = ms => orb.animate([{ transform: "scale(0)", opacity: 0 }, { transform: "scale(.7)", opacity: .9, offset: .5 }, { transform: "scale(.6)", opacity: .8, offset: .7 }, { transform: "scale(1.15)", opacity: 1 }], { duration: ms, fill: "forwards", easing: "ease-in" });
-  const clip = turbo ? null : vsBreakClip();
+  const clip = vsBreakClip();
   if (clip) {
     // the punch clip (assets/vs-punch.webm, Gemini Omni) plays in the reel at the duel's pace, like sleep() below: the
     // skeleton pirate charges his fist and lands a huge punch at the centre at 2.2 s of the clip; the cracks run out
@@ -1054,8 +1055,9 @@ async function duelShow(d) {
   // every encounter's clip starts loading now (who faces whom follows from the round's results)
   const champ1 = topWins1 ? ghostTop : ghostBot, champ2 = pirate?.wins ? "pirate" : champ1;
   const champ3 = devil?.wins ? "devil" : champ2;
-  if (!turbo) { loadFight(ghostTop, ghostBot, champ1); if (pirate) loadFight(champ1, "pirate", champ2); if (devil) loadFight(champ2, "devil", champ3); }
-  const fightOr = async (a, b, w, bump) => { const v = turbo ? null : await loadFight(a, b, w); if (v && !slam) await playFight(tall, v); else await bump(); };
+  // in turbo too: the clips then play at the duel's turbo pace (playFight)
+  loadFight(ghostTop, ghostBot, champ1); if (pirate) loadFight(champ1, "pirate", champ2); if (devil) loadFight(champ2, "devil", champ3);
+  const fightOr = async (a, b, w, bump) => { const v = await loadFight(a, b, w); if (v && !slam) await playFight(tall, v); else await bump(); };
   let winner = topWins1 ? ghostTop : ghostBot, mult = topWins1 ? m1 : m1b;
   const vsSym = q(tall, ".vx-crest .sym") || q(tall, ".sym");
   say(i18n("Duell", "Duel") + `: ${SYM[ghostTop].name} vs ${SYM[ghostBot].name}`);
@@ -1177,19 +1179,21 @@ async function banner(title, sub, hold = 1700) {
 // melt away; under the clip the board is cleared but for the FS symbols, which become the crates next. A vortex of
 // ghost fire opens, swirls and bursts in a flash: under the flash (PORTAL_SWAP) the board turns into the bonus board,
 // as the light fades the title lands, and the clip dissolves into the live bonus board. Its sound (assets/sfx/trove.mp3)
-// hits 2.3 s in, so it starts that long before the flash's peak. Off in turbo and with reduced motion, or while the
-// clip has not arrived: then the banner plays instead (returns false).
-const PORTAL_SWAP = 3.8, PORTAL_PEAK = 4.08, PORTAL_TITLE = 4.6, PORTAL_OUT = 5.3;
+// hits 2.3 s in, so it starts that long before the flash's peak. In turbo the clip plays PORTAL_TURBO times faster.
+// Off with reduced motion, or while the clip has not arrived: then the banner plays instead (returns false).
+const PORTAL_SWAP = 3.8, PORTAL_PEAK = 4.08, PORTAL_TITLE = 4.6, PORTAL_OUT = 5.3, PORTAL_TURBO = 1.5;
 async function troveEntrance(title, sub, note, swap) {
-  if (RM || turbo || !clipReady["fs-portal"]) return false;
+  if (RM || !clipReady["fs-portal"]) return false;
+  const rate = turbo ? PORTAL_TURBO : 1;
   const v = document.createElement("video"); v.className = "portal"; v.muted = v.playsInline = true; v.preload = "auto"; v.src = "assets/fs-portal.webm";
   const ready = await Promise.race([new Promise(r => { v.oncanplay = () => r(true); v.onerror = () => r(false); }), new Promise(r => setTimeout(() => r(false), 1500))]);
   if (!ready) return false;
   nextSequence();
   const onTap = () => skip(); stage.addEventListener("pointerdown", onTap); stage.classList.add("vortexing");
-  stage.appendChild(v);
+  stage.appendChild(v); v.playbackRate = rate;
   await v.play().catch(() => {});
-  sound.trove(PORTAL_PEAK - 2.3);
+  v.playbackRate = rate;
+  sound.trove(Math.max(0, PORTAL_PEAK / rate - 2.3)); // the bell lands on the flash's peak
   // the board melts into the clip's first frame (the same board, empty); under the clip it is cleared but for the FS
   // symbols, and the VS reels go
   let cleared = false;
@@ -1234,9 +1238,9 @@ async function troveEntrance(title, sub, note, swap) {
     await Promise.all([box, v].map(e => e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" }).finished));
   } else {
     showTitle();
-    await v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, easing: "ease-in-out", fill: "forwards" }).finished; // into the live bonus board
+    await v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700 / rate, easing: "ease-in-out", fill: "forwards" }).finished; // into the live bonus board
     await sleep(900);
-    await box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, fill: "forwards" }).finished;
+    await box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450 / rate, fill: "forwards" }).finished;
   }
   box.remove(); v.remove(); stage.classList.remove("vortexing"); stage.removeEventListener("pointerdown", onTap);
   return true;
@@ -1342,7 +1346,7 @@ function preloadTotalWin() {
 async function totalWinScreen(total, spins, counted = false) {
   nextSequence();
   preloadTotalWin();
-  const intro = !RM && !turbo; // turbo starts on the loop
+  const intro = !RM; // in turbo the intro plays faster
   const rig = await twRig;
   if (!rig) return false;
   const el = document.getElementById("totalWin"), box = document.getElementById("twArt"), amtEl = document.getElementById("twAmount");
@@ -1350,7 +1354,7 @@ async function totalWinScreen(total, spins, counted = false) {
   document.getElementById("twSub").textContent = i18n(`${spins} Freispiele gespielt · ${x}× Einsatz`, `${spins} free spins played · ${x}× bet`);
   const cv = document.createElement("canvas");
   box.replaceChildren(cv); amtEl.textContent = money(counted ? total : 0); el.hidden = false;
-  const anim = RigPlayer.play(cv, rig, { intro, still: RM });
+  const anim = RigPlayer.play(cv, rig, { intro, still: RM, speed: turbo ? 1.6 : 1 });
   hero.react("cheer", 4000); sound.totalWin();
   el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
   // teal embers rising around the emblem while the screen is up
