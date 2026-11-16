@@ -1172,51 +1172,42 @@ async function banner(title, sub, hold = 1700) {
   bannerEl.hidden = true;
 }
 
-// ---------- The way into the free spins, on the board itself: a vortex of ghost fire (assets/fs-vortex.webm, Gemini
-// Omni on black, laid over the board with screen blending, so only its light shows) opens in the middle of the board and
-// pulls the symbols in, the nearest first; the FS symbols hold on. At its flash (VORTEX_FLASH) the board turns into the
-// bonus board (swap), the FS symbols flare up, the title lands over the board and the vortex dies away into sparks.
-// Its sound (assets/sfx/trove.mp3) hits 2.3 s in, so it starts that long before the flash. Off in turbo and with
-// reduced motion, or while the clip has not arrived: then the banner plays instead (returns false).
-const VORTEX_FLASH = 3.42;
+// ---------- The way into the free spins, in the board: one painted clip (assets/fs-portal.webm, Gemini Omni from a still
+// of the empty board, so its first frame is the board itself). The board fades into that first frame, so the symbols
+// melt away; under the clip the board is cleared but for the FS symbols, which become the crates next. A vortex of
+// ghost fire opens, swirls and bursts in a flash: under the flash (PORTAL_SWAP) the board turns into the bonus board,
+// as the light fades the title lands, and the clip dissolves into the live bonus board. Its sound (assets/sfx/trove.mp3)
+// hits 2.3 s in, so it starts that long before the flash's peak. Off in turbo and with reduced motion, or while the
+// clip has not arrived: then the banner plays instead (returns false).
+const PORTAL_SWAP = 3.8, PORTAL_PEAK = 4.08, PORTAL_TITLE = 4.6, PORTAL_OUT = 5.3;
 async function troveEntrance(title, sub, note, swap) {
-  if (RM || turbo || !clipReady["fs-vortex"]) return false;
-  const v = document.createElement("video"); v.className = "vortex"; v.muted = v.playsInline = true; v.preload = "auto"; v.src = "assets/fs-vortex.webm";
+  if (RM || turbo || !clipReady["fs-portal"]) return false;
+  const v = document.createElement("video"); v.className = "portal"; v.muted = v.playsInline = true; v.preload = "auto"; v.src = "assets/fs-portal.webm";
   const ready = await Promise.race([new Promise(r => { v.oncanplay = () => r(true); v.onerror = () => r(false); }), new Promise(r => setTimeout(() => r(false), 1500))]);
   if (!ready) return false;
   nextSequence();
-  const onTap = () => skip(); stage.addEventListener("pointerdown", onTap);
-  stage.appendChild(v); stage.classList.add("vortexing");
+  const onTap = () => skip(); stage.addEventListener("pointerdown", onTap); stage.classList.add("vortexing");
+  stage.appendChild(v);
   await v.play().catch(() => {});
-  sound.trove(VORTEX_FLASH - 2.3);
-  // every symbol but the FS spirals into the eye: it swings round the middle as it falls in, shrinks and fades
-  const S = stage.getBoundingClientRect(), mx = S.left + S.width / 2, my = S.top + S.height / 2, far = Math.hypot(S.width, S.height) / 2;
-  const pulls = [];
-  const pull = el => {
-    const r = el.getBoundingClientRect(), dx = mx - (r.left + r.width / 2), dy = my - (r.top + r.height / 2), d = Math.hypot(dx, dy) / far;
-    // on its way in, the symbol's offset from the eye turns 2.4 rad and shrinks to nothing
-    const kf = [0, .25, .5, .75, 1].map(t => {
-      const a = t * 2.4, k = 1 - t;
-      const x = dx - k * (dx * Math.cos(a) - dy * Math.sin(a)), y = dy - k * (dx * Math.sin(a) + dy * Math.cos(a));
-      return { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${Math.round(t * 540)}deg) scale(${(1 - t * t).toFixed(3)})`,
-        opacity: t < .8 ? 1 : 0, filter: `brightness(${(1 + t * 2).toFixed(2)})`, offset: t };
+  sound.trove(PORTAL_PEAK - 2.3);
+  // the board melts into the clip's first frame (the same board, empty); under the clip it is cleared but for the FS
+  // symbols, and the VS reels go
+  let cleared = false;
+  const clear = () => {
+    if (cleared) return; cleared = true;
+    reels.forEach(rl => {
+      if (!rl.tall.hidden) { rl.tall.hidden = true; rl.tall.replaceChildren(); rl.cells.forEach(c => c.style.visibility = ""); }
+      rl.cells.forEach(cell => { const el = cell.firstElementChild; if (el && el.dataset.id !== "fs") el.remove(); cell.classList.remove("win", "dim"); });
     });
-    const an = el.animate(kf, { duration: 1300, delay: 900 + d * 1000, easing: "cubic-bezier(.5,0,.8,.6)", fill: "forwards" });
-    pulls.push(an); return an;
   };
-  reels.forEach(rl => {
-    if (!rl.tall.hidden) { pull(rl.tall); return; }
-    rl.cells.forEach(cell => { const el = cell.firstElementChild; if (el && el.dataset.id !== "fs") pull(el).finished.then(() => el.isConnected && el.remove(), () => {}); });
-  });
-  let swapped = false;
-  const flash = () => {
-    if (swapped) return; swapped = true;
-    swap(); shake(12, 600);
-    const [x, y, w] = centerOf(stage);
-    fx.emit(x, y, { n: 60, kind: "spark", rgb: SYM.fs.rgb, scale: w / 360 });
-    qa(reelsEl, '.cell > .sym[data-id="fs"]').forEach(f => f.animate([{ filter: "brightness(1)", transform: "scale(1)" }, { filter: "brightness(3) drop-shadow(0 0 1.4cqw #fff)", transform: "scale(1.3)", offset: .3 }, { filter: "brightness(1)", transform: "scale(1)" }], { duration: 900, easing: "ease-out" }));
+  v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 350, easing: "ease-out" }).finished.then(clear, clear);
+  let swapped = false, peaked = false;
+  const doSwap = () => { if (swapped) return; swapped = true; clear(); swap(); };
+  const peak = () => {
+    if (peaked) return; peaked = true; shake(12, 600);
+    const [x, y, w] = centerOf(stage); fx.emit(x, y, { n: 60, kind: "spark", rgb: SYM.fs.rgb, scale: w / 360 });
   };
-  // the title lands over the board just after the flash, while the vortex dissolves
+  // the title lands over the board as the light fades
   const box = div("vortex-title"), t = div("trove-title");
   t.innerHTML = `<h2></h2><p></p><small></small>`;
   q(t, "h2").textContent = title; q(t, "p").textContent = sub; q(t, "small").textContent = note;
@@ -1231,20 +1222,23 @@ async function troveEntrance(title, sub, note, swap) {
   };
   await new Promise(res => {
     const iv = setInterval(() => {
-      if (v.currentTime >= VORTEX_FLASH - .05) flash();
-      if (v.currentTime >= VORTEX_FLASH + .35) showTitle();
-      if (v.ended || slam) { clearInterval(iv); res(); }
+      const ct = v.currentTime;
+      if (ct >= PORTAL_SWAP) doSwap();
+      if (ct >= PORTAL_PEAK) peak();
+      if (ct >= PORTAL_TITLE) showTitle();
+      if (ct >= PORTAL_OUT || v.ended || slam) { clearInterval(iv); res(); }
     }, 30);
   });
-  // skipped: everything still on its way into the eye is gone at once
-  pulls.forEach(an => an.finish());
-  flash();
-  if (!slam) { showTitle(); await sleep(1500); }
-  await Promise.all([box, v].map(e => e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: slam ? 200 : 600, fill: "forwards" }).finished));
+  doSwap();
+  if (slam) {
+    await Promise.all([box, v].map(e => e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" }).finished));
+  } else {
+    showTitle();
+    await v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 700, easing: "ease-in-out", fill: "forwards" }).finished; // into the live bonus board
+    await sleep(900);
+    await box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, fill: "forwards" }).finished;
+  }
   box.remove(); v.remove(); stage.classList.remove("vortexing"); stage.removeEventListener("pointerdown", onTap);
-  // the VS reels went into the eye too: hidden for the bonus, and their pull let go, so they show again after it
-  reels.forEach(rl => { if (!rl.tall.hidden) { rl.tall.hidden = true; rl.tall.replaceChildren(); } });
-  pulls.forEach(an => an.cancel());
   return true;
 }
 
@@ -3103,7 +3097,7 @@ function preloadClip(name) {
   const v = document.createElement("video"); v.muted = v.playsInline = true; v.preload = "auto";
   v.addEventListener("canplaythrough", mark, { once: true }); v.src = url; v.load();
 }
-if (!RM) introDone.then(() => { preloadClip("vs-punch"); preloadClip("fs-vortex"); });
+if (!RM) introDone.then(() => { preloadClip("vs-punch"); preloadClip("fs-portal"); });
 
 // the loading bar waits for the images of the first screen
 LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp", "assets/hud-bg.webp", "assets/bb-logo.webp",
