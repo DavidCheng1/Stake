@@ -120,12 +120,14 @@ const RigPlayer = (() => {
     return c;
   }
 
-  // intro: start with the intro, then loop. still: draw the rest pose once (reduced motion).
-  function play(canvas, rig, { intro = true, still = false } = {}) {
+  // intro: start with the intro, then loop. still: draw the rest pose once (reduced motion). speed: how much faster
+  // the intro plays (turbo); the loop after it keeps its own pace.
+  function play(canvas, rig, { intro = true, still = false, speed = 1 } = {}) {
     const ctx = canvas.getContext("2d");
     const shine = document.createElement("canvas"), sctx = shine.getContext("2d");
     const P = rig.pad * Math.max(rig.w, rig.h);
     let start = performance.now(), introOn = intro && !still, raf = 0, stopped = false;
+    const introLen = rig.intro / speed; // seconds the intro takes
     const partFx = name => rig.effects.filter(e => e.part === name);
 
     function draw(now) {
@@ -137,8 +139,8 @@ const RigPlayer = (() => {
       let ox = (cw - rig.w * k) / 2, oy = (ch - rig.h * k) / 2;
       const el = still ? 0 : (now - start) / 1000;
       let t, ti = null, fade = 1;
-      if (introOn && el < rig.intro) {
-        t = ti = el / rig.intro;
+      if (introOn && el < introLen) {
+        t = ti = el / introLen;
         fade = clamp(ti / rig.fade);
         const s = rig.shake;
         if (s && ti < s.duration) {
@@ -146,7 +148,7 @@ const RigPlayer = (() => {
           ox += env * (Math.sin(TAU * c * ti) + .5 * Math.sin(TAU * (c + 3) * ti + 1.3));
           oy += env * (Math.cos(TAU * (c + 1) * ti) + .5 * Math.sin(TAU * (c + 5) * ti + .4));
         }
-      } else t = ((el - (introOn ? rig.intro : 0)) / rig.loop) % 1;
+      } else t = ((el - (introOn ? introLen : 0)) / rig.loop) % 1;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, cw, ch);
       ctx.imageSmoothingQuality = "high";
@@ -235,8 +237,8 @@ const RigPlayer = (() => {
     raf = requestAnimationFrame(tick);
     return {
       // true once the intro has played (or there was none)
-      get introDone() { return !introOn || (performance.now() - start) / 1000 >= rig.intro; },
-      skipIntro() { if (introOn && (performance.now() - start) / 1000 < rig.intro) { introOn = false; start = performance.now(); } },
+      get introDone() { return !introOn || (performance.now() - start) / 1000 >= introLen; },
+      skipIntro() { if (introOn && (performance.now() - start) / 1000 < introLen) { introOn = false; start = performance.now(); } },
       redraw() { draw(performance.now()); },
       stop() { stopped = true; cancelAnimationFrame(raf); },
     };
