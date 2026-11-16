@@ -267,8 +267,9 @@ function playSymAnim(el, kind) {
 }
 // now and then a symbol on a calm board plays its idle loop
 setInterval(() => {
-  if (RM || document.hidden || stage.classList.contains("dropping") || q(reelsEl, ".cell.win") || qa(reelsEl, ".sym.anim-idle").length >= 2) return;
-  const all = qa(reelsEl, ".cell > .sym:not(.animating)").filter(s => symAnim.img[s.dataset.id + "-idle"]);
+  if (RM || document.hidden || stage.classList.contains("dropping") || q(reelsEl, ".cell.win") || qa(reelsEl, ".anim-idle").length >= 2) return;
+  // symbols on the board, and in the bonus the runes and the characters in the crates
+  const all = qa(reelsEl, ".cell > .sym:not(.animating), .rtok > .rsym:not(.animating), .crate > .sym:not(.animating)").filter(s => symAnim.img[s.dataset.id + "-idle"]);
   if (all.length) playSymAnim(pick(all), "idle");
 }, 700);
 // The win of a rune, an object or the FS: its light layer flares, a shine sweeps across it, and each kind adds its own
@@ -1165,38 +1166,64 @@ async function banner(title, sub, hold = 1700) {
   bannerEl.hidden = false;
   await bannerEl.animate([{ opacity: 0, transform: "scale(1.3)" }, { opacity: 1, transform: "scale(1)" }], { duration: 380, easing: "ease-out" }).finished;
   const s = stage.getBoundingClientRect();
-  fx.emit(s.width / 2, s.height / 2, { n: 60, kind: "spark", rgb: "255 79 210", scale: s.width / 360 });
+  fx.emit(s.width / 2, s.height / 2, { n: 60, kind: "spark", rgb: SYM.fs.rgb, scale: s.width / 360 });
   await sleep(hold);
   await bannerEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).finished;
   bannerEl.hidden = true;
 }
 
-// ---------- The way into the free spins: a fullscreen clip (assets/fs-trove.webm, Gemini Omni, 6 s, VP9 by ffmpeg): the camera rushes
-// through the crypt to a rune vault door that bursts open in light (brightest at 3.2 s) and flies into the treasure vault.
-// Under the flash the board turns into the bonus board (swap), over the vault the title lands, then the clip dissolves
-// into the bonus. Its sound (assets/sfx/trove.mp3) hits at 2.3 s, so it starts 0.9 s into the clip. Off in turbo and
-// with reduced motion, or while the clip has not arrived: then the banner plays instead (returns false).
-const TROVE_FLASH = 3.15, TROVE_TITLE = 4.3;
+// ---------- The way into the free spins, on the board itself: a vortex of ghost fire (assets/fs-vortex.webm, Gemini
+// Omni on black, laid over the board with screen blending, so only its light shows) opens in the middle of the board and
+// pulls the symbols in, the nearest first; the FS symbols hold on. At its flash (VORTEX_FLASH) the board turns into the
+// bonus board (swap), the FS symbols flare up, the title lands over the board and the vortex dies away into sparks.
+// Its sound (assets/sfx/trove.mp3) hits 2.3 s in, so it starts that long before the flash. Off in turbo and with
+// reduced motion, or while the clip has not arrived: then the banner plays instead (returns false).
+const VORTEX_FLASH = 3.42;
 async function troveEntrance(title, sub, note, swap) {
-  if (RM || turbo || !clipReady["fs-trove"]) return false;
-  nextSequence();
-  const url = "assets/fs-trove.webm", box = div("trove"), v = document.createElement("video");
-  v.muted = v.playsInline = true; v.preload = "auto"; v.src = url;
-  const t = div("trove-title");
-  t.innerHTML = `<h2></h2><p></p><small></small>`;
-  q(t, "h2").textContent = title; q(t, "p").textContent = sub; q(t, "small").textContent = note;
-  box.append(v, div("trove-shade"), t);
-  box.addEventListener("pointerdown", () => skip());
+  if (RM || turbo || !clipReady["fs-vortex"]) return false;
+  const v = document.createElement("video"); v.className = "vortex"; v.muted = v.playsInline = true; v.preload = "auto"; v.src = "assets/fs-vortex.webm";
   const ready = await Promise.race([new Promise(r => { v.oncanplay = () => r(true); v.onerror = () => r(false); }), new Promise(r => setTimeout(() => r(false), 1500))]);
   if (!ready) return false;
-  document.body.appendChild(box);
-  box.animate([{ opacity: 0, transform: "scale(1.06)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: "ease-out" });
+  nextSequence();
+  const onTap = () => skip(); stage.addEventListener("pointerdown", onTap);
+  stage.appendChild(v); stage.classList.add("vortexing");
   await v.play().catch(() => {});
-  sound.trove(.9);
-  let swapped = false, titled = false;
-  const doSwap = () => { if (swapped) return; swapped = true; swap(); };
+  sound.trove(VORTEX_FLASH - 2.3);
+  // every symbol but the FS spirals into the eye: it swings round the middle as it falls in, shrinks and fades
+  const S = stage.getBoundingClientRect(), mx = S.left + S.width / 2, my = S.top + S.height / 2, far = Math.hypot(S.width, S.height) / 2;
+  const pulls = [];
+  const pull = el => {
+    const r = el.getBoundingClientRect(), dx = mx - (r.left + r.width / 2), dy = my - (r.top + r.height / 2), d = Math.hypot(dx, dy) / far;
+    // on its way in, the symbol's offset from the eye turns 2.4 rad and shrinks to nothing
+    const kf = [0, .25, .5, .75, 1].map(t => {
+      const a = t * 2.4, k = 1 - t;
+      const x = dx - k * (dx * Math.cos(a) - dy * Math.sin(a)), y = dy - k * (dx * Math.sin(a) + dy * Math.cos(a));
+      return { transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${Math.round(t * 540)}deg) scale(${(1 - t * t).toFixed(3)})`,
+        opacity: t < .8 ? 1 : 0, filter: `brightness(${(1 + t * 2).toFixed(2)})`, offset: t };
+    });
+    const an = el.animate(kf, { duration: 1300, delay: 900 + d * 1000, easing: "cubic-bezier(.5,0,.8,.6)", fill: "forwards" });
+    pulls.push(an); return an;
+  };
+  reels.forEach(rl => {
+    if (!rl.tall.hidden) { pull(rl.tall); return; }
+    rl.cells.forEach(cell => { const el = cell.firstElementChild; if (el && el.dataset.id !== "fs") pull(el).finished.then(() => el.isConnected && el.remove(), () => {}); });
+  });
+  let swapped = false;
+  const flash = () => {
+    if (swapped) return; swapped = true;
+    swap(); shake(12, 600);
+    const [x, y, w] = centerOf(stage);
+    fx.emit(x, y, { n: 60, kind: "spark", rgb: SYM.fs.rgb, scale: w / 360 });
+    qa(reelsEl, '.cell > .sym[data-id="fs"]').forEach(f => f.animate([{ filter: "brightness(1)", transform: "scale(1)" }, { filter: "brightness(3) drop-shadow(0 0 1.4cqw #fff)", transform: "scale(1.3)", offset: .3 }, { filter: "brightness(1)", transform: "scale(1)" }], { duration: 900, easing: "ease-out" }));
+  };
+  // the title lands over the board just after the flash, while the vortex dissolves
+  const box = div("vortex-title"), t = div("trove-title");
+  t.innerHTML = `<h2></h2><p></p><small></small>`;
+  q(t, "h2").textContent = title; q(t, "p").textContent = sub; q(t, "small").textContent = note;
+  box.appendChild(t);
+  let titled = false;
   const showTitle = () => {
-    if (titled) return; titled = true; box.classList.add("titled");
+    if (titled) return; titled = true; stage.appendChild(box);
     q(t, "h2").animate([{ opacity: 0, transform: "scale(1.7)", filter: "blur(14px) brightness(3)" }, { opacity: 1, transform: "scale(.96)", filter: "blur(0) brightness(1.6)", offset: .6 },
       { opacity: 1, transform: "none", filter: "none" }], { duration: 700, easing: "cubic-bezier(.2,.8,.3,1)", fill: "backwards" });
     for (const [el, d] of [[q(t, "p"), 380], [q(t, "small"), 560]])
@@ -1204,16 +1231,20 @@ async function troveEntrance(title, sub, note, swap) {
   };
   await new Promise(res => {
     const iv = setInterval(() => {
-      if (v.currentTime >= TROVE_FLASH) doSwap();
-      if (v.currentTime >= TROVE_TITLE) showTitle();
+      if (v.currentTime >= VORTEX_FLASH - .05) flash();
+      if (v.currentTime >= VORTEX_FLASH + .35) showTitle();
       if (v.ended || slam) { clearInterval(iv); res(); }
     }, 30);
   });
-  doSwap();
-  if (!slam) { showTitle(); await sleep(2600); } // the title stands over the vault's last frame
-  await box.animate([{ opacity: 1, transform: "none", filter: "none" }, { opacity: 0, transform: "scale(1.08)", filter: "blur(6px) brightness(1.4)" }],
-    { duration: slam ? 260 : 700, easing: "ease-in", fill: "forwards" }).finished;
-  v.pause(); box.remove();
+  // skipped: everything still on its way into the eye is gone at once
+  pulls.forEach(an => an.finish());
+  flash();
+  if (!slam) { showTitle(); await sleep(1500); }
+  await Promise.all([box, v].map(e => e.animate([{ opacity: 1 }, { opacity: 0 }], { duration: slam ? 200 : 600, fill: "forwards" }).finished));
+  box.remove(); v.remove(); stage.classList.remove("vortexing"); stage.removeEventListener("pointerdown", onTap);
+  // the VS reels went into the eye too: hidden for the bonus, and their pull let go, so they show again after it
+  reels.forEach(rl => { if (!rl.tall.hidden) { rl.tall.hidden = true; rl.tall.replaceChildren(); } });
+  pulls.forEach(an => an.cancel());
   return true;
 }
 
@@ -1384,9 +1415,11 @@ function makeCrate(id, mult) {
 function makeRune(v, id) {
   const el = div("rtok"); el.style.setProperty("--c", SYM[id].rgb);
   const img = new Image(); img.src = IMG[id]; img.alt = ""; img.draggable = false;
+  // the rune sits in a square of its own, so its filmed idle and win (playSymAnim) can play over it
+  const s = div("rsym"); s.dataset.id = id; s.appendChild(img);
   // a rune shows its value in times the bet (1 to 10), never money, so there are no decimals at any bet
   const t = document.createElement("span"); t.className = "rv"; setRv(t, fmtR(v));
-  el.append(img, t); return el;
+  el.append(s, t); return el;
 }
 // a rune's value: up to 3 characters at full size, longer amounts (high bets, multiplied wins) smaller, so they stay
 // inside the rune
@@ -1454,6 +1487,7 @@ function linkGroups() {
 const bonusValue = () => Math.min(MAX_WIN, linkGroups().reduce((s, g) => s + (g.ok ? g.sum * g.mult : 0), 0)) * bet;
 
 function drawGroupLinks(groups) {
+  const was = new Set(qa(reelsEl, ".rtok.linked")); // a rune that joins a paying group now plays its win once
   qa(reelsEl, ".rtok.linked").forEach(e => e.classList.remove("linked"));
   qa(reelsEl, ".crate.active").forEach(e => e.classList.remove("active"));
   qa(reelsEl, ".lit").forEach(e => e.classList.add("stale"));
@@ -1467,7 +1501,7 @@ function drawGroupLinks(groups) {
     g.cells.forEach(([c, r]) => {
       const t = q(reels[c].cells[r], ".rtok"); t.style.setProperty("--lc", rgb);
       const d = g.depth.get(c + "," + r) ?? 1;
-      later(() => t.classList.add("linked"), RM ? 0 : d * 160 + 120);
+      later(() => { t.classList.add("linked"); if (!was.has(t)) playSymAnim(q(t, ".rsym"), "win"); }, RM ? 0 : d * 160 + 120);
     });
   }
   qa(reelsEl, ".lit.stale").forEach(e => e.remove());
@@ -1609,6 +1643,7 @@ async function harvest(start, spinEvents, end) {
     await Promise.all(g.cells.map(([c, r], i) => sleep(i * 40).then(() => {
       // the rune counts up in whole times the bet (3 -> 6 shows 4 and 5), what it pays stays in money for the collect
       K[c][r].paid = paidOf(K[c][r].v, g);
+      playSymAnim(q(reels[c].cells[r], ".rsym"), "win"); // the rune blazes up as its value climbs
       const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v, to = Math.round(K[c][r].paid / bet), t0 = performance.now();
       return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtR(k < 1 ? Math.round(from + (to - from) * k) : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
     })));
@@ -1907,7 +1942,7 @@ const buyBtn = document.getElementById("buyBtn"), buyDlg = document.getElementBy
 function buyArt(b) {
   const art = div("ic-art"), place = (s2, left, top, width, rot, z) => { Object.assign(s2.style, { left: left + "%", top: top + "%", width: width + "%", rotate: rot + "deg", zIndex: z }); art.appendChild(s2); };
   if (b.vs) { art.style.setProperty("--c", "120 220 255"); place(makeSym("blue"), 22, 46, 40, 0, 1); place(makeSym("witch"), 78, 46, 40, 0, 1); place(makeSym("vs"), 50, 44, 52, 0, 2); return art; }
-  art.style.setProperty("--c", "255 79 210");
+  art.style.setProperty("--c", SYM.fs.rgb);
   for (let i = 0; i < b.fs; i++) {
     const k = b.fs === 1 ? 0 : i / (b.fs - 1) - .5, mid = Math.abs(k) < .01; // -0.5 .. 0.5
     place(makeSym("fs"), 50 + k * 62, 52 + Math.abs(k) * 8, mid ? 44 : 36, k * 30, 10 - Math.round(Math.abs(k) * 10));
@@ -3068,7 +3103,7 @@ function preloadClip(name) {
   const v = document.createElement("video"); v.muted = v.playsInline = true; v.preload = "auto";
   v.addEventListener("canplaythrough", mark, { once: true }); v.src = url; v.load();
 }
-if (!RM) introDone.then(() => { preloadClip("vs-punch"); preloadClip("fs-trove"); });
+if (!RM) introDone.then(() => { preloadClip("vs-punch"); preloadClip("fs-vortex"); });
 
 // the loading bar waits for the images of the first screen
 LOADER.track([...Object.values(IMG), "assets/bg.webp", "assets/logo.webp", "assets/console-front.webp", "assets/img0.webp", "assets/img1.webp", "assets/hud-bg.webp", "assets/bb-logo.webp",
