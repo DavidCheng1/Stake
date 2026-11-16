@@ -267,8 +267,9 @@ function playSymAnim(el, kind) {
 }
 // now and then a symbol on a calm board plays its idle loop
 setInterval(() => {
-  if (RM || document.hidden || stage.classList.contains("dropping") || q(reelsEl, ".cell.win") || qa(reelsEl, ".sym.anim-idle").length >= 2) return;
-  const all = qa(reelsEl, ".cell > .sym:not(.animating)").filter(s => symAnim.img[s.dataset.id + "-idle"]);
+  if (RM || document.hidden || stage.classList.contains("dropping") || q(reelsEl, ".cell.win") || qa(reelsEl, ".anim-idle").length >= 2) return;
+  // symbols on the board, and in the bonus the runes and the characters in the crates
+  const all = qa(reelsEl, ".cell > .sym:not(.animating), .rtok > .rsym:not(.animating), .crate > .sym:not(.animating)").filter(s => symAnim.img[s.dataset.id + "-idle"]);
   if (all.length) playSymAnim(pick(all), "idle");
 }, 700);
 // The win of a rune, an object or the FS: its light layer flares, a shine sweeps across it, and each kind adds its own
@@ -1165,7 +1166,7 @@ async function banner(title, sub, hold = 1700) {
   bannerEl.hidden = false;
   await bannerEl.animate([{ opacity: 0, transform: "scale(1.3)" }, { opacity: 1, transform: "scale(1)" }], { duration: 380, easing: "ease-out" }).finished;
   const s = stage.getBoundingClientRect();
-  fx.emit(s.width / 2, s.height / 2, { n: 60, kind: "spark", rgb: "255 79 210", scale: s.width / 360 });
+  fx.emit(s.width / 2, s.height / 2, { n: 60, kind: "spark", rgb: SYM.fs.rgb, scale: s.width / 360 });
   await sleep(hold);
   await bannerEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).finished;
   bannerEl.hidden = true;
@@ -1384,9 +1385,11 @@ function makeCrate(id, mult) {
 function makeRune(v, id) {
   const el = div("rtok"); el.style.setProperty("--c", SYM[id].rgb);
   const img = new Image(); img.src = IMG[id]; img.alt = ""; img.draggable = false;
+  // the rune sits in a square of its own, so its filmed idle and win (playSymAnim) can play over it
+  const s = div("rsym"); s.dataset.id = id; s.appendChild(img);
   // a rune shows its value in times the bet (1 to 10), never money, so there are no decimals at any bet
   const t = document.createElement("span"); t.className = "rv"; setRv(t, fmtR(v));
-  el.append(img, t); return el;
+  el.append(s, t); return el;
 }
 // a rune's value: up to 3 characters at full size, longer amounts (high bets, multiplied wins) smaller, so they stay
 // inside the rune
@@ -1454,6 +1457,7 @@ function linkGroups() {
 const bonusValue = () => Math.min(MAX_WIN, linkGroups().reduce((s, g) => s + (g.ok ? g.sum * g.mult : 0), 0)) * bet;
 
 function drawGroupLinks(groups) {
+  const was = new Set(qa(reelsEl, ".rtok.linked")); // a rune that joins a paying group now plays its win once
   qa(reelsEl, ".rtok.linked").forEach(e => e.classList.remove("linked"));
   qa(reelsEl, ".crate.active").forEach(e => e.classList.remove("active"));
   qa(reelsEl, ".lit").forEach(e => e.classList.add("stale"));
@@ -1467,7 +1471,7 @@ function drawGroupLinks(groups) {
     g.cells.forEach(([c, r]) => {
       const t = q(reels[c].cells[r], ".rtok"); t.style.setProperty("--lc", rgb);
       const d = g.depth.get(c + "," + r) ?? 1;
-      later(() => t.classList.add("linked"), RM ? 0 : d * 160 + 120);
+      later(() => { t.classList.add("linked"); if (!was.has(t)) playSymAnim(q(t, ".rsym"), "win"); }, RM ? 0 : d * 160 + 120);
     });
   }
   qa(reelsEl, ".lit.stale").forEach(e => e.remove());
@@ -1609,6 +1613,7 @@ async function harvest(start, spinEvents, end) {
     await Promise.all(g.cells.map(([c, r], i) => sleep(i * 40).then(() => {
       // the rune counts up in whole times the bet (3 -> 6 shows 4 and 5), what it pays stays in money for the collect
       K[c][r].paid = paidOf(K[c][r].v, g);
+      playSymAnim(q(reels[c].cells[r], ".rsym"), "win"); // the rune blazes up as its value climbs
       const t = q(reels[c].cells[r], ".rtok .rv"), from = K[c][r].v, to = Math.round(K[c][r].paid / bet), t0 = performance.now();
       return new Promise(res => (function step(tt) { const k = Math.min(1, Math.max(0, (tt - t0) / (500 / pace()))); setRv(t, fmtR(k < 1 ? Math.round(from + (to - from) * k) : to)); if (k < 1) requestAnimationFrame(step); else res(); })(t0));
     })));
@@ -1907,7 +1912,7 @@ const buyBtn = document.getElementById("buyBtn"), buyDlg = document.getElementBy
 function buyArt(b) {
   const art = div("ic-art"), place = (s2, left, top, width, rot, z) => { Object.assign(s2.style, { left: left + "%", top: top + "%", width: width + "%", rotate: rot + "deg", zIndex: z }); art.appendChild(s2); };
   if (b.vs) { art.style.setProperty("--c", "120 220 255"); place(makeSym("blue"), 22, 46, 40, 0, 1); place(makeSym("witch"), 78, 46, 40, 0, 1); place(makeSym("vs"), 50, 44, 52, 0, 2); return art; }
-  art.style.setProperty("--c", "255 79 210");
+  art.style.setProperty("--c", SYM.fs.rgb);
   for (let i = 0; i < b.fs; i++) {
     const k = b.fs === 1 ? 0 : i / (b.fs - 1) - .5, mid = Math.abs(k) < .01; // -0.5 .. 0.5
     place(makeSym("fs"), 50 + k * 62, 52 + Math.abs(k) * 8, mid ? 44 : 36, k * 30, 10 - Math.round(Math.abs(k) * 10));
