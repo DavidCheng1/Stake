@@ -10,6 +10,7 @@
 <div class="wrap">
   <div class="game" id="game">
     <div class="bg"></div>
+    <video class="bgv" id="bgv" muted loop playsinline aria-hidden="true"></video>
     <div class="trails" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="stars" aria-hidden="true"></div>
 
@@ -19,40 +20,49 @@
       <button class="buy" data-buy="chase"><img src="assets/sym/scatter.webp" alt=""><span><b>The Chase</b><small>10 free spins</small><em id="costChase"></em></span></button>
       <button class="buy super" data-buy="super"><img src="assets/sym/wild.webp" alt=""><span><b>Super Chase</b><small>every car ×3 or more</small><em id="costSuper"></em></span></button>
     </div>
+    <div class="fspanel" id="fspanel">
+      <h3 id="fsTitle">The Chase</h3>
+      <div class="fsLeft"><span id="fsLeft">10</span><small>spins left</small></div>
+      <div class="fsWin"><small>chase win</small><span id="fsWin">0.00</span></div>
+    </div>
+
+    <div class="boss" id="boss" aria-hidden="true"><img src="assets/boss.webp" alt=""><video id="bossIdle" muted loop playsinline></video><video id="bossLaugh" muted playsinline></video></div>
 
     <div class="board" id="board">
       <div class="glass"></div>
       <div class="cells" id="cells"></div>
       <div class="cars" id="cars"></div>
       <img class="frame" src="assets/grid.webp" alt="">
+      <img class="frame glow" src="assets/grid.webp" alt="" aria-hidden="true">
+      <div class="runner" aria-hidden="true"></div>
       <div class="floats" id="floats"></div>
     </div>
 
-    <div class="side" id="side">
-      <div class="info base">
-        <h3>Getaway Car</h3>
-        <p>The car is <b>wild</b> and carries <b>×2, ×3 or ×5</b>. Cars in one win multiply.</p>
-        <h3>Drive-By</h3>
-        <p>Now and then a car speeds across a row and leaves wilds behind.</p>
-        <h3>The Chase</h3>
-        <p>3, 4 or 5 <b>sunsets</b>: 10, 12 or 15 free spins. Cars stay and drive one reel left each spin. A car that leaves the board: <b>+1 spin</b>.</p>
-      </div>
-      <div class="info fs">
-        <h3 id="fsTitle">The Chase</h3>
-        <div class="fsLeft"><span id="fsLeft">10</span><small>spins left</small></div>
-        <div class="fsWin"><small>chase win</small><span id="fsWin">0.00</span></div>
-      </div>
-    </div>
-
     <div class="bar">
+      <button class="ibtn" id="infoBtn" aria-label="Game info">i</button>
       <div class="box"><small>Balance</small><span id="bal">0.00</span></div>
       <div class="box bet"><small>Bet</small><button id="betMinus" aria-label="Lower bet">−</button><span id="bet">1.00</span><button id="betPlus" aria-label="Raise bet">+</button></div>
       <button class="spin" id="spin" aria-label="Spin"><svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 0 1 7.4 5H17l3.5 4 3.5-4h-2.5A10 10 0 0 0 2.3 9.5l1.9.6A8 8 0 0 1 12 4Zm0 16a8 8 0 0 1-7.4-5H7l-3.5-4L0 15h2.5a10 10 0 0 0 19.2 0l-1.9-.6A8 8 0 0 1 12 20Z"/></svg></button>
       <div class="box win"><small>Win</small><span id="win">0.00</span></div>
       <button class="turbo" id="turbo" aria-pressed="false">Turbo</button>
+      <button class="ibtn" id="muteBtn" aria-label="Sound on" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z"/></svg></button>
     </div>
     <div class="msg" id="msg">Press Spin</div>
 
+    <div class="dlg" id="info" hidden role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+      <div class="dlg-in">
+        <button class="close" id="infoClose" aria-label="Close">×</button>
+        <h2 id="infoTitle">Night Drive</h2>
+        <div class="rules">
+          <section><h3>Getaway Car</h3><p>The car is <b>wild</b>: it stands in for every symbol but the sunset. It carries <b>×2, ×3 or ×5</b>; cars in one win multiply.</p></section>
+          <section><h3>Drive-By</h3><p>Now and then a car speeds across a row and leaves 2 to 4 wild cars behind.</p></section>
+          <section><h3>The Chase</h3><p><b>3, 4 or 5 sunsets</b> anywhere start 10, 12 or 15 free spins. Every car that lands stays and drives one reel to the left before each spin. A car that drives off the board gives <b>+1 spin</b> (Nitro).</p></section>
+          <section><h3>Ways</h3><p>Wins pay for 3, 4 or 5 matching symbols on neighbouring reels from the left, in any row (3125 ways). Pays below are per way at your bet.</p></section>
+        </div>
+        <div class="paytable" id="paytable"></div>
+        <p class="small">Prototype: placeholder math, demo balance. Maximum win 10,000× the bet.</p>
+      </div>
+    </div>
     <div class="overlay" id="overlay" hidden><div class="ov-in"><h1 id="ovTitle"></h1><p id="ovSub"></p><div class="ov-amt" id="ovAmt"></div></div></div>
     <div class="proto">Prototype: placeholder math, demo balance</div>
   </div>

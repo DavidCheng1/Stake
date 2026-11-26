@@ -8,6 +8,8 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
 
 /* the world: background, light trails streaming along the boulevard, twinkling stars */
 .bg { position: absolute; inset: 0; background: url(assets/bg.webp) center / cover; }
+.bgv { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .8s; }
+.bgv.on { opacity: 1; }
 .trails { position: absolute; left: 0; right: 0; bottom: 0; height: 15%; overflow: hidden; pointer-events: none; mix-blend-mode: screen; }
 .trails i { position: absolute; height: 4px; width: 38%; border-radius: 4px; left: 100%; filter: blur(1px);
   background: linear-gradient(90deg, transparent, rgb(var(--cyan)) 70%, #fff); animation: trail 2.6s linear infinite; }
@@ -76,19 +78,6 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
 .driveby { position: absolute; width: 22%; height: 17%; z-index: 4; pointer-events: none; filter: drop-shadow(0 0 16px rgb(var(--pink))); }
 .driveby img { width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1); }
 
-/* side panel */
-.side { position: absolute; right: 60px; top: 300px; width: 380px; }
-.info { padding: 22px 26px; border-radius: 20px; background: linear-gradient(160deg, rgb(50 14 84 / .9), rgb(16 6 34 / .9)); border: 2px solid rgb(var(--cyan) / .7); box-shadow: 0 0 20px rgb(var(--cyan) / .35); }
-.info h3 { margin: 6px 0 4px; font-size: 26px; text-transform: uppercase; letter-spacing: .05em; color: rgb(var(--cyan)); text-shadow: 0 0 10px rgb(var(--cyan) / .7); }
-.info p { margin: 0 0 12px; font-size: 20px; line-height: 1.35; opacity: .92; }
-.info b { color: #ffd2ec; }
-.info.fs { display: none; text-align: center; border-color: rgb(var(--pink)); box-shadow: 0 0 26px rgb(var(--pink) / .55); }
-.game.chasing .info.base { display: none; } .game.chasing .info.fs { display: block; }
-.fsLeft span { display: block; font: 900 120px/1 var(--ui); color: #fff; text-shadow: 0 0 20px rgb(var(--pink)), 0 0 40px rgb(var(--pink) / .6); }
-.fsLeft small, .fsWin small { font-size: 22px; text-transform: uppercase; letter-spacing: .1em; opacity: .85; }
-.fsWin { margin-top: 18px; } .fsWin span { display: block; font: 800 52px/1.1 var(--ui); color: #fff4c8; }
-.fsLeft span.bump { animation: bump .5s ease-out; } @keyframes bump { 40% { transform: scale(1.35); color: rgb(var(--cyan)); } }
-
 /* bottom bar */
 .bar { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; align-items: center; gap: 26px; z-index: 7; }
 .box { min-width: 230px; padding: 10px 22px; border-radius: 16px; text-align: center; background: rgb(14 6 30 / .82); border: 2px solid rgb(var(--pink) / .7); box-shadow: 0 0 14px rgb(var(--pink) / .35); }
@@ -124,3 +113,59 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
 @keyframes dropIn { 0% { transform: translateY(-260%); opacity: 0; } 8% { opacity: 1; } 70% { transform: translateY(6%) scale(1.05, .92); } 100% { transform: none; } }
 @keyframes dropOut { to { transform: translateY(260%); opacity: 0; } }
 @keyframes flipWild { 0% { transform: scale(1); filter: brightness(1); } 40% { transform: scale(1.3) rotate(-8deg); filter: brightness(3); } 100% { transform: none; filter: brightness(1); } }
+
+/* the free-spin counter takes the buys' place during The Chase */
+.fspanel { position: absolute; left: 60px; top: 380px; width: 380px; display: none; text-align: center; padding: 22px 26px; border-radius: 20px;
+  background: linear-gradient(160deg, rgb(50 14 84 / .92), rgb(16 6 34 / .92)); border: 3px solid rgb(var(--pink)); box-shadow: 0 0 26px rgb(var(--pink) / .55); }
+.game.chasing .buys { display: none; } .game.chasing .fspanel { display: block; }
+.fspanel h3 { margin: 0 0 6px; font-size: 32px; text-transform: uppercase; letter-spacing: .06em; color: rgb(var(--cyan)); text-shadow: 0 0 12px rgb(var(--cyan)); }
+.fsLeft span { display: block; font: 900 130px/1 var(--ui); color: #fff; text-shadow: 0 0 20px rgb(var(--pink)), 0 0 40px rgb(var(--pink) / .6); }
+.fsLeft small, .fsWin small { font-size: 22px; text-transform: uppercase; letter-spacing: .1em; opacity: .85; }
+.fsWin { margin-top: 18px; } .fsWin span { display: block; font: 800 54px/1.1 var(--ui); color: #fff4c8; }
+.fsLeft span.bump { animation: bump .5s ease-out; } @keyframes bump { 40% { transform: scale(1.35); color: rgb(var(--cyan)); } }
+
+/* the main character on the right: his still, his idle loop and his laugh (videos with alpha, once they exist) */
+.boss { position: absolute; left: 1430px; bottom: 0; height: 980px; width: 426px; pointer-events: none; transform-origin: 50% 100%; }
+.boss img, .boss video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: bottom; }
+.boss video { opacity: 0; } .boss video.on { opacity: 1; } .boss.has-vid img { opacity: 0; }
+.boss.cheer { animation: cheer .9s ease-in-out 2; }
+@keyframes cheer { 30% { transform: translateY(-3%) rotate(-1.5deg) scale(1.02); } 60% { transform: translateY(0) rotate(1deg); } }
+
+/* the grid's frame comes alive: a light runs round it while the reels spin, and it pulses through The Chase */
+@property --a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.frame.glow { z-index: 5; mix-blend-mode: screen; filter: blur(6px) brightness(1.6) saturate(1.4); opacity: 0; transition: opacity .3s; }
+.board.spinning .frame.glow { opacity: .75; animation: framePulse .5s ease-in-out infinite alternate; }
+.game.chasing .frame.glow { opacity: .5; animation: framePulse 1.1s ease-in-out infinite alternate; }
+.board.flash .frame.glow { opacity: 1; animation: none; filter: blur(4px) brightness(2.6); }
+@keyframes framePulse { from { opacity: .35; } to { opacity: .9; } }
+.runner { position: absolute; inset: 3.2%; z-index: 6; border-radius: 4%; padding: 1.4%; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: conic-gradient(from var(--a), transparent 0 62%, rgb(var(--cyan)) 74%, #fff 80%, rgb(var(--pink)) 86%, transparent 96%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; filter: blur(2px) drop-shadow(0 0 10px rgb(var(--cyan))); }
+.board.spinning .runner { opacity: 1; animation: run .9s linear infinite; }
+@keyframes run { to { --a: 360deg; } }
+
+/* bar buttons: info and sound */
+.ibtn { width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgb(var(--cyan) / .8); background: rgb(14 6 30 / .85); color: #fff; font: 800 32px/1 Georgia, serif; cursor: pointer; display: grid; place-items: center; box-shadow: 0 0 12px rgb(var(--cyan) / .4); }
+.ibtn svg { width: 34px; height: 34px; fill: #fff; }
+.ibtn[aria-pressed="true"] { opacity: .5; }
+
+/* info dialog */
+.dlg { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; background: rgb(6 2 14 / .78); }
+.dlg[hidden] { display: none; }
+.dlg-in { position: relative; width: 1400px; max-height: 960px; overflow: auto; padding: 36px 48px; border-radius: 24px; background: linear-gradient(160deg, rgb(52 16 88), rgb(16 6 34));
+  border: 3px solid rgb(var(--pink)); box-shadow: 0 0 40px rgb(var(--pink) / .5); }
+.dlg h2 { margin: 0 0 18px; font-size: 56px; text-transform: uppercase; letter-spacing: .06em; color: #fff; text-shadow: 0 0 18px rgb(var(--pink)); }
+.dlg .close { position: absolute; right: 24px; top: 18px; width: 60px; height: 60px; border-radius: 50%; border: 2px solid #fff; background: none; color: #fff; font-size: 40px; line-height: 1; cursor: pointer; }
+.rules { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 40px; }
+.rules h3 { margin: 10px 0 4px; font-size: 28px; text-transform: uppercase; letter-spacing: .05em; color: rgb(var(--cyan)); text-shadow: 0 0 10px rgb(var(--cyan) / .7); }
+.rules p { margin: 0; font-size: 22px; line-height: 1.4; } .rules b { color: #ffd2ec; }
+.paytable { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 26px; }
+.pt { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 14px; background: rgb(0 0 0 / .28); }
+.pt img { width: 96px; height: 96px; }
+.pt div { font-size: 20px; line-height: 1.5; font-variant-numeric: tabular-nums; } .pt b { color: rgb(var(--cyan)); display: inline-block; width: 30px; }
+.dlg .small { margin: 20px 0 0; font-size: 18px; opacity: .7; }
+
+/* filmed symbol animations (sprite sheets on a canvas over the symbol) */
+.sym-anim { position: absolute; pointer-events: none; z-index: 2; }
+.sym.animating > img { visibility: hidden; }
+.cell:has(.sym.animating) { z-index: 3; }

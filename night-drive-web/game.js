@@ -115,6 +115,87 @@ const say = t => { $("msg").textContent = t; };
 function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); game.style.transform = `translate(-50%, -50%) scale(${s})`; }
 addEventListener("resize", fit); fit();
 
+// ---------- Sound: one output (the mute covers everything); the music crossfades between the base and The Chase ----------
+const sound = (() => {
+  let ctx = null, master, musicBus, sfxBus, muted = false, cur = null, curName = null;
+  const buf = {}, SFX = ["click", "spin", "land", "win", "winbig", "wild", "scatter", "driveby", "carmove", "nitro", "chase", "bigwin", "chaseover"];
+  const load = (name, url) => fetch(url).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(d => { buf[name] = d; if (name === curName && !cur) start(name); }).catch(() => {});
+  function init() {
+    if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = muted ? 0 : 1; master.connect(ctx.destination);
+    musicBus = ctx.createGain(); musicBus.gain.value = .3; musicBus.connect(master);
+    sfxBus = ctx.createGain(); sfxBus.gain.value = .75; sfxBus.connect(master);
+    SFX.forEach(n => load(n, `assets/sfx/${n}.mp3`)); ["music-base", "music-chase"].forEach(n => load(n, `assets/${n}.mp3`));
+  }
+  function play(name, vol = 1, rate = 1, delay = 0) {
+    if (!ctx || !buf[name]) return;
+    const s = ctx.createBufferSource(), g = ctx.createGain(); s.buffer = buf[name]; s.playbackRate.value = rate; g.gain.value = vol;
+    s.connect(g).connect(sfxBus); s.start(ctx.currentTime + delay / 1000);
+  }
+  function start(name) {
+    const s = ctx.createBufferSource(), g = ctx.createGain(); s.buffer = buf[name]; s.loop = true; g.gain.value = 0;
+    s.connect(g).connect(musicBus); s.start(); g.gain.linearRampToValueAtTime(1, ctx.currentTime + 1.2); cur = { s, g };
+  }
+  function music(name) {
+    if (!ctx || name === curName) return; curName = name;
+    if (cur) { const old = cur; old.g.gain.cancelScheduledValues(ctx.currentTime); old.g.gain.setValueAtTime(old.g.gain.value, ctx.currentTime); old.g.gain.linearRampToValueAtTime(0, ctx.currentTime + 1); old.s.stop(ctx.currentTime + 1.1); cur = null; }
+    if (buf[name]) start(name);
+  }
+  return { init, play, music, toggle() { muted = !muted; if (master) master.gain.value = muted ? 0 : 1; return muted; } };
+})();
+
+// ---------- Filmed symbol animations (sprite sheets from tools/sprites/symanim.py --game nd): an idle loop now and
+// then, a win when a symbol takes part in a win. A canvas over the symbol plays the sheet from its first frame (the
+// still) and fades back onto the still at the end. ----------
+const symAnim = { meta: {}, img: {} };
+fetch("assets/sym-anim/anim.json").then(r => r.ok ? r.json() : {}).then(m => {
+  symAnim.meta = m;
+  for (const id in m) for (const kind in m[id]) { const im = new Image(); im.src = `assets/sym-anim/${id}-${kind}.webp`; im.decode().then(() => { symAnim.img[id + "-" + kind] = im; }, () => {}); }
+}).catch(() => {});
+function playSymAnim(el, kind) {
+  const id = el?.dataset.id, m = symAnim.meta[id]?.[kind], im = symAnim.img[id + "-" + kind];
+  if (!m || !im) return false;
+  el.querySelector(".sym-anim")?.remove();
+  const cv = document.createElement("canvas"); cv.className = "sym-anim"; cv.width = cv.height = m.px;
+  const p = m.pad * 100; cv.style.left = cv.style.top = `${-p}%`; cv.style.width = cv.style.height = `${100 + 2 * p}%`;
+  el.appendChild(cv); el.classList.add("animating", "anim-" + kind);
+  const g = cv.getContext("2d"), step = m.px + 2, t0 = performance.now(), rate = kind === "win" ? pace() * 1.3 : 1;
+  const len = m.n / m.fps * 1000, hold = kind === "win" ? 500 : 0; let last = -1;
+  const done = () => { if (el.querySelector(".sym-anim") === cv) el.classList.remove("animating", "anim-" + kind); };
+  const tick = now => {
+    if (!cv.isConnected) return done();
+    const t = (now - t0) * rate, f = Math.min(m.n - 1, Math.floor(t / 1000 * m.fps));
+    if (f !== last) { last = f; g.clearRect(0, 0, m.px, m.px); g.drawImage(im, (f % m.cols) * step + 1, Math.floor(f / m.cols) * step + 1, m.px, m.px, 0, 0, m.px, m.px); }
+    if (t < len + hold) { requestAnimationFrame(tick); return; }
+    done(); cv.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220 }).finished.then(() => cv.remove());
+  };
+  requestAnimationFrame(tick);
+  return true;
+}
+setInterval(() => {
+  if (document.hidden || busy || document.querySelectorAll(".anim-idle").length >= 2) return;
+  const all = [...document.querySelectorAll(".cell > .sym:not(.animating), .car > .sym:not(.animating)")].filter(e => symAnim.img[e.dataset.id + "-idle"]);
+  if (all.length) playSymAnim(all[rnd(all.length)], "idle");
+}, 650);
+
+// ---------- The main character: his idle loop and his laugh are videos with alpha (assets/boss-idle.webm,
+// boss-laugh.webm); until they exist he is the still, and cheers with a little bounce ----------
+const boss = $("boss"), bossIdle = $("bossIdle"), bossLaugh = $("bossLaugh");
+bossIdle.src = "assets/boss-idle.webm"; bossLaugh.src = "assets/boss-laugh.webm";
+bossIdle.addEventListener("canplay", () => { boss.classList.add("has-vid"); bossIdle.classList.add("on"); bossIdle.play().catch(() => {}); }, { once: true });
+bossIdle.addEventListener("error", () => {}); bossLaugh.addEventListener("error", () => {});
+function cheer() {
+  if (bossLaugh.readyState >= 2 && boss.classList.contains("has-vid")) {
+    bossLaugh.currentTime = 0; bossLaugh.classList.add("on"); bossIdle.classList.remove("on"); bossLaugh.play().catch(() => {});
+    bossLaugh.onended = () => { bossLaugh.classList.remove("on"); bossIdle.classList.add("on"); };
+  } else { boss.classList.remove("cheer"); void boss.offsetWidth; boss.classList.add("cheer"); }
+}
+// the living background: a seamless loop (assets/bg.webm) over the still, once it exists
+const bgv = $("bgv"); bgv.src = "assets/bg.webm";
+bgv.addEventListener("canplay", () => { bgv.play().then(() => bgv.classList.add("on")).catch(() => {}); }, { once: true });
+bgv.addEventListener("error", () => {});
+
 const cells = [];
 for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) { const d = document.createElement("div"); d.className = "cell"; d.style.gridColumn = c + 1; d.style.gridRow = r + 1; cellsEl.appendChild(d); (cells[c] ||= [])[r] = d; }
 function symEl(cell) {
@@ -143,13 +224,17 @@ async function dropOut(skip = () => false) {
   await Promise.all(anims);
 }
 async function dropIn(grid, skip = () => false, under = {}) {
-  const anims = [];
+  const anims = []; let scat = 0;
   for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
     if (skip(c, r)) continue;
     const cell = under[c + "," + r] || grid[c][r], el = symEl(cell); cells[c][r].replaceChildren(el);
+    const delay = (c * 80 + (4 - r) * 26) / pace();
     anims.push(el.animate([{ transform: "translateY(-260%)", opacity: 0 }, { opacity: 1, offset: .08 }, { transform: "translateY(6%) scale(1.05,.92)", offset: .7 }, { transform: "none", opacity: 1 }],
-      { duration: 430 / pace(), delay: (c * 80 + (4 - r) * 26) / pace(), easing: "cubic-bezier(.4,0,.6,1)", fill: "backwards" }).finished);
+      { duration: 430 / pace(), delay, easing: "cubic-bezier(.4,0,.6,1)", fill: "backwards" }).finished);
+    if (cell.id === "wild") sound.play("wild", .7, 1, delay + 300 / pace());
+    if (cell.id === "scatter") sound.play("scatter", .9, 1 + .12 * scat++, delay + 300 / pace());
   }
+  for (let c = 0; c < COLS; c++) sound.play("land", .45, .94 + c * .03, (c * 80 + 300) / pace());
   await Promise.all(anims);
   if (grid.flat().some(x => x.id === "scatter")) grid.flat().forEach((x, i) => {}); // scatters glow by CSS
 }
@@ -162,14 +247,17 @@ async function showWins(grid, ev, carEls) {
     const k = c + "," + r, el = cells[c][r];
     if (lit.has(k)) { el.classList.add("win"); el.style.setProperty("--wc", lit.get(k)); } else el.classList.add("dim");
   }
-  carEls?.forEach(e => { const car = e._car; if (lit.has(car.c + "," + car.r)) e.animate([{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }], { duration: 700 / pace(), iterations: 2 }); });
+  for (const k of lit.keys()) { const [c, r] = k.split(",").map(Number); const s = cells[c][r].querySelector(".sym"); if (s) playSymAnim(s, "win"); }
+  board.classList.add("flash"); setTimeout(() => board.classList.remove("flash"), 450 / pace());
+  sound.play(ev.total >= 5 ? "winbig" : "win", .8);
+  carEls?.forEach(e => { const car = e._car; const s = e.querySelector(".sym"); if (s && lit.has(car.c + "," + car.r)) playSymAnim(s, "win"); if (lit.has(car.c + "," + car.r)) e.animate([{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }], { duration: 700 / pace(), iterations: 2 }); });
   floatText(50, 50, money(ev.total * bet()));
   await sleep(1300);
   cells.flat().forEach(el => el.classList.remove("win", "dim"));
 }
 // Drive-By: a car speeds across the row from the right and the cells it passes turn into cars
 async function driveBy(d) {
-  say("Drive-By!");
+  say("Drive-By!"); sound.play("driveby", .9);
   const car = document.createElement("div"); car.className = "driveby"; const img = new Image(); img.src = "assets/sym/wild.webp"; car.appendChild(img);
   const [, y] = cellPct(0, d.r); car.style.top = `calc(${y}% - 8.5%)`; board.appendChild(car);
   const dur = 1100 / pace();
@@ -183,6 +271,7 @@ async function driveBy(d) {
 let lastGrid = null;
 async function bigWin(x, amount) {
   const t = x >= 100 ? "Epic Win" : x >= 50 ? "Mega Win" : "Big Win";
+  sound.play("bigwin", .9); cheer();
   const ov = $("overlay"); $("ovTitle").textContent = t; $("ovSub").textContent = ""; ov.hidden = false;
   let skip = false; const go = () => { skip = true; }; ov.addEventListener("pointerdown", go, { once: true });
   await countTo($("ovAmt"), 0, amount, skip ? 1 : 2200); await sleep(skip ? 0 : 900); ov.hidden = true; ov.removeEventListener("pointerdown", go);
@@ -197,10 +286,13 @@ async function banner(title, sub, ms = 1900) {
 async function spin() {
   if (busy || balance < bet()) return;
   setBusy(true); balance -= bet(); updateHud(); $("win").textContent = money(0); say("Good luck!");
+  sound.init(); sound.music("music-base"); sound.play("spin", .6);
   const res = baseSpin(); lastGrid = res.grid;
+  board.classList.add("spinning");
   await dropOut();
   const under = {}; if (res.driveby) for (const c of res.driveby.cols) under[c + "," + res.driveby.r] = res.driveby.under[c];
   await dropIn(res.grid, () => false, under);
+  board.classList.remove("spinning");
   if (res.driveby) await driveBy(res.driveby);
   let won = Math.min(res.ev.total, MAX_WIN);
   if (won > 0) { say(res.ev.wins.map(w => `${w.len}× ${w.id}`).join(" · ")); await showWins(res.grid, res.ev); }
@@ -210,7 +302,7 @@ async function spin() {
 async function buy(kind) {
   const cost = PRICE[kind] * bet();
   if (busy || balance < cost) return;
-  setBusy(true); balance -= cost; updateHud(); $("win").textContent = money(0);
+  sound.init(); setBusy(true); balance -= cost; updateHud(); $("win").textContent = money(0);
   const won = await chase(10, kind === "super", MAX_WIN);
   await finish(won);
 }
@@ -223,6 +315,7 @@ async function finish(won) {
 }
 // The Chase: cars stay and drive one reel left before every spin; a car leaving the board gives one more spin
 async function chase(spins, superMode, room) {
+  sound.play("chase", .9); sound.music("music-chase"); cheer();
   await banner(superMode ? "Super Chase" : "The Chase", `${spins} free spins`);
   game.classList.add("chasing"); $("fsTitle").textContent = superMode ? "Super Chase" : "The Chase";
   const st = { cars: [], left: spins, super: superMode }; let total = 0; const carEls = new Map();
@@ -230,22 +323,24 @@ async function chase(spins, superMode, room) {
   await dropOut();
   while (st.left > 0 && total < room) {
     if (st.cars.length) {
-      const exits = chaseMove(st);
+      const exits = chaseMove(st); sound.play("carmove", .6);
       for (const [id, el] of carEls) {
         const car = el._car; el.classList.add("moving"); el.style.left = (car.c * PITCH) + "%";
         if (car.c < 0) { el.classList.add("gone"); carEls.delete(id); setTimeout(() => el.remove(), 700); }
       }
       await sleep(600);
       carEls.forEach(el => el.classList.remove("moving"));
-      for (const car of exits) { const [x, y] = cellPct(0, car.r); floatText(x, y, "Nitro +1 spin", "nitro"); }
+      for (const car of exits) { const [x, y] = cellPct(0, car.r); floatText(x, y, "Nitro +1 spin", "nitro"); sound.play("nitro", .8); }
       if (exits.length) { $("fsLeft").textContent = st.left; const s = $("fsLeft"); s.classList.remove("bump"); void s.offsetWidth; s.classList.add("bump"); await sleep(500); }
     }
     const occupied = new Set(st.cars.map(car => car.c + "," + car.r));
     const skip = (c, r) => occupied.has(c + "," + r);
+    board.classList.add("spinning"); sound.play("spin", .45);
     await dropOut(skip);
     for (const k of occupied) { const [c, r] = k.split(",").map(Number); cells[c][r].replaceChildren(); }
     const step = chaseSpin(st); $("fsLeft").textContent = st.left;
     await dropIn(step.grid, skip);
+    board.classList.remove("spinning");
     // a car that lands leaves its cell and becomes a driving car
     for (const car of step.landed) {
       cells[car.c][car.r].replaceChildren();
@@ -260,14 +355,26 @@ async function chase(spins, superMode, room) {
   }
   await sleep(400);
   carEls.forEach(el => el.remove()); carsEl.replaceChildren();
+  sound.play("chaseover", .8);
   await banner("Chase over", `${money(total * bet())}`, 2200);
+  sound.music("music-base");
   game.classList.remove("chasing");
   return total;
 }
 
+function paytable() {
+  $("paytable").replaceChildren(...PAYING.map(id => {
+    const d = document.createElement("div"); d.className = "pt";
+    d.innerHTML = `<img src="assets/sym/${id}.webp" alt=""><div>${[5, 4, 3].map(n => `<b>${n}</b> ${money(PAY[id][n - 3] * K * bet())}`).join("<br>")}</div>`; return d;
+  }));
+}
+$("infoBtn").addEventListener("click", () => { sound.init(); sound.play("click", .5); paytable(); $("info").hidden = false; });
+$("infoClose").addEventListener("click", () => { sound.play("click", .5); $("info").hidden = true; });
+$("info").addEventListener("click", e => { if (e.target === $("info")) $("info").hidden = true; });
+$("muteBtn").addEventListener("click", () => { sound.init(); const m = sound.toggle(); $("muteBtn").setAttribute("aria-pressed", m); $("muteBtn").setAttribute("aria-label", m ? "Sound off" : "Sound on"); });
 $("spin").addEventListener("click", spin);
 addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); spin(); } });
-$("betMinus").addEventListener("click", () => { if (!busy && betIdx > 0) { betIdx--; updateHud(); } });
-$("betPlus").addEventListener("click", () => { if (!busy && betIdx < BETS.length - 1) { betIdx++; updateHud(); } });
-$("turbo").addEventListener("click", () => { turbo = !turbo; $("turbo").setAttribute("aria-pressed", turbo); });
+$("betMinus").addEventListener("click", () => { if (!busy && betIdx > 0) { betIdx--; updateHud(); sound.play("click", .5); } });
+$("betPlus").addEventListener("click", () => { if (!busy && betIdx < BETS.length - 1) { betIdx++; updateHud(); sound.play("click", .5); } });
+$("turbo").addEventListener("click", () => { turbo = !turbo; $("turbo").setAttribute("aria-pressed", turbo); sound.init(); sound.play("click", .5); });
 document.querySelectorAll(".buy").forEach(b => b.addEventListener("click", () => buy(b.dataset.buy)));

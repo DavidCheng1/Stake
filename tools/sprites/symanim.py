@@ -19,6 +19,9 @@ build  keys the backdrop out of every frame (the colour is unmixed, so soft glow
 The win plays the first WIN_S seconds of its clip, every second frame, at 24 fps (so twice as fast); the idle plays
 its whole clip at IDLE_FPS from every 24/IDLE_FPS-th frame.
 
+--game nd works on Night Drive instead: its spec is symanim-nd.json, its stills night-drive/symbols/<id>.webp (high
+resolution), its sheets go to night-drive-web/assets/sym-anim/ and its takes to imagegen-out/nd-anim-<id>...
+
 Needs numpy, Pillow and OpenCV (math-sdk's environment) and, for gen, the GEMINI_API_KEY like gen.py.
 """
 
@@ -32,9 +35,23 @@ import numpy as np
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SPEC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "symanim.json")
-WEB = os.path.join(ROOT, "ghost-duels-web")
-OUT = os.path.join(WEB, "assets", "sym-anim")
+HERE = os.path.dirname(os.path.abspath(__file__))
+# the game the tool works on (--game): its spec, where its still symbols are, where the sheets go, the take folders
+GAMES = {
+    "gd": {"spec": "symanim.json", "still": os.path.join(ROOT, "ghost-duels-web", "assets", "{}.webp"),
+           "out": os.path.join(ROOT, "ghost-duels-web", "assets", "sym-anim"), "prefix": "anim"},
+    "nd": {"spec": "symanim-nd.json", "still": os.path.join(ROOT, "night-drive", "symbols", "{}.webp"),
+           "out": os.path.join(ROOT, "night-drive-web", "assets", "sym-anim"), "prefix": "nd-anim"},
+}
+SPEC = os.path.join(HERE, GAMES["gd"]["spec"])
+STILL = GAMES["gd"]["still"]
+OUT = GAMES["gd"]["out"]
+PREFIX = GAMES["gd"]["prefix"]
+
+
+def use_game(g):
+    global SPEC, STILL, OUT, PREFIX
+    SPEC, STILL, OUT, PREFIX = os.path.join(HERE, GAMES[g]["spec"]), GAMES[g]["still"], GAMES[g]["out"], GAMES[g]["prefix"]
 TAKES = os.path.join(ROOT, "imagegen-out")
 PY = sys.executable
 FW, FH, SYM_PX = 720, 1280, 560  # the clip frame and the symbol's size in it
@@ -54,12 +71,12 @@ def start(ids):
     S = spec()
     for i in ids:
         bg = BGS[S[i]["bg"]]
-        sym = Image.open(os.path.join(WEB, "assets", f"{i}.webp")).convert("RGBA")
+        sym = Image.open(STILL.format(i)).convert("RGBA")
         k = SYM_PX / max(sym.size)
         sym = sym.resize((round(sym.width * k), round(sym.height * k)), Image.LANCZOS)
         frame = Image.new("RGBA", (FW, FH), bg + (255,))
         frame.alpha_composite(sym, ((FW - sym.width) // 2, (FH - sym.height) // 2))
-        d = os.path.join(TAKES, f"anim-{i}")
+        d = os.path.join(TAKES, f"{PREFIX}-{i}")
         os.makedirs(d, exist_ok=True)
         frame.convert("RGB").save(os.path.join(d, "start.png"))
         print(os.path.join(d, "start.png"))
@@ -77,13 +94,13 @@ def prompt(i, kind):
 
 def gen(ids, kinds, yes):
     for i in ids:
-        st = os.path.join(TAKES, f"anim-{i}", "start.png")
+        st = os.path.join(TAKES, f"{PREFIX}-{i}", "start.png")
         if not os.path.exists(st):
             start([i])
         for kind in kinds:
-            cmd = [PY, os.path.join(ROOT, "tools", "imagegen", "gen.py"), "video", f"anim-{i}-{kind}", prompt(i, kind),
+            cmd = [PY, os.path.join(ROOT, "tools", "imagegen", "gen.py"), "video", f"{PREFIX}-{i}-{kind}", prompt(i, kind),
                    "--ref", st, "--duration", "3", "--task", "image_to_video"] + (["--yes"] if yes else [])
-            d = os.path.join(TAKES, f"anim-{i}-{kind}")
+            d = os.path.join(TAKES, f"{PREFIX}-{i}-{kind}")
             count = lambda: len([f for f in os.listdir(d) if f.endswith(".mp4")]) if os.path.isdir(d) else 0
             before = count()
             # the video model answers RESOURCE_EXHAUSTED when asked too often: a pause after every clip, and a
@@ -156,7 +173,7 @@ def build(ids, picks):
     for i in ids:
         sheets = {}
         for kind in ("idle", "win"):
-            d = os.path.join(TAKES, f"anim-{i}-{kind}")
+            d = os.path.join(TAKES, f"{PREFIX}-{i}-{kind}")
             if not os.path.isdir(d) or not any(f.endswith(".mp4") for f in os.listdir(d)):
                 print(f"{i} {kind}: no clip yet")
                 continue
@@ -221,7 +238,7 @@ SETTLE_OUT = {"idle": 6, "win": 0}  # frames that blend from the clip back into 
 def still_frame(i, fpx, pad):
     """The still symbol as the game shows it, on a sheet frame: its box in the middle, the margin round it."""
     box = round(fpx / (1 + 2 * pad))
-    sym = Image.open(os.path.join(WEB, "assets", f"{i}.webp")).convert("RGBA").resize((box, box), Image.LANCZOS)
+    sym = Image.open(STILL.format(i)).convert("RGBA").resize((box, box), Image.LANCZOS)
     c = Image.new("RGBA", (fpx, fpx), (0, 0, 0, 0))
     c.alpha_composite(sym, ((fpx - box) // 2, (fpx - box) // 2))
     return c
@@ -361,7 +378,7 @@ def preview(i, sheets):
     for r in rows:
         out.paste(r, (0, y))
         y += r.height
-    p = os.path.join(TAKES, f"anim-{i}", "preview.png")
+    p = os.path.join(TAKES, f"{PREFIX}-{i}", "preview.png")
     os.makedirs(os.path.dirname(p), exist_ok=True)
     out.save(p)
     print(p)
@@ -369,6 +386,10 @@ def preview(i, sheets):
 
 def main():
     a = sys.argv[1:]
+    if "--game" in a:
+        i = a.index("--game")
+        use_game(a[i + 1])
+        del a[i:i + 2]
     if not a or a[0] not in ("start", "gen", "build", "settle"):
         sys.exit(__doc__)
     picks, kinds, yes = {}, ["idle", "win"], "--yes" in a

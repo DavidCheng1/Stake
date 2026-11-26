@@ -1,0 +1,89 @@
+{
+ "_about": "Symbol animations for Night Drive (tools/sprites/symanim.py --game nd): what each symbol is, its backdrop, its idle loop and its win. Style: 1980s cartoon cel, flat two-tone shading, thick outlines.",
+ "symbols": {
+  "driver": {
+   "bg": "green",
+   "what": "the cartoon bust of a confident woman getaway driver with big curly hair and pink aviator sunglasses",
+   "idle": "Her curly hair bounces softly, the sunset glints across her sunglasses, she gives a small cool smile.",
+   "win": "She pushes her sunglasses down with one finger and winks, her hair whips in a gust of wind, pink neon sparks fly around her."
+  },
+  "captain": {
+   "bg": "green",
+   "what": "the cartoon bust of a grinning boat captain with a white cap, a grey beard and a gold chain",
+   "idle": "He chuckles, his shoulders bounce, the gold chain glints.",
+   "win": "He laughs out loud and tips his captain's cap, sea spray and cyan sparkles burst around him."
+  },
+  "owner": {
+   "bg": "green",
+   "what": "the cartoon bust of a suave nightclub owner with slicked-back hair in a pastel pink blazer",
+   "idle": "He raises one eyebrow and smirks, adjusting his blazer collar.",
+   "win": "He snaps his fingers and grins, a shower of pink neon confetti and light flashes around him."
+  },
+  "dj": {
+   "bg": "green",
+   "what": "the cartoon bust of a cool DJ with a glowing cyan visor and big headphones around his neck",
+   "idle": "He nods to a beat, the cyan visor pulses with light.",
+   "win": "He puts on his headphones and throws his head back laughing, pulsing cyan and pink sound waves ring out around him."
+  },
+  "boat": {
+   "bg": "green",
+   "what": "a cartoon 1980s offshore speedboat with pink and cyan stripes cutting through a splash of water",
+   "idle": "The boat bobs on the water, little splashes spray from its bow.",
+   "win": "The boat jumps forward, a big wave of white spray bursts up around it, cyan sparkles in the spray."
+  },
+  "tape": {
+   "bg": "green",
+   "what": "a cartoon retro cassette tape with a glowing pink label stripe",
+   "idle": "The tape reels turn slowly, the pink label glows softly.",
+   "win": "The reels spin fast, the cassette bounces, glowing pink and cyan music notes and sound waves burst out of it."
+  },
+  "flamingo": {
+   "bg": "green",
+   "what": "a stylish cartoon pink flamingo with little sunglasses, standing on one leg",
+   "idle": "The flamingo shifts on its leg and preens a feather.",
+   "win": "The flamingo strikes a dance pose, flaps its wings, pink feathers and sparkles swirl around it."
+  },
+  "briefcase": {
+   "bg": "green",
+   "what": "a cartoon shiny metal briefcase with cyan light glowing from its seams",
+   "idle": "The cyan glow at its seams pulses softly.",
+   "win": "The briefcase pops open a little and a burst of bright cyan light and sparkles shoots out."
+  },
+  "shades": {
+   "bg": "green",
+   "what": "a pair of cartoon pink 1980s sunglasses with a sunset reflected in the lenses",
+   "idle": "A glint slides across the lenses.",
+   "win": "The sunglasses bounce up, a bright star glint flashes across both lenses, pink sparks pop around them."
+  },
+  "skate": {
+   "bg": "green",
+   "what": "a single cartoon hot-pink roller skate with cyan wheels",
+   "idle": "The wheels spin slowly, the skate rocks a little.",
+   "win": "The skate does a little jump and spin, its wheels blur, a pink and cyan motion trail swooshes around it."
+  },
+  "palm": {
+   "bg": "green",
+   "what": "a neon sign of a palm tree made of glowing pink and cyan tubes",
+   "idle": "The neon tubes hum and flicker softly, the fronds sway a little.",
+   "win": "The neon sign flickers fully on, blazes bright pink and cyan, a glow pulses out around it."
+  },
+  "heart": {
+   "bg": "green",
+   "what": "a neon sign of a heart made of a glowing hot-pink tube with a cyan inner line",
+   "idle": "The neon heart beats softly, its glow pulsing.",
+   "win": "The neon heart beats strongly twice, flaring bright pink, little hearts and sparks pop out around it."
+  },
+  "wild": {
+   "bg": "green",
+   "what": "an original cartoon retro-futuristic pink sports car with a glass bubble canopy, a glowing light bar at the front and tail fins, with pink and cyan light trails",
+   "idle": "The car's light bar pulses, the light trails behind it flow and shimmer, the car rocks slightly as if idling.",
+   "win": "The car revs and lurches forward, its light bar flashes bright, the pink and cyan light trails stream out long and fast, sparks fly."
+  },
+  "scatter": {
+   "bg": "green",
+   "what": "a round emblem of a striped synthwave sun setting over the sea between two palms, in a chrome ring",
+   "idle": "The sun's stripes shimmer, the sea glitters, the chrome ring glints.",
+   "win": "The sun blazes up bright orange and pink, rays burst out from the emblem, the chrome ring flashes."
+  }
+ }
+}
