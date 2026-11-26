@@ -63,14 +63,20 @@ A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.se
 - every bonus is confirmed with its cost first, and ends on a summary that waits for Continue (it goes on by
   itself after 3.5 s in autoplay);
 - sound, the filmed symbol animations, the animated background, the main character's videos.
-- the background is `video-src/bg-720p24.webm` re-rendered at 1920x1080, 48 fps (motion interpolated), sharpened and
-  more saturated (ffmpeg minterpolate, unsharp, eq); the symbol player blends each frame into the next, so the sheets
-  (idle 12 fps, win 24 fps) move smoothly at the screen's rate;
+- the background: filmed again at 1080p (`prompts/nd-bgloop2.txt`): nothing travels across the picture (clouds stay,
+  palms sway round their resting pose), closed into a seamless loop with tools/video/loop.py (6.6 s), interpolated to
+  48 fps; `assets/bg.webp` is its first frame. The symbol player blends each frame into the next, so the sheets (idle
+  12 fps, win 24 fps) move smoothly at the screen's rate;
+- every win pays at least 0.10× the bet (`MIN_WIN`), so no win shows as 0.00; pay scale K 0.038, The Chase 76×,
+  Super Chase 235×;
+- fonts (bundled, SIL OFL, `assets/fonts`): Audiowide for labels, buttons and numbers, Mr Dafoe (script) for accents;
 - the win screen (Big 20×, Mega 50×, Epic 100×, Max Win at the cap): painted titles in `assets/win/` (prompts
   `prompts/nd-win-*.txt`), a striped synthwave sun, a neon floor, sparks; the count climbs through the tiers, a tap
   skips to the end, a second tap closes it;
-- the start of The Chase: the getaway car tears past in front of us on a neon highway (full screen, built in the page;
-  a filmed clip can replace it once AI Studio has credit again), then the way in inside the grid: the symbols are pulled into the vanishing point, a neon warp tunnel, the
+- the start of The Chase: a filmed clip (`assets/fsi.webm`, Gemini Omni from `prompts/nd-fsintro.txt` take 02 and
+  `prompts/nd-fsintro-video2.txt` take 04, with the car's own picture as a second reference so it stays our cartoon car):
+  the getaway car comes at us down a neon boulevard and roars past; the built scene in the page is the fallback;
+  then the way in inside the grid: the symbols are pulled into the vanishing point, a neon warp tunnel, the
   car blasts out, a flash, the title in the grid; during The Chase a neon road runs under the reels.
 
 The math is a **placeholder in the browser**. `simulate(n, buys, boost)` in the console gives about 96 %: free spins

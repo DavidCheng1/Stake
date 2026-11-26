@@ -1,0 +1,10 @@
+Animate this picture as a calm looping game background: static camera, 8 seconds, exactly the same picture, layout,
+colours and hand-painted 1980s cartoon cel style throughout, every element stays in its place. Nothing travels across
+the picture and nothing leaves its place, so the end matches the start:
+The palm trees: their fronds sway gently back and forth around their resting pose in a soft sea breeze and always
+come back to it, the trunks stay still.
+The clouds: they stay exactly where they are and only glow and shimmer softly, they do not drift.
+The buildings: the neon outlines and signs flicker and pulse, some neon shapes light up one after another like
+chasing lights, lit windows switch on and off now and then.
+The sea: small waves shimmer in place, the sun's reflection sparkles on the water. The stars twinkle.
+No new objects, no cars, no people, no text. It ends exactly as it starts, so it can loop seamlessly.

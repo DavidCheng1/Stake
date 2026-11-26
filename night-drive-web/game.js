@@ -10,8 +10,8 @@ const PAY = {
   boat: [.3, .8, 2], tape: [.3, .7, 1.8], flamingo: [.25, .6, 1.5], briefcase: [.25, .6, 1.4],
   shades: [.12, .3, .7], skate: [.12, .3, .7], palm: [.1, .25, .6], heart: [.1, .25, .6],
 };
-const K = 0.0407; // pay scale: the base game with its free spins returns about 96 % (simulate(), 2026-11-26: one sunset per reel at most; free spins about every 176 spins, 45 % of the RTP)
-const PRICE = { chase: 81, super: 250 }; // buy prices × bet, from simulate(): average bonus ÷ 0.96, rounded
+let K = 0.038; // pay scale: about 96 % with the 0.10× minimum win (simulate(), 2026-11-26: base 53 %, free spins about every 176 spins, 43 %)
+const PRICE = { chase: 76, super: 235 }; // buy prices × bet, from simulate(): average bonus ÷ 0.96, rounded
 const PAYING = Object.keys(PAY);
 const WEIGHT = { driver: 3, captain: 3, owner: 3, dj: 3, boat: 5, tape: 5, flamingo: 5, briefcase: 5, shades: 9, skate: 9, palm: 9, heart: 9 };
 const W_WILD = 1.6, W_WILD_FS = 2.2, W_SCATTER = 1.27;
@@ -19,6 +19,7 @@ const W_WILD = 1.6, W_WILD_FS = 2.2, W_SCATTER = 1.27;
 const BOOST = { w: 1.97, cost: 2 }; // simulate(), 2026-11-26: free spins about every 55 spins instead of 176 (×3.2), ~96 % at 2× the bet
 const MULTS = [[2, 6], [3, 3], [5, 1]], MULTS_SUPER = [[3, 5], [4, 3], [5, 2]];
 const FS_FOR = { 3: 10, 4: 12, 5: 15 };
+const MIN_WIN = 0.1; // the smallest win, × the bet: no win shows as 0.00 (at the 0.20 minimum bet it is 0.02)
 const DRIVEBY = 0.03;
 const TIER = id => ["driver", "captain", "owner", "dj"].includes(id) ? "255 46 150" : ["boat", "tape", "flamingo", "briefcase"].includes(id) ? "0 229 255" : "255 154 60";
 
@@ -50,7 +51,7 @@ function evaluate(grid) {
       pv *= v; pw *= w; len++;
     }
     if (len < 3 || pv - pw <= 0) continue;
-    const pay = PAY[s][len - 3] * K * (pv - pw);
+    const pay = Math.max(MIN_WIN, PAY[s][len - 3] * K * (pv - pw)); // every win pays at least MIN_WIN × the bet
     total += pay; wins.push({ id: s, len, ways: pv - pw, pay });
   }
   return { total, wins };
@@ -117,6 +118,8 @@ let boostOn = false, autoOn = false, autoLeft = 0, autoChoice = 0; // Chance ×3
 const BETS = [0.2, 0.4, 1, 2, 5, 10, 20, 50, 100];
 const bet = () => BETS[betIdx];
 const money = v => v.toFixed(2);
+// values under a cent keep two significant digits (a per-way value in the rules), never 0.00
+const small = v => v >= .01 || v === 0 ? money(v) : v.toPrecision(2);
 const pace = () => turbo ? 2.2 : 1;
 const sleep = ms => new Promise(r => setTimeout(r, ms / pace()));
 const say = t => { $("msg").textContent = t; };
@@ -485,7 +488,22 @@ function warp(ms) {
 }
 // the getaway car tears past in front of us on a neon highway: it races in from the right, holds the middle for a
 // heartbeat, then floors it out to the left; the picture shakes as it passes, a white flash cuts back to the grid
+const fsiv = $("fsiv"); fsiv.src = "assets/fsi.webm"; fsiv.load(); fsiv.addEventListener("error", () => {});
+// the filmed clip: the car comes at us down the neon boulevard and roars past on the left (assets/fsi.webm, Gemini
+// Omni); it is cut with a flash once the car has gone. Without the clip the built scene below plays instead.
 async function carPass() {
+  const f = $("fsi");
+  if (fsiv.readyState < 3 || fsiv.error) return builtPass();
+  f.hidden = false; f.classList.add("film"); fsiv.currentTime = 0; fsiv.playbackRate = turbo ? 1.5 : 1;
+  f.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 / pace(), fill: "forwards" });
+  try { await fsiv.play(); } catch { f.classList.remove("film"); return builtPass(); }
+  sound.play("carmove", .7, .9, 150 / pace()); sound.play("driveby", 1, 1, 1500 / pace()); setTimeout(cheer, 1900 / pace());
+  await new Promise(res => { const tick = () => (fsiv.currentTime >= 3.3 || fsiv.ended || fsiv.paused) ? res() : requestAnimationFrame(tick); requestAnimationFrame(tick); });
+  const fl = f.querySelector(".fsi-flash");
+  await fl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140 / pace(), fill: "forwards" }).finished;
+  fsiv.pause(); f.hidden = true; f.classList.remove("film"); fl.getAnimations().forEach(a => a.cancel());
+}
+async function builtPass() {
   const f = $("fsi"), car = f.querySelector(".fsi-car"), dur = 2100 / pace();
   f.hidden = false; f.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 / pace(), fill: "forwards" });
   sound.play("driveby", 1); sound.play("carmove", .8, .9, 700 / pace()); cheer();
@@ -593,7 +611,7 @@ async function chase(spins, superMode, room) {
 function paytable() {
   $("paytable").replaceChildren(...PAYING.map(id => {
     const d = document.createElement("div"); d.className = "pt";
-    d.innerHTML = `<img src="assets/sym/${id}.webp" alt=""><div>${[5, 4, 3].map(n => `<b>${n}</b> ${money(PAY[id][n - 3] * K * bet())}`).join("<br>")}</div>`; return d;
+    d.innerHTML = `<img src="assets/sym/${id}.webp" alt=""><div>${[5, 4, 3].map(n => `<b>${n}</b> ${small(PAY[id][n - 3] * K * bet())}`).join("<br>")}</div>`; return d;
   }));
 }
 $("infoBtn").addEventListener("click", () => { sound.init(); sound.play("click", .5); closeMenu(); paytable(); $("info").hidden = false; });
