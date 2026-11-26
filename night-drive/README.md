@@ -48,6 +48,29 @@ synthwave. Status: concept art, round 2 (November 2026). No math, no frontend ye
 - **Board mood:** `concept/board-mood.webp` (neon frame over the boulevard). It is for the feeling only: its painted
   dashboard is not used.
 
+## Prototype (2026-11-26): `night-drive-web/`
+
+A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.server 8099 --bind 127.0.0.1` in
+`night-drive-web/`, then open http://127.0.0.1:8099/. It plays everything below:
+- 5 x 5 ways;
+- the car wild with ×2/×3/×5 (cars in one win multiply);
+- Drive-By;
+- The Chase with driving cars and Nitro +1 spin;
+- both buys.
+
+The math is a **placeholder in the browser**. `simulate()` in the console gives about 96 %: free spins about every
+190 spins, 43 % of the RTP; Drive-By about every 33 spins; Chase 83×, Super Chase 260×. Test hook:
+`window.__force = "driveby"` or `"chase"` before a spin. Not in it yet:
+- the real math (math-sdk) and the RGS;
+- sound;
+- the filmed symbol animations (the symbols move with CSS only);
+- the animated background loop;
+- portrait layout;
+- the Stake review checks.
+
+The wild is now our own car (`prompts/nd-sym-wild2.txt`, take 01: bubble canopy, a light bar instead of headlights,
+tail fins).
+
 ## Round 2 (2026-11-26): 5 x 5, background, symbol set
 
 `concept/round2/`:

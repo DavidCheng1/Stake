@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Night Drive</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="game" id="game">
+    <div class="bg"></div>
+    <div class="trails" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="stars" aria-hidden="true"></div>
+
+    <img class="logo" src="assets/logo.webp" alt="Night Drive">
+
+    <div class="buys" id="buys">
+      <button class="buy" data-buy="chase"><img src="assets/sym/scatter.webp" alt=""><span><b>The Chase</b><small>10 free spins</small><em id="costChase"></em></span></button>
+      <button class="buy super" data-buy="super"><img src="assets/sym/wild.webp" alt=""><span><b>Super Chase</b><small>every car ×3 or more</small><em id="costSuper"></em></span></button>
+    </div>
+
+    <div class="board" id="board">
+      <div class="glass"></div>
+      <div class="cells" id="cells"></div>
+      <div class="cars" id="cars"></div>
+      <img class="frame" src="assets/grid.webp" alt="">
+      <div class="floats" id="floats"></div>
+    </div>
+
+    <div class="side" id="side">
+      <div class="info base">
+        <h3>Getaway Car</h3>
+        <p>The car is <b>wild</b> and carries <b>×2, ×3 or ×5</b>. Cars in one win multiply.</p>
+        <h3>Drive-By</h3>
+        <p>Now and then a car speeds across a row and leaves wilds behind.</p>
+        <h3>The Chase</h3>
+        <p>3, 4 or 5 <b>sunsets</b>: 10, 12 or 15 free spins. Cars stay and drive one reel left each spin. A car that leaves the board: <b>+1 spin</b>.</p>
+      </div>
+      <div class="info fs">
+        <h3 id="fsTitle">The Chase</h3>
+        <div class="fsLeft"><span id="fsLeft">10</span><small>spins left</small></div>
+        <div class="fsWin"><small>chase win</small><span id="fsWin">0.00</span></div>
+      </div>
+    </div>
+
+    <div class="bar">
+      <div class="box"><small>Balance</small><span id="bal">0.00</span></div>
+      <div class="box bet"><small>Bet</small><button id="betMinus" aria-label="Lower bet">−</button><span id="bet">1.00</span><button id="betPlus" aria-label="Raise bet">+</button></div>
+      <button class="spin" id="spin" aria-label="Spin"><svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 0 1 7.4 5H17l3.5 4 3.5-4h-2.5A10 10 0 0 0 2.3 9.5l1.9.6A8 8 0 0 1 12 4Zm0 16a8 8 0 0 1-7.4-5H7l-3.5-4L0 15h2.5a10 10 0 0 0 19.2 0l-1.9-.6A8 8 0 0 1 12 20Z"/></svg></button>
+      <div class="box win"><small>Win</small><span id="win">0.00</span></div>
+      <button class="turbo" id="turbo" aria-pressed="false">Turbo</button>
+    </div>
+    <div class="msg" id="msg">Press Spin</div>
+
+    <div class="overlay" id="overlay" hidden><div class="ov-in"><h1 id="ovTitle"></h1><p id="ovSub"></p><div class="ov-amt" id="ovAmt"></div></div></div>
+    <div class="proto">Prototype: placeholder math, demo balance</div>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
