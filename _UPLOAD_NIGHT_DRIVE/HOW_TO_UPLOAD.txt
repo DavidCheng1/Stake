@@ -1,0 +1,21 @@
+Night Drive - files for the Stake Engine dashboard (built 2026-11-26 from branch ghost-duels)
+
+1_math       Upload all 9 files as the math version: index.json plus a books file (.jsonl.zst)
+             and a lookup table (.csv) for each mode.
+
+2_frontend   Upload the contents of this folder as the frontend version (index.html at the top).
+
+3_cover-art  The 16:9 cover (cover-16x9.png) and the 3:4 game tile (tile-3x4.png).
+
+Modes (cost, RTP, max win):
+  base             1x   RTP  96.00%   max win    25,000x
+  boost            2x   RTP  96.00%   max win    25,000x
+  chase           76x   RTP  96.00%   max win    25,000x
+  super          235x   RTP  96.00%   max win    25,000x
+
+After uploading: play once with a real session - spin, win, boosts, every bonus buy, reload mid-round, a replay
+link, social mode.
+
+The big math files are stored with Git LFS, so "git pull" downloads them on any computer with Git LFS (Git for
+Windows includes it). Rebuild with the stake-release skill or tools/release/package.py. Every new math version adds
+about 0.5 GB to the repo's LFS storage, which counts against the repo owner's GitHub quota.

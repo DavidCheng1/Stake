@@ -9,7 +9,7 @@ index.json is served: play with mode "BONUS" draws from the bonus buy books and 
     python tools/mock_rgs.py --web other-game-web --publish math-sdk/games/other_game/library/publish_files --game other_game
 
 Force a feature by putting it in rgs_url, e.g. rgs_url=http://127.0.0.1:8080/force/bonus
-(kinds: win, lose, big, bonus, maxwin, plus Ghost Duels' duel, tier2, tier3, wildonly). Not part of the game upload.
+(kinds: win, lose, big, bonus, maxwin, plus Ghost Duels' duel, tier2, tier3, wildonly, and Night Drive's driveby). Not part of the game upload.
 """
 
 import argparse
@@ -49,6 +49,8 @@ def categories(book):
         out.append("tier3")
     if wild_only:
         out.append("wildonly")
+    if "driveBy" in types:  # Night Drive
+        out.append("driveby")
     if pay >= 10000:
         out.append("big")
     return out

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Night Drive</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="loader" id="loader">
+  <div class="ld-studio">
+    <i class="ld-glow"></i>
+    <img src="assets/studio-logo.webp" alt="Maestro Studios" draggable="false">
+    <i class="ld-shine"></i>
+    <i class="ld-spark s1"></i><i class="ld-spark s2"></i><i class="ld-spark s3"></i><i class="ld-spark s4"></i>
+    <div class="ld-bar" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i class="ld-fill"></i></div>
+  </div>
+</div>
+<script src="loader.js"></script>
+<div class="wrap">
+  <div class="game" id="game">
+    <div class="bg"></div>
+    <video class="bgv" id="bgv" muted loop playsinline aria-hidden="true"></video>
+    <div class="trails" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="stars" aria-hidden="true"></div>
+
+    <img class="logo" src="assets/logo.webp" alt="Night Drive">
+
+    <!-- the bonus button with the logo: it opens the bonus menu (The Chase, Super Chase, Chance ×3) -->
+    <button class="bonus-btn" id="bonusBtn" aria-haspopup="dialog"><img src="assets/logo.webp" alt=""><span>Bonus</span></button>
+    <div class="boost-tag" id="boostTag" hidden><b>Chance ×3 on</b><span><span id="boostCost"></span> per spin</span><button id="boostOff">Turn off</button></div>
+    <div class="fspanel" id="fspanel">
+      <h3 id="fsTitle">The Chase</h3>
+      <div class="fsLeft"><span id="fsLeft">10</span><small>spins left</small></div>
+      <div class="fsWin"><small>chase win</small><span id="fsWin">0.00</span></div>
+    </div>
+
+    <div class="boss" id="boss" aria-hidden="true"><img src="assets/boss.webp" alt=""><video id="bossIdle" muted loop playsinline></video><video id="bossLaugh" muted playsinline></video></div>
+
+    <div class="board" id="board">
+      <div class="glass"><div class="road"></div></div>
+      <div class="cells" id="cells"></div>
+      <div class="cars" id="cars"></div>
+      <img class="frame" src="assets/grid.webp" alt="">
+      <img class="frame glow" src="assets/grid.webp" alt="" aria-hidden="true">
+      <div class="runner" aria-hidden="true"></div>
+      <canvas class="warp" id="warp" width="660" height="658" hidden></canvas>
+      <video class="grid-clip" id="gridClip" muted playsinline preload="auto" hidden></video>
+      <div class="floats" id="floats"></div>
+    </div>
+
+    <!-- bottom left: the menu (game info, music, effects, sound off) and the balance -->
+    <button class="gbtn menu-btn" id="menuBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M3 6h18v2.2H3zm0 4.9h18v2.2H3zm0 4.9h18V18H3z"/></svg></button>
+    <div class="stat bal"><small>Balance</small><span id="bal">0.00</span></div>
+    <div class="menu" id="menu" hidden>
+      <button class="m-row" id="infoBtn"><i class="m-ico">i</i>Game info</button>
+      <label class="m-row"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3v10.6A3.5 3.5 0 1 0 11 17V7h6V3H9Z"/></svg><span class="vh">Music volume</span><input type="range" id="musicVol" min="0" max="100" value="70"></label>
+      <label class="m-row"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z"/></svg><span class="vh">Effects volume</span><input type="range" id="sfxVol" min="0" max="100" value="80"></label>
+      <button class="m-row" id="muteBtn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z"/></svg><span id="muteText">Sound on</span></button>
+    </div>
+
+    <!-- under the board: messages and the win -->
+    <div class="msg" id="msg">Press Spin</div>
+    <div class="stat win"><small>Win</small><span id="win">0.00</span></div>
+
+    <!-- bottom right: autoplay, spin, turbo and the bet -->
+    <div class="ctrl">
+      <button class="gbtn auto" id="autoBtn" aria-label="Autoplay" aria-pressed="false" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></svg><span class="auto-left" id="autoLeft" hidden></span></button>
+      <button class="spin" id="spin" aria-label="Spin"><span class="spin-ring"></span><span class="spin-dome"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" stroke="#fff" stroke-width=".9" stroke-linejoin="round" d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z"/></svg></span><span class="spin-gloss"></span></button>
+      <button class="gbtn turbo" id="turbo" aria-label="Turbo" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg></button>
+    </div>
+    <div class="stat bet"><small>Bet</small><div class="bet-row"><button id="betMinus" aria-label="Lower bet"><svg viewBox="0 0 24 24"><path d="M15.5 4 7.5 12l8 8 1.8-1.8L11.1 12l6.2-6.2Z"/></svg></button><span id="bet">1.00</span><button id="betPlus" aria-label="Raise bet"><svg viewBox="0 0 24 24"><path d="m8.5 4 8 8-8 8-1.8-1.8 6.2-6.2-6.2-6.2Z"/></svg></button></div></div>
+
+    <div class="auto-menu" id="autoMenu" role="dialog" aria-label="Choose autoplay" hidden>
+      <h3>Autoplay</h3>
+      <p>Number of spins</p>
+      <div class="am-grid"><button data-n="10">10</button><button data-n="25">25</button><button data-n="50">50</button><button data-n="100">100</button><button data-n="250">250</button><button data-n="1000">1000</button><button data-n="Infinity">∞</button></div>
+      <div class="am-foot"><button id="amStart" class="am-start" disabled>Start</button><button id="amClose" class="am-close" aria-label="Close">×</button></div>
+    </div>
+
+    <!-- the bonus menu: two bonuses for a price, and the Chance ×3 switch -->
+    <div class="dlg" id="bonusDlg" hidden role="dialog" aria-modal="true" aria-labelledby="bonusTitle">
+      <div class="bonus-in">
+        <button class="close" id="bonusClose" aria-label="Close">×</button>
+        <h2 id="bonusTitle">Bonus</h2>
+        <div class="offers">
+          <div class="offer">
+            <img src="assets/sym/scatter.webp" alt="">
+            <h3>The Chase</h3><p>Starts 10 free spins right away.</p>
+            <div class="price" id="costChase"></div>
+            <button class="go" data-buy="chase">Get</button>
+          </div>
+          <div class="offer super">
+            <img src="assets/sym/wild.webp" alt="">
+            <h3>Super Chase</h3><p>10 free spins, every car ×3 or more.</p>
+            <div class="price" id="costSuper"></div>
+            <button class="go" data-buy="super">Get</button>
+          </div>
+          <div class="offer boost">
+            <div class="x3"><img src="assets/sym/scatter.webp" alt=""><b>×3</b></div>
+            <h3>Chance ×3</h3><p>Sunsets land more often: The Chase starts about 3× as often.</p>
+            <div class="price"><span id="costBoost"></span><small>per spin</small></div>
+            <button class="go" id="boostToggle" aria-pressed="false">Turn on</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- every bonus is confirmed first, with its cost -->
+    <div class="dlg confirm" id="confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="cfTitle" aria-describedby="cfText">
+      <div class="confirm-in">
+        <h3 id="cfTitle"></h3>
+        <p id="cfText"></p>
+        <div class="cf-cost" id="cfCost"></div>
+        <div class="cf-btns"><button class="cf-no" id="cfNo">Cancel</button><button class="cf-yes" id="cfYes">Confirm</button></div>
+      </div>
+    </div>
+
+    <div class="dlg" id="info" hidden role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+      <div class="dlg-in">
+        <button class="close" id="infoClose" aria-label="Close">×</button>
+        <h2 id="infoTitle">Night Drive</h2>
+        <div class="rules">
+          <section><h3>Getaway Car</h3><p>The car is <b>wild</b>: it stands in for every symbol but the sunset. It carries <b>×2, ×3 or ×5</b>; cars in one win multiply.</p></section>
+          <section><h3>Drive-By</h3><p>Now and then a car speeds across a row and leaves 2 to 4 wild cars behind.</p></section>
+          <section><h3>The Chase</h3><p><b>3, 4 or 5 sunsets</b> anywhere start 10, 12 or 15 free spins. A reel holds at most one sunset. Every car that lands stays and drives one reel to the left before each spin. A car that drives off the board gives <b>+1 spin</b> (Nitro). Sunsets don't land during The Chase, so there are no re-triggers.</p></section>
+          <section><h3>Ways</h3><p>Wins pay for 3, 4 or 5 matching symbols on neighbouring reels from the left, in any row (3125 ways). Values below are per way at your bet; ways add up, cars multiply. <b>Every win pays at least 0.10× the bet</b>, and each win is rounded to the nearest 0.10× the bet.</p></section>
+          <section><h3>Bonus</h3><p>The <b>Bonus</b> button opens: <b>The Chase</b> for <b id="rcChase"></b>× the bet (10 free spins), <b>Super Chase</b> for <b id="rcSuper"></b>× the bet (10 free spins, every car ×3 or more), and <b>Chance ×3</b>: while it is on, The Chase starts about 3× as often and every spin costs <b id="rcBoost"></b>× the bet. Each one shows its cost and asks you to confirm.</p></section>
+          <section class="wide"><h3>Return and maximum win</h3><p>The expected return (RTP) and the maximum win of every mode; a round ends when the maximum win is reached.</p>
+            <table class="modes" id="modesTable"><thead><tr><th>Mode</th><th>Cost</th><th>RTP</th><th>Max win</th></tr></thead><tbody></tbody></table></section>
+          <section class="wide"><h3>Controls</h3><p><b>Spin</b> (the round arrow, or the space bar) plays one round. <b>‹ ›</b> lower and raise the bet. <b>Autoplay</b> (circular arrow): choose a number of spins and press Start; press it again or the space bar to stop. <b>Turbo</b> (lightning): faster animations, same results. While Chance ×3 is on, its tag under the Bonus button shows the price per spin and <b>Turn off</b> switches it off. <b>Bonus</b>: the bonus menu. <b>Menu</b> (three lines): game info, music and effects volume, and sound on or off for every sound. A tap during a win or a message skips it.</p></section>
+        </div>
+        <div class="paytable" id="paytable"></div>
+        <p class="small">Malfunction voids all wins and plays. A consistent internet connection is required. In the event of a disconnection, reload the game to finish any uncompleted rounds. The expected return is calculated over many plays. The game display is not representative of any physical device and is for illustrative purposes only. Winnings are settled according to the amount received from the Remote Game Server and not from events within the web browser.</p>
+        
+      </div>
+    </div>
+    <!-- the start of The Chase: the getaway car tears past in front of us on a neon highway -->
+    <div class="fsi" id="fsi" hidden aria-hidden="true">
+      <div class="ws-sun fsi-sun"></div>
+      <div class="fsi-hills"></div>
+      <div class="fsi-road"></div>
+      <div class="fsi-streaks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="fsi-car"><div class="trail"><i></i><i></i><i></i></div><div class="lights"></div><img src="assets/fsi-car.webp" alt=""></div>
+      <video id="fsiv" muted playsinline preload="auto"></video>
+      <div class="fsi-flash"></div>
+    </div>
+    <!-- the win screen: Big, Mega, Epic, Max Win; the count climbs through the tiers -->
+    <div class="winscreen" id="winscreen" hidden data-tier="big">
+      <div class="ws-sun"></div>
+      <div class="ws-floor"></div>
+      <canvas class="ws-fx" id="wsFx" width="1920" height="1080"></canvas>
+      <div class="ws-title" id="wsTitle"><img id="wsImg" alt=""><i class="ws-shine"></i></div>
+      <div class="ws-amt" id="wsAmt">0.00</div>
+      <div class="ws-x" id="wsX"></div>
+      <p class="ws-skip">Tap to skip</p>
+    </div>
+    <div class="overlay" id="overlay" hidden><div class="ov-in"><h1 id="ovTitle"></h1><p id="ovSub"></p><div class="ov-amt" id="ovAmt"></div><button class="ov-go" id="ovGo" hidden>Continue</button></div></div>
+
+    <!-- the intro: logo, three cards that explain the game, a tap to start (it also unlocks the sound) -->
+    <div class="intro" id="intro" role="dialog" aria-label="Night Drive features">
+      <img class="intro-logo" src="assets/logo.webp" alt="Night Drive">
+      <div class="cards">
+        <div class="card">
+          <h3>Getaway Car</h3>
+          <div class="pic car-pic"><img src="assets/sym/wild.webp" alt=""><span class="mult" data-m="2"><b>×2</b></span><span class="mult" data-m="3"><b>×3</b></span><span class="mult" data-m="5"><b>×5</b></span></div>
+          <p>The car is wild and carries ×2, ×3 or ×5. Cars in one win multiply. A Drive-By leaves 2 to 4 cars behind.</p>
+        </div>
+        <div class="card">
+          <h3>The Chase</h3>
+          <div class="pic suns"><img src="assets/sym/scatter.webp" alt=""><img src="assets/sym/scatter.webp" alt=""><img src="assets/sym/scatter.webp" alt=""></div>
+          <p>3, 4 or 5 sunsets start 10, 12 or 15 free spins. Cars stay and drive left; one that drives off gives +1 spin.</p>
+        </div>
+        <div class="card">
+          <h3>Max Win</h3>
+          <div class="pic maxwin"><b>25,000×</b><span>Max win</span></div>
+          <p>Win up to 25,000× in one round.</p>
+        </div>
+      </div>
+      <p class="intro-go">Press anywhere to continue</p>
+    </div>
+    <!-- replay: what is replayed (bet, mode, real cost) and a button to play it (again) -->
+    <div class="replay-bar" id="replayBar" hidden></div>
+    <div class="dlg confirm" id="replayDlg" hidden role="dialog" aria-modal="true" aria-labelledby="replayTitle">
+      <div class="confirm-in"><h3 id="replayTitle">Replay</h3><p id="replayInfo"></p><div class="cf-btns"><button class="cf-yes" id="replayGo">Play</button></div></div>
+    </div>
+    <!-- a launch that cannot reach the RGS stops here -->
+    <div class="dlg confirm" id="errDlg" hidden role="alertdialog" aria-modal="true" aria-labelledby="errTitle" aria-describedby="errText">
+      <div class="confirm-in"><h3 id="errTitle">Connection problem</h3><p id="errText"></p><div class="cf-btns"><button class="cf-yes" id="errReload">Reload</button></div></div>
+    </div>
+  </div>
+</div>
+<script src="rgs.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

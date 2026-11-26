@@ -1,0 +1,254 @@
+{
+ "boat": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.1,
+   "px": 154,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.3,
+   "px": 205,
+   "settled": true
+  }
+ },
+ "briefcase": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.2,
+   "px": 179,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "captain": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.05,
+   "px": 141,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.35,
+   "px": 218,
+   "settled": true
+  }
+ },
+ "dj": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.05,
+   "px": 141,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.25,
+   "px": 192,
+   "settled": true
+  }
+ },
+ "driver": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.05,
+   "px": 141,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "flamingo": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.1,
+   "px": 154,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "heart": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.1,
+   "px": 154,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.35,
+   "px": 218,
+   "settled": true
+  }
+ },
+ "owner": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.1,
+   "px": 154,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "palm": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.05,
+   "px": 141,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "scatter": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.0,
+   "px": 128,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "shades": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.15,
+   "px": 166,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.25,
+   "px": 192,
+   "settled": true
+  }
+ },
+ "skate": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.05,
+   "px": 141,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "tape": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.0,
+   "px": 128,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.45,
+   "px": 243,
+   "settled": true
+  }
+ },
+ "wild": {
+  "idle": {
+   "cols": 6,
+   "fps": 12,
+   "n": 36,
+   "pad": 0.05,
+   "px": 141,
+   "settled": true
+  },
+  "win": {
+   "cols": 6,
+   "fps": 24,
+   "n": 31,
+   "pad": 0.1,
+   "px": 154,
+   "settled": true
+  }
+ }
+}

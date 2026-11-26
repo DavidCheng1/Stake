@@ -48,6 +48,23 @@ synthwave. Status: concept art, round 2 (November 2026). No math, no frontend ye
 - **Board mood:** `concept/board-mood.webp` (neon frame over the boulevard). It is for the feeling only: its painted
   dashboard is not used.
 
+## Release 1 (2026-11-26): `_UPLOAD_NIGHT_DRIVE/`
+
+The first version for the Stake Engine dashboard (see `_UPLOAD_NIGHT_DRIVE/HOW_TO_UPLOAD.txt`):
+- **Math** `math-sdk/games/night_drive` (the prototype's math ported: ways with car multipliers, the 0.10× minimum
+  win, wins in 0.1× steps, Drive-By, The Chase with moving cars and Nitro). Release layer from
+  `templates/stake-3star`: base 1×, Chance ×3 (`boost`) 2×, The Chase (`chase`) 76×, Super Chase (`super`) 235×,
+  every mode 96.00 %, 25,000× cap. 400k base, 200k Chance ×3, 40k per buy (0.37 GB of books). Run from math-sdk:
+  `env\Scripts\python.exe games\night_drive\run.py` (needs cargo for the optimizer).
+- **Frontend** `night-drive-web`: plays the RGS's books (rgs.js from Ghost Duels), the Maestro Studios loader
+  (loader.js), bet levels from authenticate (the 0.10 minimum bet is set on the Engine dashboard), resume of an open
+  round, replay, social wording, error dialog. Local test:
+  `math-sdk\env\Scripts\python.exe tools\mock_rgs.py --web night-drive-web --publish math-sdk/games/night_drive/library/publish_files --game night_drive`
+  (`/force/bonus`, `/force/driveby`, ... in rgs_url).
+- **Review** `math-sdk\env\Scripts\python.exe tools\review\run_review.py --profile tools\review\games\night_drive.json --port 8096`.
+- **Package** `math-sdk\env\Scripts\python.exe tools\release\package.py night_drive night-drive-web "Night Drive" --out _UPLOAD_NIGHT_DRIVE`,
+  cover art from `night-drive/cover/`.
+
 ## Prototype (2026-11-26): `night-drive-web/`
 
 A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.server 8099 --bind 127.0.0.1` in

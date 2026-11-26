@@ -1,130 +1,46 @@
 "use strict";
-// Night Drive prototype. The math here is a placeholder that runs in the browser (roughly 96 %, calibrated with
-// simulate() below); the real game gets its math from math-sdk and its rounds from the Stake RGS.
+// Night Drive. Every round comes from the Stake Engine RGS (rgs.js): the math is math-sdk/games/night_drive, and the
+// game plays a round's events (its book) back. The values in the rules come from the same math.
 
-// ---------- Math ----------
-const COLS = 5, ROWS = 5, MAX_WIN = 10000;
-// pay for 3, 4 and 5 reels, per way, before K. Ways count multiplies; cars in a way multiply by their ×.
+const COLS = 5, ROWS = 5, MAX_WIN = 25000;
+// The bet modes (tools/release/sync_frontend.py keeps cost, rtp and maxWin in step with the math's stats)
+const MODES = [
+  { name: "Base game", mode: "BASE", cost: 1, rtp: 96.00, maxWin: 25000 },
+  { name: "Chance ×3", mode: "BOOST", cost: 2, rtp: 96.00, maxWin: 25000 },
+  { name: "The Chase", mode: "CHASE", cost: 76, rtp: 96.00, maxWin: 25000 },
+  { name: "Super Chase", mode: "SUPER", cost: 235, rtp: 96.00, maxWin: 25000 },
+];
+const modeOf = m => MODES.find(x => x.mode === String(m).toUpperCase()) || MODES[0];
+// book symbol names -> art; display names
+const SYM = { H1: "driver", H2: "captain", H3: "owner", H4: "dj", M1: "boat", M2: "tape", M3: "flamingo", M4: "briefcase",
+  L1: "shades", L2: "skate", L3: "palm", L4: "heart", W: "wild", S: "scatter" };
+const NAMES = { driver: "Driver", captain: "Captain", owner: "Club Owner", dj: "DJ", boat: "Speedboat", tape: "Cassette",
+  flamingo: "Flamingo", briefcase: "Briefcase", shades: "Shades", skate: "Roller Skate", palm: "Palm", heart: "Neon Heart" };
+// pay per way (× the bet) for 3, 4 and 5 reels: game_config.py way_pays (these × 0.038)
 const PAY = {
   driver: [1, 2.5, 6], captain: [.8, 2, 5], owner: [.6, 1.5, 4], dj: [.5, 1.2, 3],
   boat: [.3, .8, 2], tape: [.3, .7, 1.8], flamingo: [.25, .6, 1.5], briefcase: [.25, .6, 1.4],
   shades: [.12, .3, .7], skate: [.12, .3, .7], palm: [.1, .25, .6], heart: [.1, .25, .6],
 };
-let K = 0.038; // pay scale: about 96 % with the 0.10× minimum win (simulate(), 2026-11-26: base 53 %, free spins about every 176 spins, 43 %)
-const PRICE = { chase: 76, super: 235 }; // buy prices × bet, from simulate(): average bonus ÷ 0.96, rounded
+const K = 0.038, MIN_WIN = 0.1;
 const PAYING = Object.keys(PAY);
-const WEIGHT = { driver: 3, captain: 3, owner: 3, dj: 3, boat: 5, tape: 5, flamingo: 5, briefcase: 5, shades: 9, skate: 9, palm: 9, heart: 9 };
-const W_WILD = 1.6, W_WILD_FS = 2.2, W_SCATTER = 1.27;
-// Chance ×3: the sunset weight that makes The Chase start 3× as often, and the price per spin that keeps it at ~96 %
-const BOOST = { w: 1.97, cost: 2 }; // simulate(), 2026-11-26: free spins about every 55 spins instead of 176 (×3.2), ~96 % at 2× the bet
-const MULTS = [[2, 6], [3, 3], [5, 1]], MULTS_SUPER = [[3, 5], [4, 3], [5, 2]];
-const FS_FOR = { 3: 10, 4: 12, 5: 15 };
-const MIN_WIN = 0.1; // the smallest win, × the bet: no win shows as 0.00 (at the 0.20 minimum bet it is 0.02)
-const DRIVEBY = 0.03;
 const TIER = id => ["driver", "captain", "owner", "dj"].includes(id) ? "255 46 150" : ["boat", "tape", "flamingo", "briefcase"].includes(id) ? "0 229 255" : "255 154 60";
-
 const rnd = n => Math.floor(Math.random() * n);
-const pickW = pairs => { let t = 0; for (const [, w] of pairs) t += w; let x = Math.random() * t; for (const [v, w] of pairs) { if ((x -= w) < 0) return v; } return pairs[pairs.length - 1][0]; };
-const SYM_PAIRS = Object.entries(WEIGHT);
-function randCell(c, fs, superMode, noScatter = false, boost = false) {
-  const pairs = SYM_PAIRS.slice();
-  if (c > 0) pairs.push(["wild", fs ? W_WILD_FS : W_WILD]); // cars land on reels 2 to 5
-  if (!fs && !noScatter) pairs.push(["scatter", boost ? BOOST.w : W_SCATTER]);
-  const id = pickW(pairs);
-  return id === "wild" ? { id, m: pickW(superMode ? MULTS_SUPER : MULTS) } : { id };
-}
-// at most one sunset per reel: a second one in the same reel is drawn again without the sunset
-const newGrid = (fs, superMode, boost = false) => Array.from({ length: COLS }, (_, c) => {
-  let seen = false;
-  return Array.from({ length: ROWS }, () => { const cell = randCell(c, fs, superMode, seen, boost); if (cell.id === "scatter") seen = true; return cell; });
-});
-
-// left-to-right ways; a car counts as its ×, so cars in one way multiply. Ways made of cars only don't pay.
-function evaluate(grid) {
-  let total = 0; const wins = [];
-  for (const s of PAYING) {
-    let pv = 1, pw = 1, len = 0;
-    for (let c = 0; c < COLS; c++) {
-      let v = 0, w = 0;
-      for (const cell of grid[c]) { if (cell.id === s) v += 1; else if (cell.id === "wild") { v += cell.m; w += cell.m; } }
-      if (!v) break;
-      pv *= v; pw *= w; len++;
-    }
-    if (len < 3 || pv - pw <= 0) continue;
-    const pay = Math.max(MIN_WIN, PAY[s][len - 3] * K * (pv - pw)); // every win pays at least MIN_WIN × the bet
-    total += pay; wins.push({ id: s, len, ways: pv - pw, pay });
-  }
-  return { total, wins };
-}
-function baseSpin(boost = false) {
-  const grid = newGrid(false, false, boost); let driveby = null;
-  // test hook: window.__force = "driveby" or "chase" makes the next spin show it (prototype only)
-  const force = window.__force; window.__force = null;
-  if (force === "chase") for (const [c, r] of [[0, 1], [2, 3], [4, 0]]) grid[c][r] = { id: "scatter" };
-  // "line": three cars in the middle row
-  if (force === "line") for (const c of [1, 2, 3]) grid[c][2] = { id: "wild", m: 2 };
-  // "tease": two sunsets on reels 1 and 2 and none after, so the anticipation runs and ends without a third
-  if (force === "tease") for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) { if (grid[c][r].id === "scatter") grid[c][r] = { id: "heart" }; if (c <= 1 && r === 2 - c) grid[c][r] = { id: "scatter" }; }
-  if (force === "driveby" || Math.random() < DRIVEBY) {
-    const r = rnd(ROWS), cols = [1, 2, 3, 4].sort(() => Math.random() - .5).slice(0, 2 + rnd(3)).sort((a, b) => b - a), under = {};
-    for (const c of cols) { under[c] = grid[c][r]; grid[c][r] = { id: "wild", m: pickW(MULTS) }; }
-    driveby = { r, cols, under };
-  }
-  const scatters = grid.flat().filter(x => x.id === "scatter").length;
-  return { grid, driveby, scatters, fs: scatters >= 3 ? FS_FOR[Math.min(5, scatters)] : 0, ev: evaluate(grid) };
-}
-// The Chase: before each spin every car drives one reel left (off the board: +1 spin), then the free cells spin,
-// and cars that land stay.
-function chaseMove(st) {
-  const exits = [];
-  for (const car of st.cars) { car.c -= 1; if (car.c < 0) exits.push(car); }
-  st.cars = st.cars.filter(car => car.c >= 0); st.left += exits.length;
-  return exits;
-}
-let carId = 0;
-function chaseSpin(st) {
-  st.left -= 1;
-  const grid = newGrid(true, st.super);
-  for (const car of st.cars) grid[car.c][car.r] = { id: "wild", m: car.m, car };
-  const landed = [];
-  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
-    const cell = grid[c][r];
-    if (cell.id === "wild" && !cell.car) { const car = { id: ++carId, c, r, m: cell.m }; st.cars.push(car); cell.car = car; landed.push(car); }
-  }
-  return { grid, landed, ev: evaluate(grid) };
-}
-function chaseTotal(spins, superMode) {
-  const st = { cars: [], left: spins, super: superMode }; let total = 0;
-  while (st.left > 0 && total < MAX_WIN) { chaseMove(st); total += chaseSpin(st).ev.total; }
-  return Math.min(total, MAX_WIN);
-}
-// calibration: run in the console. RTP of the base game (with its free spins) and the buys' average win
-window.simulate = (n = 200000, buys = 20000, boost = false) => {
-  let base = 0, fsWin = 0, fsCount = 0, db = 0;
-  for (let i = 0; i < n; i++) {
-    const s = baseSpin(boost); base += Math.min(s.ev.total, MAX_WIN); if (s.driveby) db++;
-    if (s.fs) { fsCount++; fsWin += chaseTotal(s.fs, false); }
-  }
-  let ch = 0, su = 0;
-  for (let i = 0; i < buys; i++) { ch += chaseTotal(10, false); su += chaseTotal(10, true); }
-  return { rtp: (base + fsWin) / n, baseRtp: base / n, fsRtp: fsWin / n, fsEvery: n / fsCount, drivebyEvery: n / db, chaseAvg: ch / buys, superAvg: su / buys,
-    hit: null, chasePrice: ch / buys / .96, superPrice: su / buys / .96 };
-};
 
 // ---------- Screen ----------
 const $ = id => document.getElementById(id);
 const game = $("game"), cellsEl = $("cells"), carsEl = $("cars"), floatsEl = $("floats"), board = $("board");
 const PITCH = 20.74; // % of the cell area per cell (17.04 % cell + 3.7 % gap)
-let balance = 1000, betIdx = 2, busy = false, turbo = false;
+let balance = 0, betIdx = 0, busy = false, turbo = false, loading = true;
 let boostOn = false, autoOn = false, autoLeft = 0, autoChoice = 0; // Chance ×3 switch; autoplay
-const BETS = [0.2, 0.4, 1, 2, 5, 10, 20, 50, 100];
+let BETS = [1]; // from the RGS (authenticate): every bet level Stake allows, e.g. from 0.10
 const bet = () => BETS[betIdx];
-const money = v => v.toFixed(2);
+const money = v => RGS.formatMoney(v);
 // values under a cent keep two significant digits (a per-way value in the rules), never 0.00
-const small = v => v >= .01 || v === 0 ? money(v) : v.toPrecision(2);
+const small = v => RGS.formatMoney(v); // RGS.formatNumber keeps the digits a sub-cent value needs
 const pace = () => turbo ? 2.75 : 1.25; // the game runs 1.25× its designed speed; turbo 2.75×
 const sleep = ms => new Promise(r => setTimeout(r, ms / pace()));
-const say = t => { $("msg").textContent = t; };
+const say = t => { $("msg").textContent = RGS.socialText(t); };
 
 function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); game.style.transform = `translate(-50%, -50%) scale(${s})`; }
 addEventListener("resize", fit); fit();
@@ -168,7 +84,9 @@ const sound = (() => {
     if (cur) { const old = cur; old.g.gain.cancelScheduledValues(ctx.currentTime); old.g.gain.setValueAtTime(old.g.gain.value, ctx.currentTime); old.g.gain.linearRampToValueAtTime(0, ctx.currentTime + 1); old.s.stop(ctx.currentTime + 1.1); cur = null; }
     if (buf[name]) start(name);
   }
-  return { init, play, music, toggle() { muted = !muted; if (master) master.gain.value = muted ? 0 : 1; return muted; },
+  // the mute and the effects volume are saved, so the loader's shimmer on the next launch follows them (loader.js)
+  const save = () => { try { localStorage.setItem("nightDrive.sound", JSON.stringify({ muted, sfx: Math.round(sv * 100) })); } catch {} };
+  return { init, play, music, toggle() { muted = !muted; if (master) master.gain.value = muted ? 0 : 1; save(); return muted; },
     setMusic(v) { mv = v; if (musicBus) musicBus.gain.value = .3 * v; },
     // a sound that repeats until the returned function stops it; the music ducking under big moments
     loop(name, vol = 1, rate = 1) {
@@ -177,7 +95,7 @@ const sound = (() => {
       s.connect(g).connect(sfxBus); s.start(0, s.loopStart);
       return () => { g.gain.setTargetAtTime(0, ctx.currentTime, .04); s.stop(ctx.currentTime + .3); };
     },
-    duck(on) { if (musicBus) musicBus.gain.setTargetAtTime(.3 * mv * (on ? .3 : 1), ctx.currentTime, .2); }, setSfx(v) { sv = v; if (sfxBus) sfxBus.gain.value = .75 * v; } };
+    duck(on) { if (musicBus) musicBus.gain.setTargetAtTime(.3 * mv * (on ? .3 : 1), ctx.currentTime, .2); }, setSfx(v) { sv = v; if (sfxBus) sfxBus.gain.value = .75 * v; save(); } };
 })();
 
 // ---------- Filmed symbol animations (sprite sheets from tools/sprites/symanim.py --game nd): an idle loop now and
@@ -250,17 +168,17 @@ function symEl(cell) {
 // the first board: one of each
 (() => { const ids = [...PAYING, "scatter", "scatter"]; for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) cells[c][r].appendChild(symEl(c && (c + r) % 7 === 3 ? { id: "wild", m: 2 + (r % 2) } : { id: ids[(c * 5 + r) % ids.length] })); })();
 
-// a spin costs the bet, or BOOST.cost × the bet while Chance ×3 is on
-const spinCost = () => bet() * (boostOn ? BOOST.cost : 1);
+// a spin costs the bet, or Chance ×3's cost × the bet while it is on
+const spinCost = () => bet() * modeOf(boostOn ? "BOOST" : "BASE").cost;
 function updateHud() {
-  $("bal").textContent = money(balance); $("bet").textContent = money(bet());
-  $("costChase").textContent = money(PRICE.chase * bet()); $("costSuper").textContent = money(PRICE.super * bet()); $("costBoost").textContent = money(BOOST.cost * bet());
+  $("bal").textContent = RGS.replay ? "–" : money(balance); $("bet").textContent = money(bet()); // replays have no wallet
+  $("costChase").textContent = money(modeOf("CHASE").cost * bet()); $("costSuper").textContent = money(modeOf("SUPER").cost * bet()); $("costBoost").textContent = money(modeOf("BOOST").cost * bet());
   $("boostCost").textContent = money(spinCost()); $("boostTag").hidden = !boostOn;
-  $("rcChase").textContent = PRICE.chase; $("rcSuper").textContent = PRICE.super; $("rcBoost").textContent = BOOST.cost;
-  const lock = busy || autoOn; $("betMinus").disabled = lock || betIdx === 0; $("betPlus").disabled = lock || betIdx === BETS.length - 1;
+  $("rcChase").textContent = modeOf("CHASE").cost; $("rcSuper").textContent = modeOf("SUPER").cost; $("rcBoost").textContent = modeOf("BOOST").cost;
+  const lock = busy || autoOn || loading || RGS.replay; $("betMinus").disabled = lock || betIdx === 0; $("betPlus").disabled = lock || betIdx === BETS.length - 1;
 }
 updateHud();
-function setBusy(b) { busy = b; const lock = b || autoOn; $("spin").disabled = lock; $("spin").classList.toggle("go", b); $("bonusBtn").disabled = lock; $("boostOff").disabled = lock; updateHud(); }
+function setBusy(b) { busy = b; const lock = b || autoOn || loading || RGS.replay; $("spin").disabled = lock; $("spin").classList.toggle("go", b); $("bonusBtn").disabled = lock; $("boostOff").disabled = lock; updateHud(); }
 async function countTo(el, from, to, ms) { const t0 = performance.now(); ms /= pace(); while (true) { const k = Math.min(1, (performance.now() - t0) / ms); el.textContent = money(from + (to - from) * k); if (k >= 1) break; await new Promise(requestAnimationFrame); } }
 function floatText(x, y, text, cls = "") { const f = document.createElement("div"); f.className = "float " + cls; f.textContent = text; f.style.left = x + "%"; f.style.top = y + "%"; floatsEl.appendChild(f); setTimeout(() => f.remove(), 1500); }
 const cellPct = (c, r) => [11.6 + 76.8 * (c * PITCH + 8.52) / 100, 11.9 + 76.7 * (r * PITCH + 8.52) / 100]; // board % of a cell's centre
@@ -363,6 +281,7 @@ async function dropCols(grid, skip, under, from, to, st, slow) {
 async function showWins(grid, ev, carEls) {
   if (!ev.wins.length) return;
   const lit = new Map();
+  // a win lights its symbol and the cars on its first `len` reels (the book does not list positions)
   for (const w of ev.wins) for (let c = 0; c < w.len; c++) for (let r = 0; r < ROWS; r++) { const id = grid[c][r].id; if (id === w.id || id === "wild") lit.set(c + "," + r, TIER(w.id)); }
   for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
     const k = c + "," + r, el = cells[c][r];
@@ -474,11 +393,14 @@ async function winScreen(x, amount) {
   await new Promise(res => { const t = setTimeout(res, (autoOn ? 1800 : 3200) / pace()); wsTap = () => { clearTimeout(t); res(); }; });
   wsTap = null; ws.hidden = true; sound.duck(false);
 }
-// the end of a bonus: the total waits for Continue (in autoplay it goes on by itself after a few seconds)
+// the end of a bonus: the total, with Continue
 async function summary(title, amount) {
   const ov = $("overlay"), go = $("ovGo"); $("ovTitle").textContent = title; $("ovSub").textContent = amount > 0 ? "Total win" : "No win this time"; $("ovAmt").textContent = money(amount);
   go.hidden = false; ov.hidden = false; setTimeout(() => go.focus(), 50);
-  await new Promise(res => { let t = 0; const done = () => { clearTimeout(t); go.removeEventListener("click", done); res(); }; go.addEventListener("click", done); if (autoOn) t = setTimeout(done, 3500); });
+  // Continue (or Space) goes on at once; otherwise it goes on by itself after a few seconds, so autoplay, a resumed round
+  // and a replay never stop here
+  await new Promise(res => { const done = () => { clearTimeout(t); go.removeEventListener("click", done); res(); }; go.addEventListener("click", done);
+    const t = setTimeout(done, RGS.replay ? 3000 : autoOn ? 3500 : 6000); });
   sound.play("click", .5); go.hidden = true; ov.hidden = true;
 }
 async function banner(title, sub, ms = 1900) {
@@ -487,38 +409,89 @@ async function banner(title, sub, ms = 1900) {
   ov.hidden = true;
 }
 
-// ---------- Rounds ----------
+// ---------- Rounds: play debits the bet (× the mode's cost) on the RGS and returns the round's book; the game plays its
+// events; end-round credits a win (a round paying 0× is closed by the RGS already) ----------
+async function play(mode) {
+  if (busy || loading || RGS.replay) return;
+  const cost = bet() * modeOf(mode).cost;
+  if (balance < cost) { say("Not enough balance for this bet"); if (autoOn) stopAuto(); return; } // [222] no play request
+  setBusy(true); $("win").textContent = money(0); say("Good luck!");
+  sound.init(); sound.music("music-base");
+  const t0 = performance.now();
+  try {
+    const res = await RGS.play(bet(), mode);
+    balance = res.balance; updateHud();
+    await runRound(res.round);
+    const wait = RGS.minimumRoundDuration - (performance.now() - t0);
+    if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  } catch (err) {
+    console.error(err); if (autoOn) stopAuto(); say(RGS.errorText(err));
+  } finally {
+    setBusy(false);
+  }
+}
+async function runRound(round) {
+  await playEvents(round.state);
+  if (round.active) { const end = await RGS.endRound(); balance = end.balance; }
+  updateHud();
+}
 async function spin(fromAuto = false) {
   if (busy || introOpen || (autoOn && !fromAuto)) return;
-  if (balance < spinCost()) { say("Not enough balance"); return; }
-  setBusy(true); balance -= spinCost(); updateHud(); $("win").textContent = money(0); say("Good luck!");
-  sound.init(); sound.music("music-base"); sound.play("spin", .6);
-  const res = baseSpin(boostOn); lastGrid = res.grid;
-  board.classList.add("spinning");
-  await dropOut();
-  const under = {}; if (res.driveby) for (const c of res.driveby.cols) under[c + "," + res.driveby.r] = res.driveby.under[c];
-  await dropIn(res.grid, () => false, under);
-  board.classList.remove("spinning");
-  if (res.driveby) await driveBy(res.driveby);
-  await carLines(wildRows(res.grid).filter(r => r !== res.driveby?.r), (c, r) => res.grid[c][r].id === "wild" ? cells[c][r].querySelector(".sym") : null);
-  let won = Math.min(res.ev.total, MAX_WIN);
-  if (won > 0) { say(res.ev.wins.map(w => `${w.len}× ${w.id}`).join(" · ")); await showWins(res.grid, res.ev); }
-  if (res.fs) { say(`${res.scatters} sunsets: The Chase!`); await sleep(700); won += await chase(res.fs, false, MAX_WIN - won); }
-  await finish(won);
+  await play(boostOn ? "BOOST" : "BASE");
 }
 async function buy(kind) {
-  const cost = PRICE[kind] * bet();
-  if (busy || autoOn || balance < cost) return;
-  sound.init(); setBusy(true); balance -= cost; updateHud(); $("win").textContent = money(0);
-  const won = await chase(10, kind === "super", MAX_WIN);
-  await finish(won);
+  if (busy || autoOn) return;
+  await play(kind === "super" ? "SUPER" : "CHASE");
 }
-async function finish(won) {
+// a book cell -> a board cell
+const toGrid = b => b.map(col => col.map(s => s.name === "W" ? { id: "wild", m: s.m, car: s.car } : { id: SYM[s.name] }));
+const winsOf = ev => ({ total: ev.totalWin / 100, wins: ev.wins.map(w => ({ id: SYM[w.symbol], len: w.kind, ways: w.ways, pay: w.win / 100 })) });
+// Plays a round's events: reveal (with the anticipation), Drive-By, car lines, wins, The Chase, the win screen.
+async function playEvents(events) {
+  let grid = null, fs = null, total = 0, won = 0;
+  for (let i = 0; i < events.length; i++) {
+    const ev = events[i], next = events[i + 1]?.type;
+    switch (ev.type) {
+      case "reveal":
+        if (ev.gameType === "freegame") { await chaseReveal(fs, ev); break; }
+        grid = toGrid(ev.board); lastGrid = grid;
+        sound.play("spin", .6); board.classList.add("spinning");
+        await dropOut(); await dropIn(grid);
+        board.classList.remove("spinning");
+        if (next !== "driveBy") await carLines(wildRows(grid), (c, r) => grid[c][r].id === "wild" ? cells[c][r].querySelector(".sym") : null);
+        break;
+      case "driveBy":
+        for (const car of ev.cars) grid[car.reel][car.row] = { id: "wild", m: car.m };
+        await driveBy({ r: ev.row, cols: ev.cars.map(car => car.reel) });
+        await carLines(wildRows(grid).filter(r => r !== ev.row), (c, r) => grid[c][r].id === "wild" ? cells[c][r].querySelector(".sym") : null);
+        break;
+      case "winInfo": {
+        const w = winsOf(ev);
+        if (!fs) say(w.wins.map(x => `${x.len}× ${NAMES[x.id]}`).join(" · "));
+        await showWins(fs ? fs.grid : grid, w, fs ? [...fs.carEls.values()] : null);
+        break;
+      }
+      case "setTotalWin": {
+        const before = total; total = ev.amount / 100;
+        if (fs && total > before) await countTo($("fsWin"), (before - fs.base) * bet(), (total - fs.base) * bet(), 400);
+        break;
+      }
+      case "freeSpinTrigger":
+        say(`${ev.positions.length} sunsets: The Chase!`); await sleep(700);
+        fs = await chaseStart(ev, total);
+        break;
+      case "chaseMove": await chaseMove(fs, ev); break;
+      case "updateFreeSpin": fs.played = ev.amount; $("fsLeft").textContent = ev.total - ev.amount; break;
+      case "carsLand": await chaseLand(fs, ev); break;
+      case "freeSpinEnd": await chaseEnd(fs, ev.amount / 100); fs = null; break;
+      case "wincap": say("Max win!"); break;
+      case "finalWin": won = ev.amount / 100; break;
+    }
+  }
   if (won >= TIERS[0][1]) await winScreen(won, won * bet());
-  balance += won * bet(); updateHud();
   if (won > 0) await countTo($("win"), 0, won * bet(), 500);
   say(won > 0 ? `Win ${money(won * bet())}` : "Press Spin");
-  setBusy(false);
+  return won;
 }
 // ---------- The way into The Chase, inside the grid ----------
 // a neon warp tunnel on a canvas over the cells: streaks fly out of the vanishing point, faster and faster
@@ -643,63 +616,72 @@ function driveCar(el, to) {
   if (exit) el.animate([{ opacity: 1 }, { opacity: 1, offset: .55 }, { opacity: 0 }], { duration: dur, fill: "forwards" });
   return new Promise(r => setTimeout(r, dur + 60));
 }
-// The Chase: cars stay and drive one reel left before every spin; a car leaving the board gives one more spin
-async function chase(spins, superMode, room) {
+// The Chase, step by step from its events: cars stay and drive one reel left before every spin (chaseMove), a car
+// leaving the board gives one more spin; the free cells spin (reveal); cars that land stay (carsLand)
+async function chaseStart(ev, base) {
+  const superMode = !!ev.super;
   sound.play("chase", .9); sound.music("music-chase"); cheer();
-  await warpIn(superMode ? "Super Chase" : "The Chase", `${spins} free spins`);
+  await warpIn(superMode ? "Super Chase" : "The Chase", `${ev.totalFs} free spins`);
   game.classList.add("chasing"); $("fsTitle").textContent = superMode ? "Super Chase" : "The Chase";
-  const st = { cars: [], left: spins, super: superMode }; let total = 0; const carEls = new Map();
-  $("fsLeft").textContent = st.left; $("fsWin").textContent = money(0);
-  while (st.left > 0 && total < room) {
-    if (st.cars.length) {
-      const exits = chaseMove(st); sound.play("carmove", .6);
-      const drives = [];
-      for (const [id, el] of carEls) {
-        const car = el._car; drives.push(driveCar(el, car.c));
-        if (car.c < 0) { carEls.delete(id); drives[drives.length - 1].then(() => el.remove()); }
-      }
-      await Promise.all(drives);
-      for (const car of exits) { const [x, y] = cellPct(0, car.r); floatText(x, y, "Nitro +1 spin", "nitro"); sound.play("nitro", .8); }
-      if (exits.length) { $("fsLeft").textContent = st.left; const s = $("fsLeft"); s.classList.remove("bump"); void s.offsetWidth; s.classList.add("bump"); await sleep(500); }
-    }
-    const occupied = new Set(st.cars.map(car => car.c + "," + car.r));
-    const skip = (c, r) => occupied.has(c + "," + r);
-    board.classList.add("spinning"); sound.play("spin", .45);
-    await dropOut(skip);
-    for (const k of occupied) { const [c, r] = k.split(",").map(Number); cells[c][r].replaceChildren(); }
-    const rowCount = () => [0, 1, 2, 3, 4].map(r => st.cars.filter(car => car.r === r).length), before = rowCount();
-    const step = chaseSpin(st); $("fsLeft").textContent = st.left;
-    await dropIn(step.grid, skip);
-    board.classList.remove("spinning");
-    // a car that lands leaves its cell and becomes a driving car
-    for (const car of step.landed) {
-      cells[car.c][car.r].replaceChildren();
-      const el = document.createElement("div"); el.className = "car"; el._car = car; el.style.left = (car.c * PITCH) + "%"; el.style.top = (car.r * PITCH) + "%";
-      el.append(...carFx(), symEl({ id: "wild", m: car.m })); carsEl.appendChild(el); carEls.set(car.id, el);
-      el.animate([{ transform: "scale(1.5)", filter: "brightness(3)" }, { transform: "none", filter: "brightness(1)" }], { duration: 420 / pace() });
-    }
-    if (step.landed.length) await sleep(350);
-    // a new row of 3 or more cars: the supercar races along it
-    const after = rowCount(), lines = after.map((n, r) => n >= 3 && before[r] < 3 ? r : -1).filter(r => r >= 0);
-    await carLines(lines, (c, r) => { const car = st.cars.find(x => x.c === c && x.r === r); return car ? carEls.get(car.id) : null; });
-    const w = Math.min(step.ev.total, room - total);
-    if (w > 0) { await showWins(step.grid, step.ev, [...carEls.values()]); total += w; await countTo($("fsWin"), (total - w) * bet(), total * bet(), 400); }
-    else await sleep(350);
+  $("fsLeft").textContent = ev.totalFs; $("fsWin").textContent = money(0);
+  return { superMode, base, played: 0, cars: new Map(), carEls: new Map(), grid: null, before: [] };
+}
+async function chaseMove(fs, ev) {
+  sound.play("carmove", .6);
+  const drives = [];
+  for (const car of ev.cars) { const o = fs.cars.get(car.id), el = fs.carEls.get(car.id); if (!o || !el) continue; o.c = car.reel; o.r = car.row; drives.push(driveCar(el, car.reel)); }
+  for (const x of ev.exits) {
+    const el = fs.carEls.get(x.id); fs.carEls.delete(x.id); fs.cars.delete(x.id);
+    if (el) drives.push(driveCar(el, -1).then(() => el.remove()));
   }
+  await Promise.all(drives);
+  for (const x of ev.exits) { const [px, py] = cellPct(0, x.row); floatText(px, py, "Nitro +1 spin", "nitro"); sound.play("nitro", .8); }
+  if (ev.exits.length) { const s = $("fsLeft"); s.textContent = ev.totalFs - fs.played; s.classList.remove("bump"); void s.offsetWidth; s.classList.add("bump"); await sleep(500); }
+}
+const rowCounts = fs => [0, 1, 2, 3, 4].map(r => [...fs.cars.values()].filter(car => car.r === r).length);
+async function chaseReveal(fs, ev) {
+  const occupied = new Set([...fs.cars.values()].map(car => car.c + "," + car.r)), skip = (c, r) => occupied.has(c + "," + r);
+  board.classList.add("spinning"); sound.play("spin", .45);
+  await dropOut(skip);
+  for (const k of occupied) { const [c, r] = k.split(",").map(Number); cells[c][r].replaceChildren(); }
+  fs.grid = toGrid(ev.board); lastGrid = fs.grid; fs.before = rowCounts(fs);
+  await dropIn(fs.grid, skip);
+  board.classList.remove("spinning");
+}
+// a car that lands leaves its cell and becomes a driving car; a new row of 3+ cars sends the supercar along it
+async function chaseLand(fs, ev) {
+  for (const x of ev.cars) {
+    const car = { id: x.id, c: x.reel, r: x.row, m: x.m };
+    cells[car.c][car.r].replaceChildren();
+    const el = document.createElement("div"); el.className = "car"; el._car = car; el.style.left = (car.c * PITCH) + "%"; el.style.top = (car.r * PITCH) + "%";
+    el.append(...carFx(), symEl({ id: "wild", m: car.m })); carsEl.appendChild(el);
+    fs.cars.set(car.id, car); fs.carEls.set(car.id, el);
+    el.animate([{ transform: "scale(1.5)", filter: "brightness(3)" }, { transform: "none", filter: "brightness(1)" }], { duration: 420 / pace() });
+  }
+  await sleep(350);
+  const after = rowCounts(fs), lines = after.map((n, r) => n >= 3 && fs.before[r] < 3 ? r : -1).filter(r => r >= 0);
+  await carLines(lines, (c, r) => { const car = [...fs.cars.values()].find(x => x.c === c && x.r === r); return car ? fs.carEls.get(car.id) : null; });
+}
+async function chaseEnd(fs, amount) {
   await sleep(400);
-  for (const el of carEls.values()) driveCar(el, -1);
+  for (const el of fs.carEls.values()) driveCar(el, -1);
   await sleep(800); carsEl.replaceChildren();
   sound.play("chaseover", .8); board.classList.add("flash"); setTimeout(() => board.classList.remove("flash"), 500);
-  await summary(superMode ? "Super Chase complete" : "Chase complete", total * bet());
+  await summary(fs.superMode ? "Super Chase complete" : "Chase complete", amount * bet());
   sound.music("music-base");
   game.classList.remove("chasing");
-  return total;
 }
 
 function paytable() {
+  const num = v => v.toLocaleString(RGS.lang, { maximumFractionDigits: 2 });
+  $("modesTable").tBodies[0].replaceChildren(...MODES.map(m => {
+    const tr = document.createElement("tr");
+    [m.name, `${num(m.cost)}× ${RGS.socialText("the bet")}`, `${m.rtp.toLocaleString(RGS.lang, { minimumFractionDigits: 2 })} %`, `${num(m.maxWin)}×`].forEach(t => { tr.insertCell().textContent = t; });
+    return tr;
+  }));
   $("paytable").replaceChildren(...PAYING.map(id => {
     const d = document.createElement("div"); d.className = "pt";
-    d.innerHTML = `<img src="assets/sym/${id}.webp" alt=""><div>${[5, 4, 3].map(n => `<b>${n}</b> ${small(PAY[id][n - 3] * K * bet())}`).join("<br>")}</div>`; return d;
+    d.innerHTML = `<img src="assets/sym/${id}.webp" alt=""><div><i class="pt-name">${NAMES[id]}</i>${[5, 4, 3].map(n => `<b>${n}</b> ${small(PAY[id][n - 3] * K * bet())}`).join("<br>")}</div>`; return d;
   }));
 }
 $("infoBtn").addEventListener("click", () => { sound.init(); sound.play("click", .5); closeMenu(); paytable(); $("info").hidden = false; });
@@ -718,7 +700,7 @@ for (const [id, set] of [["musicVol", v => sound.setMusic(v)], ["sfxVol", v => s
 
 // ---------- Confirmation: every bonus (the two bonuses and Chance ×3) shows its cost and waits for Confirm ----------
 function ask(title, text, cost, yes = "Confirm") {
-  const dlg = $("confirm"); $("cfTitle").textContent = title; $("cfText").textContent = text; $("cfCost").textContent = cost; $("cfYes").textContent = yes; dlg.hidden = false;
+  const dlg = $("confirm"); $("cfTitle").textContent = RGS.socialText(title); $("cfText").textContent = RGS.socialText(text); $("cfCost").textContent = cost; $("cfYes").textContent = RGS.socialText(yes); dlg.hidden = false;
   setTimeout(() => $("cfNo").focus(), 30);
   return new Promise(res => {
     const done = v => { dlg.hidden = true; $("cfYes").onclick = $("cfNo").onclick = dlg.onclick = null; sound.play("click", .5); res(v); };
@@ -729,16 +711,16 @@ function ask(title, text, cost, yes = "Confirm") {
 // ---------- The bonus menu: The Chase, Super Chase (a price each) and the Chance ×3 switch ----------
 const bonusDlg = $("bonusDlg");
 function openBonus() {
-  for (const b of bonusDlg.querySelectorAll("[data-buy]")) { const short = balance < PRICE[b.dataset.buy] * bet(); b.disabled = short; b.textContent = short ? "Not enough balance" : "Get"; }
+  for (const b of bonusDlg.querySelectorAll("[data-buy]")) { const short = balance < modeOf(b.dataset.buy).cost * bet(); b.disabled = short; b.textContent = short ? "Not enough balance" : "Get"; }
   $("boostToggle").setAttribute("aria-pressed", boostOn); $("boostToggle").textContent = boostOn ? "Turn off" : "Turn on";
   bonusDlg.hidden = false;
 }
 const closeBonus = () => { bonusDlg.hidden = true; };
-$("bonusBtn").addEventListener("click", () => { if (busy || autoOn) return; sound.init(); sound.play("click", .5); openBonus(); });
+$("bonusBtn").addEventListener("click", () => { if (busy || autoOn || loading || RGS.replay) return; sound.init(); sound.play("click", .5); openBonus(); });
 $("bonusClose").addEventListener("click", () => { sound.play("click", .5); closeBonus(); });
 bonusDlg.addEventListener("click", e => { if (e.target === bonusDlg) closeBonus(); });
 for (const b of bonusDlg.querySelectorAll("[data-buy]")) b.addEventListener("click", async () => {
-  const kind = b.dataset.buy, cost = PRICE[kind] * bet(); sound.play("click", .5);
+  const kind = b.dataset.buy, cost = modeOf(kind).cost * bet(); sound.play("click", .5);
   if (busy || autoOn || balance < cost) return;
   const ok = await ask(kind === "super" ? "Super Chase" : "The Chase", kind === "super" ? "10 free spins, every car ×3 or more. Start it for" : "10 free spins. Start it for", money(cost));
   if (!ok) return;
@@ -749,17 +731,18 @@ $("boostToggle").addEventListener("click", async () => {
   sound.play("click", .5);
   if (busy || autoOn) return;
   if (boostOn) { setBoost(false); return; }
-  const ok = await ask("Chance ×3", `The Chase starts about 3× as often. While it is on, every spin costs ${BOOST.cost}× the bet:`, `${money(BOOST.cost * bet())} per spin`, "Turn on");
+  const ok = await ask("Chance ×3", `The Chase starts about 3× as often. While it is on, every spin costs ${modeOf("BOOST").cost}× the bet:`, `${money(modeOf("BOOST").cost * bet())} per spin`, "Turn on");
   if (!ok) return;
   setBoost(true); closeBonus();
 });
 $("boostOff").addEventListener("click", () => { if (busy || autoOn) return; sound.play("click", .5); setBoost(false); });
 
 // ---------- The intro: three cards, then a tap anywhere (it also starts the sound) ----------
-let introOpen = true;
+let introOpen = true, introDoneRes;
+const introDone = new Promise(r => { introDoneRes = r; });
 const intro = $("intro");
 function closeIntro() {
-  if (!introOpen) return; introOpen = false;
+  if (!introOpen) return; introOpen = false; introDoneRes();
   sound.init(); sound.music("music-base"); sound.play("click", .5);
   intro.classList.add("out"); setTimeout(() => { intro.hidden = true; }, 500);
 }
@@ -797,14 +780,73 @@ $("spin").addEventListener("click", () => spin());
 addEventListener("keydown", e => {
   if (e.code !== "Space") return;
   e.preventDefault();
+  if (loading || RGS.replay) return;
   if (introOpen) return closeIntro();
   if (!ws.hidden) return wsTap?.();
   if (!$("ovGo").hidden) return $("ovGo").click();
   if (autoOn) return stopAuto("Autoplay stopped");
-  if ([$("confirm"), bonusDlg, $("info"), autoMenu, menu].some(d => !d.hidden)) return;
+  if ([$("confirm"), bonusDlg, $("info"), autoMenu, menu, $("errDlg"), $("replayDlg")].some(d => !d.hidden)) return;
+  if (RGS.jurisdiction.disabledSpacebar) return;
   spin();
 });
-$("betMinus").addEventListener("click", () => { if (!busy && !autoOn && betIdx > 0) { betIdx--; updateHud(); sound.play("click", .5); if (boostOn) say(`Chance ×3 on: ${money(spinCost())} per spin`); } });
-$("betPlus").addEventListener("click", () => { if (!busy && !autoOn && betIdx < BETS.length - 1) { betIdx++; updateHud(); sound.play("click", .5); if (boostOn) say(`Chance ×3 on: ${money(spinCost())} per spin`); } });
+$("betMinus").addEventListener("click", () => { if (!busy && !autoOn && !loading && betIdx > 0) { betIdx--; updateHud(); sound.play("click", .5); if (boostOn) say(`Chance ×3 on: ${money(spinCost())} per spin`); } });
+$("betPlus").addEventListener("click", () => { if (!busy && !autoOn && !loading && betIdx < BETS.length - 1) { betIdx++; updateHud(); sound.play("click", .5); if (boostOn) say(`Chance ×3 on: ${money(spinCost())} per spin`); } });
 $("turbo").addEventListener("click", () => { turbo = !turbo; $("turbo").setAttribute("aria-pressed", turbo); sound.init(); sound.play("click", .5); });
 
+
+// ---------- Start: authenticate (or load a replay), apply the bet levels and the jurisdiction, resume an open round ----------
+function showError(text) { $("errText").textContent = text; $("errDlg").hidden = false; $("errReload").focus(); }
+$("errReload").addEventListener("click", () => location.reload());
+// Replay: a panel shows bet, mode and real cost and plays the round; afterwards it offers to watch it again
+async function replayLoop(round) {
+  const m = modeOf(round.mode), line = `${m.name} · ${RGS.socialText("Bet")} ${money(round.amount)}` + (round.cost > 1 ? ` · ×${round.cost} · ${RGS.socialText("Real cost")} ${money(round.amount * round.cost)}` : "");
+  const bar = $("replayBar"); bar.textContent = `Replay · ${line}`; bar.hidden = false;
+  for (let first = true; ; first = false) {
+    $("replayInfo").textContent = first ? line : `${line} · Win ${money(round.amount * (round.payoutMultiplier || 0))}`;
+    $("replayGo").textContent = first ? "Play" : "Replay again";
+    $("replayDlg").hidden = false; $("replayGo").focus();
+    await new Promise(res => $("replayGo").addEventListener("click", res, { once: true }));
+    $("replayDlg").hidden = true; sound.init();
+    busy = true; $("spin").disabled = true;
+    await playEvents(round.state);
+    say("Replay finished");
+  }
+}
+async function boot() {
+  setBusy(true); say("Loading…");
+  let s;
+  try { s = await RGS.init(); } catch (err) { console.error(err); LOADER.ready(); say(RGS.errorText(err)); showError(RGS.errorText(err)); return; }
+  LOADER.ready();
+  try {
+    balance = s.balance; BETS = s.betLevels; betIdx = Math.max(0, BETS.indexOf(s.defaultBet));
+    const j = s.jurisdiction || {};
+    if (j.socialCasino && !RGS.social) { const u = new URL(location.href); u.searchParams.set("social", "true"); location.replace(u); return; }
+    if (j.disabledAutoplay) autoBtn.hidden = true;
+    if (j.disabledTurbo) { turbo = false; $("turbo").hidden = true; }
+    if (j.disabledBuyFeature) { $("bonusBtn").hidden = true; setBoost(false); }
+    loading = false; setBusy(false); updateHud();
+    if (RGS.replay) { closeIntro(); autoBtn.hidden = $("bonusBtn").hidden = $("turbo").hidden = true; return await replayLoop(s.round); }
+    await introDone; // an interrupted round resumes once the player has seen the intro
+    if (s.round) {
+      // [187] the open round's stake stays selected afterwards, even if it is not one of today's levels
+      if (s.round.amount) { if (!BETS.includes(s.round.amount)) BETS = [...BETS, s.round.amount].sort((a, b) => a - b); betIdx = BETS.indexOf(s.round.amount); }
+      setBusy(true); say("Resuming your round");
+      await runRound(s.round);
+      setBusy(false);
+    } else say("Press Spin");
+  } catch (err) {
+    console.error(err); setBusy(false); say(RGS.errorText(err));
+  }
+}
+// ---------- Social mode (Stake.us): the page's own texts use social wording too ----------
+if (RGS.social) {
+  const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) n.nodeValue = RGS.socialText(n.nodeValue);
+  document.querySelectorAll("[aria-label]").forEach(el => el.setAttribute("aria-label", RGS.socialText(el.getAttribute("aria-label"))));
+  document.title = RGS.socialText(document.title);
+}
+// the loader waits for the first screen's pictures, the fonts and the RGS
+LOADER.track(["assets/bg.webp", "assets/logo.webp", "assets/grid.webp", "assets/boss.webp", "assets/card.webp", "assets/mult.webp",
+  ...PAYING.map(id => `assets/sym/${id}.webp`), "assets/sym/wild.webp", "assets/sym/scatter.webp"]);
+LOADER.onGesture(() => sound.init());
+boot();
