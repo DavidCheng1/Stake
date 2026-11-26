@@ -186,14 +186,16 @@ setInterval(() => {
 // ---------- The main character: his idle loop and his laugh are videos with alpha (assets/boss-idle.webm,
 // boss-laugh.webm); until they exist he is the still, and cheers with a little bounce ----------
 const boss = $("boss"), bossIdle = $("bossIdle"), bossLaugh = $("bossLaugh");
-bossIdle.src = "assets/boss-idle.webm"; bossLaugh.src = "assets/boss-laugh.webm";
+bossIdle.src = "assets/boss-idle.webm"; bossLaugh.preload = "auto"; bossLaugh.src = "assets/boss-laugh.webm"; bossLaugh.load();
 bossIdle.addEventListener("canplay", () => { boss.classList.add("has-vid"); bossIdle.classList.add("on"); bossIdle.play().catch(() => {}); }, { once: true });
 bossIdle.addEventListener("error", () => {}); bossLaugh.addEventListener("error", () => {});
 function cheer() {
-  if (bossLaugh.readyState >= 2 && boss.classList.contains("has-vid")) {
-    bossLaugh.currentTime = 0; bossLaugh.classList.add("on"); bossIdle.classList.remove("on"); bossLaugh.play().catch(() => {});
-    bossLaugh.onended = () => { bossLaugh.classList.remove("on"); bossIdle.classList.add("on"); };
-  } else { boss.classList.remove("cheer"); void boss.offsetWidth; boss.classList.add("cheer"); }
+  const bounce = () => { boss.classList.remove("cheer"); void boss.offsetWidth; boss.classList.add("cheer"); };
+  if (!boss.classList.contains("has-vid") || bossLaugh.error) return bounce();
+  // the laugh takes over from the idle as soon as it really plays, and hands back when it ends
+  bossLaugh.currentTime = 0;
+  bossLaugh.play().then(() => { bossLaugh.classList.add("on"); bossIdle.classList.remove("on"); }, bounce);
+  bossLaugh.onended = () => { bossIdle.classList.add("on"); bossLaugh.classList.remove("on"); };
 }
 // the living background: a seamless loop (assets/bg.webm) over the still, once it exists
 const bgv = $("bgv"); bgv.src = "assets/bg.webm";

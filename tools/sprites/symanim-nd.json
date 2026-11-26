@@ -17,7 +17,8 @@
    "bg": "green",
    "what": "the cartoon bust of a suave nightclub owner with slicked-back hair in a pastel pink blazer",
    "idle": "He raises one eyebrow and smirks, adjusting his blazer collar.",
-   "win": "He snaps his fingers and grins, a shower of pink neon confetti and light flashes around him."
+   "win": "He snaps his fingers and grins, a shower of pink neon confetti and light flashes around him.",
+   "thin": true
   },
   "dj": {
    "bg": "green",
@@ -65,7 +66,8 @@
    "bg": "green",
    "what": "a neon sign of a palm tree made of glowing pink and cyan tubes",
    "idle": "The neon tubes hum and flicker softly, the fronds sway a little.",
-   "win": "The neon sign flickers fully on, blazes bright pink and cyan, a glow pulses out around it."
+   "win": "The neon sign flickers fully on, blazes bright pink and cyan, a glow pulses out around it.",
+   "thin": true
   },
   "heart": {
    "bg": "green",

@@ -126,7 +126,7 @@ def frames(path):
     return out
 
 
-def key(rgb, warm=False):
+def key(rgb, warm=False, thin=False):
     """Alpha from how far a pixel leans to the backdrop colour, the colour unmixed from it: C = a F + (1 - a) B.
     The backdrop (green or magenta) is read off the frame's edge, so takes on either key right. warm: the symbol is
     gold (red >= green >= blue everywhere), so each pixel is given the gold hue, and the faint
@@ -156,6 +156,8 @@ def key(rgb, warm=False):
         off = (F[..., 1] > F[..., 0]) | (F[..., 2] > F[..., 1])  # only where the order is broken: gold and orange stay
         F = np.where(off[..., None], np.dstack([hi_, lo_ + .7 * (hi_ - lo_), lo_]), F)
         a = np.where(a < 1, a ** 1.6, a)  # and the faint halo of a flash thins out instead of veiling the frame
+    if thin and not warm:  # the faint halo of a flash thins out instead of veiling the frame (spec: "thin": true)
+        a = np.where(a < 1, a ** 1.8, a)
     F[a == 0] = 0
     return np.dstack([F, a * 255]).clip(0, 255).astype(np.uint8)
 
@@ -185,7 +187,7 @@ def build(ids, picks):
             else:
                 step = 24 / IDLE_FPS
                 fr = [fr[int(round(k * step))] for k in range(int(len(fr) / step))]
-            rgba = [key(f, S[i].get("warm", False)) for f in fr]
+            rgba = [key(f, S[i].get("warm", False), S[i].get("thin", False)) for f in fr]
             # the symbol's box in the clip, and the margin the motion reaches out to (the same on every side, so the
             # game can lay the canvas out round the symbol evenly)
             x0, y0 = (FW - SYM_PX) / 2, (FH - SYM_PX) / 2

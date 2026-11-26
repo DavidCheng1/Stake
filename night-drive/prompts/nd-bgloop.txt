@@ -1,5 +1,10 @@
 Animate this picture: a 1980s neon coastal night scene in a hand-painted cartoon cel style. Static camera, 6 seconds,
-a calm and subtle seamless loop, the same picture and style throughout: the palm fronds sway softly in a light breeze,
-gentle ocean waves roll and the sun's reflection shimmers on the water, the neon outlines on the hotels flicker and
-pulse softly, a few lit windows blink, stars twinkle, pink and cyan light trails stream along the boulevard at the
-bottom. Nothing else changes: no new objects, no cars, no people, no text. It ends exactly as it starts.
+a lively seamless loop, the same picture, layout and style throughout, every element stays in its place.
+The palm trees: their fronds sway clearly in a warm sea breeze, the big palms in front swing their leaves gently back
+and forth, the smaller palms behind sway a little out of step.
+The buildings: the neon outlines and signs on the hotel towers flicker and pulse, some neon shapes light up one after
+another like chasing lights, lit windows switch on and off now and then, a soft glow breathes on the facades.
+The sea: gentle waves roll in, the sun's reflection shimmers and sparkles on the water.
+The sky: stars twinkle, the soft clouds drift slowly.
+The boulevard: pink and cyan light trails stream along the road at the bottom.
+Nothing else changes: no new objects, no cars, no people, no text. It ends exactly as it starts, so it can loop.
