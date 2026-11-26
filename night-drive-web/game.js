@@ -341,7 +341,7 @@ async function showWins(grid, ev, carEls) {
 // Drive-By: a car speeds across the row from the right and the cells it passes turn into cars
 // ---------- The supercar in side profile races along a row: in a Drive-By, and whenever 3 or more cars stand in
 // one row. Its nose passes column c at the returned time, so the cells can react as it goes by. ----------
-const SIDE = { w: 50, from: 100, to: -54 }; SIDE.nose = .04 * SIDE.w; // in board %: the picture's width, its left edge at start and end; the nose sits 4 % into it
+const SIDE = { w: 34, from: 100, to: -38 }; SIDE.nose = .04 * SIDE.w; // in board %: the picture's width, its left edge at start and end; the nose sits 4 % into it
 function sideRun(r, onPass, ms = 1250) {
   const el = document.createElement("div"); el.className = "sidecar";
   const v = document.createElement("video"); v.muted = true; v.loop = true; v.playsInline = true; v.poster = "assets/sidecar.webp"; v.src = "assets/sidecar.webm";
