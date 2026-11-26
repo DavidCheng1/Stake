@@ -63,6 +63,9 @@ A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.se
 - every bonus is confirmed with its cost first, and ends on a summary that waits for Continue (it goes on by
   itself after 3.5 s in autoplay);
 - sound, the filmed symbol animations, the animated background, the main character's videos.
+- speed: the whole game runs at 1.25× its designed pace, turbo at 2.75× (`pace()`);
+- anticipation: the reels still to come are real reel strips whose last five symbols are the result; they spin as a
+  blur and stop with a bounce exactly on it, nothing is swapped;
 - the background: filmed again at 1080p (`prompts/nd-bgloop2.txt`): nothing travels across the picture (clouds stay,
   palms sway round their resting pose), closed into a seamless loop with tools/video/loop.py (6.6 s), interpolated to
   48 fps; `assets/bg.webp` is its first frame. The symbol player blends each frame into the next, so the sheets (idle
@@ -77,9 +80,10 @@ A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.se
 - the win screen (Big 20×, Mega 50×, Epic 100×, Max Win at the cap): painted titles in `assets/win/` (prompts
   `prompts/nd-win-*.txt`), a striped synthwave sun, a neon floor, sparks; the count climbs through the tiers, a tap
   skips to the end, a second tap closes it;
-- the start of The Chase: a filmed clip (`assets/fsi.webm`, Gemini Omni from `prompts/nd-fsintro.txt` take 02 and
-  `prompts/nd-fsintro-video2.txt` take 04, with the car's own picture as a second reference so it stays our cartoon car):
-  the getaway car comes at us down a neon boulevard and roars past. It plays inside the grid (`assets/fsi-grid.webm`,
+- the start of The Chase: a filmed clip of an 80s wedge supercar (our own design, `prompts/nd-supercar.txt` take 04;
+  not a copy of a real model) driving dead straight at us down the neon boulevard until its nose fills the frame
+  (`prompts/nd-fsintro2.txt` take 01, `prompts/nd-fsintro2-video.txt` take 02 from 1.0 s, the car's picture as a second
+  reference). It plays inside the grid (`assets/fsi-grid.webm`,
   cropped square, `gridPass()`); the full-screen version (`fsi.webm`, `carPass()`) and the built scene are fallbacks;
   then the way in inside the grid: the symbols are pulled into the vanishing point, a neon warp tunnel, the
   car blasts out, a flash, the title in the grid; during The Chase a neon road runs under the reels.

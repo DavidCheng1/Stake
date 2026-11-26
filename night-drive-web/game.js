@@ -122,7 +122,7 @@ const bet = () => BETS[betIdx];
 const money = v => v.toFixed(2);
 // values under a cent keep two significant digits (a per-way value in the rules), never 0.00
 const small = v => v >= .01 || v === 0 ? money(v) : v.toPrecision(2);
-const pace = () => turbo ? 2.2 : 1;
+const pace = () => turbo ? 2.75 : 1.25; // the game runs 1.25× its designed speed; turbo 2.75×
 const sleep = ms => new Promise(r => setTimeout(r, ms / pace()));
 const say = t => { $("msg").textContent = t; };
 
@@ -280,7 +280,7 @@ async function dropIn(grid, skip = () => false, under = {}) {
   const st = { scat: 0 }; let seen = 0, from = COLS;
   if (!game.classList.contains("chasing")) for (let c = 0; c < COLS; c++) { if (seen >= 2) { from = c; break; } if (grid[c].some(x => x.id === "scatter")) seen++; }
   const strips = [];
-  for (let c = from; c < COLS; c++) strips[c] = blurStrip(c);
+  for (let c = from; c < COLS; c++) strips[c] = reelStrip(c, grid, under);
   await dropCols(grid, skip, under, 0, from, st, false);
   if (from >= COLS) return;
   game.classList.add("teasing");
@@ -288,20 +288,58 @@ async function dropIn(grid, skip = () => false, under = {}) {
     const s = strips[c]; s.el.classList.add("focus");
     const beam = document.createElement("div"); beam.className = "tease-beam"; beam.style.left = `calc(${cellPct(c, 0)[0]}% - 7.8%)`; board.appendChild(beam);
     sound.play("tease", .85, 1 + .08 * k);
-    for (let i = 0; i < 12; i++) { s.anim.playbackRate = 1 - .065 * i; await sleep(1500 / 12); }
+    await sleep(350);
+    // the reel slows down, sharpens and stops with a little bounce on exactly the symbols that land
+    const ms = 1150 / pace(); s.el.classList.add("landing");
+    setTimeout(() => landSounds(grid, under, c, st, skip), ms * .86);
+    await s.stop(ms);
     s.el.remove(); beam.remove();
-    await dropCols(grid, skip, under, c, c + 1, st, true);
+    placeCol(grid, under, c, skip);
   }
   game.classList.remove("teasing");
 }
-// a reel still to come, spinning as a blur of random symbols
-function blurStrip(c) {
+// A reel still to come during the anticipation, built like a real reel strip: on top the five symbols that will land
+// (as the board will show them), above them a block of random symbols repeated. It spins as a blur over that block;
+// stop() carries it on from where it is, slows it down and lands it exactly on the real five, which then simply stay.
+function reelStrip(c, grid, under) {
+  const H = cellsEl.offsetHeight, h = H * PITCH / 100, sz = H * .1704, L = 8, R = 4;
   const el = document.createElement("div"); el.className = "reel-blur"; el.style.gridColumn = c + 1; el.style.gridRow = "1 / 6";
-  const inner = document.createElement("div"), ids = [...PAYING, "scatter", "wild"], pick = Array.from({ length: 6 }, () => ids[rnd(ids.length)]);
-  for (const id of [...pick, ...pick]) { const im = new Image(); im.src = `assets/sym/${id}.webp`; im.alt = ""; inner.appendChild(im); }
+  const inner = document.createElement("div"); inner.className = "reel-inner";
+  const item = node => { const d = document.createElement("div"); d.className = "it"; d.style.height = h + "px"; d.style.paddingTop = sz * .03 + "px";
+    node.style.width = node.style.height = sz * .94 + "px"; d.appendChild(node); return d; };
+  for (let r = 0; r < ROWS; r++) inner.appendChild(item(symEl(under[c + "," + r] || grid[c][r])));
+  const ids = [...PAYING, "wild"], block = Array.from({ length: L }, () => ids[rnd(ids.length)]);
+  for (let i = 0; i < L * R; i++) { const im = new Image(); im.src = `assets/sym/${block[i % L]}.webp`; im.alt = ""; inner.appendChild(item(im)); }
   el.appendChild(inner); cellsEl.appendChild(el);
-  const anim = inner.animate([{ transform: "translateY(-50%)" }, { transform: "translateY(0)" }], { duration: 240, iterations: Infinity });
-  return { el, anim };
+  // y = how many symbols the strip is pulled up; it spins downward over one block (Y0 + L down to Y0) again and again
+  const Y0 = ROWS + L * (R - 2), P = 320, ty = v => `translateY(${-v * h}px)`;
+  const loop = inner.animate([{ transform: ty(Y0 + L) }, { transform: ty(Y0) }], { duration: P, iterations: Infinity });
+  return {
+    el,
+    stop(ms) {
+      const y = Y0 + L - L * ((loop.currentTime % P) / P); loop.cancel();
+      return inner.animate([{ transform: ty(y), filter: "blur(3px) brightness(1.15)" }, { transform: ty(3), filter: "blur(1.5px) brightness(1.1)", offset: .6 },
+        { transform: ty(-.1), filter: "blur(0px) brightness(1)", offset: .88 }, { transform: ty(0), filter: "blur(0px) brightness(1)" }],
+        { duration: ms, easing: "cubic-bezier(.25,.6,.4,1)", fill: "forwards" }).finished;
+    },
+  };
+}
+// the real symbols take the reel's place, where the strip stopped (no drop), and the landing sounds play
+function placeCol(grid, under, c, skip) {
+  for (let r = 0; r < ROWS; r++) {
+    if (skip(c, r)) continue;
+    const cell = under[c + "," + r] || grid[c][r], el = symEl(cell); cells[c][r].replaceChildren(el);
+    if (cell.id === "scatter") el.classList.add("hit");
+  }
+}
+function landSounds(grid, under, c, st, skip) {
+  for (let r = 0; r < ROWS; r++) {
+    if (skip(c, r)) continue;
+    const id = (under[c + "," + r] || grid[c][r]).id;
+    if (id === "wild") sound.play("wild", .7);
+    if (id === "scatter") { const n = st.scat++; sound.play("scatter", .8 + .15 * Math.min(n, 2), 1 + .12 * n); }
+  }
+  sound.play("stop", 1, .97 + c * .02); sound.play("pluck", .5, NOTES[c]);
 }
 const NOTES = [1, 1.189, 1.335, 1.498, 1.782]; // A C D E G: the landing pluck of reels 1 to 5
 async function dropCols(grid, skip, under, from, to, st, slow) {
@@ -522,8 +560,9 @@ async function gridPass() {
   v.animate([{ transform: "scale(.2)", opacity: 0, filter: "brightness(3)" }, { transform: "scale(1.03)", opacity: 1, filter: "brightness(1.3)", offset: .7 }, { transform: "none", opacity: 1, filter: "none" }],
     { duration: 420 / pace(), easing: "cubic-bezier(.2,.9,.3,1.1)" });
   try { await v.play(); } catch { v.hidden = true; return carPass(); }
-  sound.play("carmove", .7, .9, 150 / pace()); sound.play("driveby", 1, 1, 1500 / pace()); setTimeout(cheer, 1900 / pace());
-  await new Promise(res => { const tick = () => (v.currentTime >= 3.3 || v.ended || v.paused) ? res() : requestAnimationFrame(tick); requestAnimationFrame(tick); });
+  const rest = ((v.duration || 3) - .9) * 1000 / v.playbackRate;
+  sound.play("carmove", .8, .9, 100); sound.play("driveby", 1, 1, rest); setTimeout(cheer, rest);
+  await new Promise(res => { const tick = () => (v.currentTime >= (v.duration || 3) - .06 || v.ended || v.paused) ? res() : requestAnimationFrame(tick); requestAnimationFrame(tick); });
   board.classList.add("flash"); setTimeout(() => board.classList.remove("flash"), 450 / pace());
   await v.animate([{ opacity: 1, filter: "brightness(1)" }, { opacity: 0, filter: "brightness(4)" }], { duration: 220 / pace(), fill: "forwards" }).finished;
   v.pause(); v.hidden = true; v.getAnimations().forEach(a => a.cancel());
@@ -537,8 +576,9 @@ async function carPass() {
   f.hidden = false; f.classList.add("film"); fsiv.currentTime = 0; fsiv.playbackRate = turbo ? 1.5 : 1;
   f.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200 / pace(), fill: "forwards" });
   try { await fsiv.play(); } catch { f.classList.remove("film"); return builtPass(); }
-  sound.play("carmove", .7, .9, 150 / pace()); sound.play("driveby", 1, 1, 1500 / pace()); setTimeout(cheer, 1900 / pace());
-  await new Promise(res => { const tick = () => (fsiv.currentTime >= 3.3 || fsiv.ended || fsiv.paused) ? res() : requestAnimationFrame(tick); requestAnimationFrame(tick); });
+  const rest = ((fsiv.duration || 3) - .9) * 1000 / fsiv.playbackRate;
+  sound.play("carmove", .8, .9, 100); sound.play("driveby", 1, 1, rest); setTimeout(cheer, rest);
+  await new Promise(res => { const tick = () => (fsiv.currentTime >= (fsiv.duration || 3) - .06 || fsiv.ended || fsiv.paused) ? res() : requestAnimationFrame(tick); requestAnimationFrame(tick); });
   const fl = f.querySelector(".fsi-flash");
   await fl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140 / pace(), fill: "forwards" }).finished;
   fsiv.pause(); f.hidden = true; f.classList.remove("film"); fl.getAnimations().forEach(a => a.cancel());

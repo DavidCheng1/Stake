@@ -105,9 +105,12 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
 .game.teasing .cell:not(:has(.scatter)) { filter: brightness(.5) saturate(.7); }
 .game.teasing .sym.scatter > img { animation-duration: .35s; } .game.teasing .neon-ring { animation: none; opacity: 1; filter: brightness(1.4); }
 .reel-blur { position: relative; overflow: hidden; z-index: 3; border-radius: 8px; }
-.reel-blur > div { display: grid; gap: 0; filter: blur(3px) brightness(1.15); }
+.reel-blur > .reel-inner { display: block; filter: blur(3px) brightness(1.15); will-change: transform; }
+.reel-blur .it { display: flex; justify-content: center; align-items: flex-start; }
+.reel-blur .it > * { flex: none; }
+.reel-blur.landing::after { opacity: 0; }
 .reel-blur::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(10 4 24 / .85), transparent 22%, transparent 78%, rgb(10 4 24 / .85)); }
-.reel-blur img { width: 100%; aspect-ratio: 1; padding: 9%; display: block; }
+.reel-blur::after { transition: opacity .35s; }
 .reel-blur.focus { box-shadow: 0 0 0 4px rgb(var(--sun)), 0 0 34px 10px rgb(var(--sun) / .85), inset 0 0 30px rgb(var(--sun) / .6); animation: teaseGlow .35s ease-in-out infinite alternate; }
 @keyframes teaseGlow { to { box-shadow: 0 0 0 5px #fff, 0 0 50px 16px rgb(var(--pink) / .9), inset 0 0 40px rgb(var(--pink) / .6); } }
 
