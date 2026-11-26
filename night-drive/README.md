@@ -66,10 +66,12 @@ A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.se
 - speed: the whole game runs at 1.25× its designed pace, turbo at 2.75× (`pace()`);
 - anticipation: the reels still to come are real reel strips whose last five symbols are the result; they spin as a
   blur and stop with a bounce exactly on it, nothing is swapped;
-- the background: filmed again at 1080p (`prompts/nd-bgloop2.txt`): nothing travels across the picture (clouds stay,
-  palms sway round their resting pose), closed into a seamless loop with tools/video/loop.py (6.6 s), interpolated to
-  48 fps; `assets/bg.webp` is its first frame. The symbol player blends each frame into the next, so the sheets (idle
-  12 fps, win 24 fps) move smoothly at the screen's rate;
+- the background: filmed at 1080p (`prompts/nd-bgloop2.txt`), nothing travels across it; looped as a ping-pong
+  (frames 12-119 forward, then back), so there is neither a jump nor a crossfade (a crossfade doubled the palm
+  fronds); 24 fps, no frame interpolation (it can ghost on thin fronds); `assets/bg.webp` is its first frame. The
+  symbol player blends each frame into the next, so the sheets move smoothly at the screen's rate;
+- the free-spins car vanishes inside the grid window (clip time 1.9 s, a flare, the window collapses into the reels);
+- the win titles are sharpened (unsharp mask) and float without rotating (rotation resampled them soft);
 - every win pays at least 0.10× the bet (`MIN_WIN`), so no win shows as 0.00; pay scale K 0.038, The Chase 76×,
   Super Chase 235×;
 - fonts (bundled, SIL OFL, `assets/fonts`): Audiowide for labels, buttons and numbers, Mr Dafoe (script) for accents;

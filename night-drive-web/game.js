@@ -560,11 +560,15 @@ async function gridPass() {
   v.animate([{ transform: "scale(.2)", opacity: 0, filter: "brightness(3)" }, { transform: "scale(1.03)", opacity: 1, filter: "brightness(1.3)", offset: .7 }, { transform: "none", opacity: 1, filter: "none" }],
     { duration: 420 / pace(), easing: "cubic-bezier(.2,.9,.3,1.1)" });
   try { await v.play(); } catch { v.hidden = true; return carPass(); }
-  const rest = ((v.duration || 3) - .9) * 1000 / v.playbackRate;
+  // the car comes at us, but vanishes inside the window while it is still well within the grid's border (clip time
+  // END): it flares into light and the window collapses into the reels
+  const END = 1.9, rest = (END - .45) * 1000 / v.playbackRate;
   sound.play("carmove", .8, .9, 100); sound.play("driveby", 1, 1, rest); setTimeout(cheer, rest);
-  await new Promise(res => { const tick = () => (v.currentTime >= (v.duration || 3) - .06 || v.ended || v.paused) ? res() : requestAnimationFrame(tick); requestAnimationFrame(tick); });
+  await new Promise(res => { const tick = () => (v.currentTime >= END || v.ended || v.paused) ? res() : requestAnimationFrame(tick); requestAnimationFrame(tick); });
+  v.pause(); sound.play("warp", .5, 1.4);
   board.classList.add("flash"); setTimeout(() => board.classList.remove("flash"), 450 / pace());
-  await v.animate([{ opacity: 1, filter: "brightness(1)" }, { opacity: 0, filter: "brightness(4)" }], { duration: 220 / pace(), fill: "forwards" }).finished;
+  await v.animate([{ opacity: 1, transform: "none", filter: "brightness(1)" }, { opacity: 1, transform: "scale(1.02)", filter: "brightness(2.6) saturate(1.5)", offset: .35 },
+    { opacity: 0, transform: "scale(.55)", filter: "brightness(5)" }], { duration: 420 / pace(), easing: "ease-in", fill: "forwards" }).finished;
   v.pause(); v.hidden = true; v.getAnimations().forEach(a => a.cancel());
 }
 const fsiv = $("fsiv"); fsiv.src = "assets/fsi.webm"; fsiv.load(); fsiv.addEventListener("error", () => {});
