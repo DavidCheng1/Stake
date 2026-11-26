@@ -195,8 +195,13 @@ function playSymAnim(el, kind) {
   const done = () => { if (el.querySelector(".sym-anim") === cv) el.classList.remove("animating", "anim-" + kind); };
   const tick = now => {
     if (!cv.isConnected) return done();
-    const t = (now - t0) * rate, f = Math.min(m.n - 1, Math.floor(t / 1000 * m.fps));
-    if (f !== last) { last = f; g.clearRect(0, 0, m.px, m.px); g.drawImage(im, (f % m.cols) * step + 1, Math.floor(f / m.cols) * step + 1, m.px, m.px, 0, 0, m.px, m.px); }
+    const t = (now - t0) * rate, pos = Math.min(m.n - 1, t / 1000 * m.fps), f = Math.floor(pos), k = pos - f;
+    const key = f + k.toFixed(2);
+    if (key !== last) {
+      last = key; g.clearRect(0, 0, m.px, m.px); g.globalAlpha = 1;
+      g.drawImage(im, (f % m.cols) * step + 1, Math.floor(f / m.cols) * step + 1, m.px, m.px, 0, 0, m.px, m.px);
+      if (k > .02 && f + 1 < m.n) { const n = f + 1; g.globalAlpha = k; g.drawImage(im, (n % m.cols) * step + 1, Math.floor(n / m.cols) * step + 1, m.px, m.px, 0, 0, m.px, m.px); g.globalAlpha = 1; }
+    }
     if (t < len + hold) { requestAnimationFrame(tick); return; }
     done(); cv.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220 }).finished.then(() => cv.remove());
   };
@@ -478,6 +483,23 @@ function warp(ms) {
     requestAnimationFrame(tick);
   });
 }
+// the getaway car tears past in front of us on a neon highway: it races in from the right, holds the middle for a
+// heartbeat, then floors it out to the left; the picture shakes as it passes, a white flash cuts back to the grid
+async function carPass() {
+  const f = $("fsi"), car = f.querySelector(".fsi-car"), dur = 2100 / pace();
+  f.hidden = false; f.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 / pace(), fill: "forwards" });
+  sound.play("driveby", 1); sound.play("carmove", .8, .9, 700 / pace()); cheer();
+  const drive = car.animate([
+    { transform: "translateX(2050px) scale(.9)", easing: "cubic-bezier(.15,.75,.35,1)" },
+    { transform: "translateX(620px) scale(1)", offset: .4, easing: "linear" },
+    { transform: "translateX(540px) scale(1.02)", offset: .56, easing: "cubic-bezier(.6,0,.95,.5)" },
+    { transform: "translateX(-1400px) scale(1.08)" }], { duration: dur, fill: "forwards" });
+  setTimeout(() => f.animate([{ transform: "none" }, { transform: "translate(-6px, 4px)" }, { transform: "translate(5px, -3px)" }, { transform: "translate(-3px, 2px)" }, { transform: "none" }],
+    { duration: 380 / pace(), iterations: 2 }), dur * .56);
+  await drive.finished;
+  await f.querySelector(".fsi-flash").animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140 / pace(), fill: "forwards" }).finished;
+  f.hidden = true; drive.cancel(); f.querySelector(".fsi-flash").getAnimations().forEach(a => a.cancel());
+}
 async function warpIn(title, sub) {
   sound.play("warp", .9); sound.duck(true);
   const pulls = [];
@@ -486,13 +508,10 @@ async function warpIn(title, sub) {
     pulls.push(s.animate([{ transform: "none", opacity: 1 }, { transform: `translate(${(2 - c) * 121.7}%, ${(2 - r) * 121.7}%) scale(.05) rotate(${(c - 2) * 50 + (r - 2) * 20}deg)`, opacity: 0 }],
       { duration: 620 / pace(), delay: Math.hypot(c - 2, r - 2) * 70 / pace(), easing: "cubic-bezier(.6,0,.9,.45)", fill: "forwards" }).finished.then(() => s.remove()));
   }
-  const tunnel = warp(2300);
-  await sleep(500);
-  // the car comes out of the tunnel at you
-  const car = new Image(); car.src = "assets/sym/wild.webp"; car.className = "warp-car"; board.appendChild(car);
-  await car.animate([{ transform: "translate(-50%,-50%) scale(.04)", opacity: 0 }, { opacity: 1, offset: .25 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1, offset: .72 },
-    { transform: "translate(-50%,-50%) scale(3.2)", opacity: 0 }], { duration: 1300 / pace(), easing: "cubic-bezier(.55,0,.85,.55)" }).finished;
-  car.remove(); await Promise.all(pulls);
+  const tunnel = warp(1800);
+  await sleep(700);
+  await carPass();
+  await Promise.all(pulls);
   const fl = document.createElement("div"); fl.className = "grid-flash"; board.appendChild(fl);
   fl.animate([{ opacity: 0 }, { opacity: .95, offset: .2 }, { opacity: 0 }], { duration: 600 / pace() }).finished.then(() => fl.remove());
   game.classList.add("chasing");

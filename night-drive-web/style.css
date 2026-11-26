@@ -28,18 +28,18 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
 @keyframes logoFloat { 50% { transform: translateY(-8px); } }
 
 /* the bonus button (the logo on gold) and the Chance ×3 tag under it */
-.bonus-btn { position: absolute; left: 100px; top: 420px; width: 300px; height: 300px; padding: 18px 16px 0; border-radius: 40px; cursor: pointer; display: flex; flex-direction: column; align-items: center;
+.bonus-btn { position: absolute; left: 150px; top: 450px; width: 200px; height: 200px; padding: 12px 10px 0; border-radius: 30px; cursor: pointer; display: flex; flex-direction: column; align-items: center;
   background: radial-gradient(circle at 50% 30%, #fff1a0, #ffcc22 45%, #f29b00 90%); border: 5px solid #fff6c4;
   box-shadow: 0 10px 0 #a35a00, 0 18px 30px rgb(0 0 0 / .5), 0 0 40px rgb(255 190 40 / .55), inset 0 -10px 24px rgb(170 80 0 / .45);
   transition: transform .15s, filter .15s; animation: bonusPulse 2.4s ease-in-out infinite; }
-.bonus-btn img { width: 252px; padding: 8px 10px 4px; border-radius: 26px; background: radial-gradient(ellipse at 50% 40%, rgb(84 24 128), rgb(18 6 38) 75%); box-shadow: inset 0 0 0 3px #a35a00, inset 0 4px 14px rgb(0 0 0 / .7), 0 0 0 3px #fff6c4; }
-.bonus-btn span { margin-top: 10px; font: 900 46px/1 var(--ui); letter-spacing: .06em; text-transform: uppercase; color: #fff; -webkit-text-stroke: 2px #7a2b00; paint-order: stroke fill; text-shadow: 0 4px 0 #7a2b00; }
+.bonus-btn img { width: 168px; padding: 6px 8px 3px; border-radius: 20px; background: radial-gradient(ellipse at 50% 40%, rgb(84 24 128), rgb(18 6 38) 75%); box-shadow: inset 0 0 0 3px #a35a00, inset 0 4px 14px rgb(0 0 0 / .7), 0 0 0 3px #fff6c4; }
+.bonus-btn span { margin-top: 7px; font: 900 32px/1 var(--ui); letter-spacing: .06em; text-transform: uppercase; color: #fff; -webkit-text-stroke: 2px #7a2b00; paint-order: stroke fill; text-shadow: 0 4px 0 #7a2b00; }
 .bonus-btn:hover:not(:disabled) { transform: translateY(-4px) scale(1.03); filter: brightness(1.08); }
 .bonus-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 4px 0 #a35a00, 0 8px 16px rgb(0 0 0 / .5); }
 .bonus-btn:disabled { filter: grayscale(.75) brightness(.7); cursor: default; animation: none; }
 @keyframes bonusPulse { 50% { box-shadow: 0 10px 0 #a35a00, 0 18px 30px rgb(0 0 0 / .5), 0 0 70px rgb(255 190 40 / .85), inset 0 -10px 24px rgb(170 80 0 / .45); } }
 .game.chasing .bonus-btn, .game.chasing .boost-tag { display: none; }
-.boost-tag { position: absolute; left: 70px; top: 760px; width: 360px; padding: 12px 16px; border-radius: 18px; text-align: center; display: grid; gap: 4px; justify-items: center;
+.boost-tag { position: absolute; left: 70px; top: 700px; width: 360px; padding: 12px 16px; border-radius: 18px; text-align: center; display: grid; gap: 4px; justify-items: center;
   background: rgb(14 6 30 / .85); border: 2px solid rgb(var(--sun)); box-shadow: 0 0 18px rgb(var(--sun) / .6); animation: tagGlow 1.4s ease-in-out infinite alternate; }
 .boost-tag[hidden] { display: none; }
 .boost-tag b { font-size: 26px; text-transform: uppercase; letter-spacing: .06em; color: #ffd9a0; text-shadow: 0 0 10px rgb(var(--sun)); }
@@ -146,21 +146,22 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
 .bet-row button { width: 58px; height: 58px; border: none; background: none; cursor: pointer; display: grid; place-items: center; padding: 0; filter: drop-shadow(0 3px 0 rgb(0 0 0 / .6)); }
 .bet-row button svg { width: 54px; height: 54px; fill: #fff; } .bet-row button:disabled { opacity: .35; cursor: default; }
 .ctrl { position: absolute; left: 1460px; width: 360px; top: 742px; display: flex; align-items: center; justify-content: space-between; z-index: 7; }
-.spin { position: relative; width: 184px; height: 184px; padding: 0; border: none; border-radius: 50%; cursor: pointer; background: #2a0420;
-  box-shadow: 0 12px 0 #3a0230, 0 22px 30px rgb(0 0 0 / .6), 0 0 40px rgb(var(--pink) / .75), 0 0 90px rgb(var(--pink) / .35); transition: transform .12s, box-shadow .12s, filter .2s; }
-.spin-ring { position: absolute; inset: 0; border-radius: 50%;
-  background: conic-gradient(from 210deg, #ffffff, #8c8ca8 12%, #f4f4ff 25%, #5d5d78 40%, #e8e8f8 55%, #7a7a96 70%, #ffffff 85%, #8c8ca8 95%, #ffffff);
-  box-shadow: inset 0 0 0 2px #1a0614, inset 0 -4px 8px rgb(0 0 0 / .45); }
-.spin-dome { position: absolute; inset: 13px; border-radius: 50%; display: grid; place-items: center;
-  background: radial-gradient(circle at 50% 30%, #ff9ad6 0%, #ff3ea6 32%, #d4097a 62%, #6e0348 100%);
-  box-shadow: inset 0 0 0 3px #4a0233, inset 0 -14px 22px rgb(60 0 40 / .75), inset 0 10px 16px rgb(255 220 240 / .45), 0 0 0 2px rgb(255 255 255 / .35); }
-.spin-dome svg { width: 100px; height: 100px; filter: drop-shadow(0 4px 0 #5a0238) drop-shadow(0 0 8px rgb(255 255 255 / .35)); }
-.spin-gloss { position: absolute; left: 26%; top: 15%; width: 48%; height: 24%; border-radius: 50%; pointer-events: none;
-  background: linear-gradient(180deg, rgb(255 255 255 / .75), rgb(255 255 255 / 0)); }
-.spin:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08); }
-.spin:active:not(:disabled) { transform: translateY(9px); box-shadow: 0 3px 0 #3a0230, 0 8px 14px rgb(0 0 0 / .6), 0 0 40px rgb(var(--pink) / .75); }
-.spin:disabled { filter: grayscale(.6) brightness(.72); cursor: default; }
-.spin.go:disabled { filter: none; }
+/* the spin button: smoked black glass, a thin neon ring (pink to cyan) that turns slowly and races while the reels
+   spin, a white round arrow with a soft glow */
+.spin { position: relative; width: 172px; height: 172px; padding: 0; border: none; border-radius: 50%; cursor: pointer; background: rgb(6 2 14 / .5);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 12px 30px rgb(0 0 0 / .55), inset 0 0 34px rgb(0 0 0 / .65); transition: transform .12s, filter .2s; }
+.spin-ring { position: absolute; inset: 0; border-radius: 50%; padding: 4px; pointer-events: none;
+  background: conic-gradient(from var(--a), rgb(var(--pink)), rgb(var(--cyan)), #fff 30%, rgb(var(--pink)) 50%, rgb(var(--cyan)) 75%, rgb(var(--pink)));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  filter: drop-shadow(0 0 6px rgb(var(--pink))) drop-shadow(0 0 14px rgb(var(--cyan) / .6)); animation: run 6s linear infinite; }
+.spin-dome { position: absolute; inset: 12px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgb(255 255 255 / .1);
+  background: radial-gradient(circle at 50% 30%, rgb(255 255 255 / .1), rgb(0 0 0 / .35) 70%); }
+.spin-dome svg { width: 86px; height: 86px; filter: drop-shadow(0 0 6px rgb(255 255 255 / .6)) drop-shadow(0 0 16px rgb(var(--pink) / .8)); transition: filter .2s; }
+.spin-gloss { position: absolute; left: 24%; top: 9%; width: 52%; height: 22%; border-radius: 50%; pointer-events: none; background: linear-gradient(180deg, rgb(255 255 255 / .2), rgb(255 255 255 / 0)); }
+.spin:hover:not(:disabled) { transform: scale(1.04); } .spin:hover:not(:disabled) svg { filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 22px rgb(var(--pink))); }
+.spin:active:not(:disabled) { transform: scale(.95); }
+.spin:disabled { filter: brightness(.65) saturate(.6); cursor: default; }
+.spin.go:disabled { filter: none; } .spin.go .spin-ring { animation-duration: .7s; }
 .spin.go svg { animation: spinIcon .6s linear infinite; } @keyframes spinIcon { to { transform: rotate(360deg); } }
 .msg { position: absolute; left: 50%; top: 884px; pointer-events: none; transform: translateX(-50%); font: 700 24px var(--ui); letter-spacing: .06em; text-transform: uppercase; color: #ffd2ec; text-shadow: 0 0 10px rgb(var(--pink)), 0 2px 0 #000; z-index: 7; white-space: nowrap; }
 
@@ -386,3 +387,56 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
   -webkit-mask: linear-gradient(transparent, #000 45%); mask: linear-gradient(transparent, #000 45%); animation: roadRun .5s linear infinite; animation-play-state: paused; }
 @keyframes roadRun { to { background-position: 0 46px, 0 0; } }
 .game.chasing .road { opacity: .38; animation-play-state: running; }
+
+/* ---------- every menu and dialog in one neon design: smoked glass, a faint synthwave grid, scanlines, a pink glow
+   from the top and a cyan one from below, a neon strip along the top, a double neon edge (pink, dark, cyan) ---------- */
+.menu, .auto-menu, .bonus-in, .confirm-in, .dlg-in, .fspanel {
+  background:
+    linear-gradient(90deg, transparent 4%, rgb(var(--pink) / .95) 30%, rgb(var(--cyan) / .95) 70%, transparent 96%) top / 100% 3px no-repeat,
+    repeating-linear-gradient(0deg, rgb(255 255 255 / .03) 0 2px, transparent 2px 4px),
+    radial-gradient(120% 55% at 50% 0%, rgb(var(--pink) / .3), transparent 62%),
+    radial-gradient(90% 45% at 50% 108%, rgb(var(--cyan) / .24), transparent 70%),
+    linear-gradient(rgb(var(--pink) / 0) 0 93%, rgb(var(--pink) / .09) 93%) 0 0 / 100% 28px,
+    linear-gradient(90deg, rgb(var(--cyan) / 0) 0 94%, rgb(var(--cyan) / .07) 94%) 0 0 / 28px 100%,
+    linear-gradient(165deg, rgb(46 12 82 / .93), rgb(14 5 30 / .95) 58%, rgb(26 6 48 / .95));
+  border: 2px solid rgb(var(--pink) / .9);
+  box-shadow: 0 0 0 4px rgb(12 4 26 / .92), 0 0 0 6px rgb(var(--cyan) / .7), 0 0 30px rgb(var(--pink) / .5), 0 0 70px rgb(var(--cyan) / .22),
+    inset 0 0 34px rgb(var(--pink) / .16), 0 24px 60px rgb(0 0 0 / .6);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.bonus-in { border-color: #ffcc22; box-shadow: 0 0 0 4px rgb(12 4 26 / .92), 0 0 0 6px rgb(var(--pink) / .7), 0 0 34px rgb(255 190 40 / .45), 0 0 80px rgb(var(--pink) / .25),
+  inset 0 0 34px rgb(255 190 40 / .14), 0 24px 60px rgb(0 0 0 / .6); }
+.offer { background: linear-gradient(180deg, rgb(255 255 255 / .06), rgb(0 0 0 / .35)); backdrop-filter: blur(4px); }
+
+/* ---------- the start of The Chase: a neon highway, the car tears past in front of us ---------- */
+.fsi { position: absolute; inset: 0; z-index: 35; overflow: hidden; pointer-events: none;
+  background: linear-gradient(180deg, #0c0320 0%, #2c0a52 30%, #8a1f78 47%, #ff6a5a 52.5%, #14041f 52.6%, #1a0630 100%); }
+.fsi[hidden] { display: none; }
+.fsi-sun { top: 150px; width: 560px; height: 560px; margin-left: -280px; }
+.fsi-hills { position: absolute; left: 0; right: 0; top: 41%; height: 12%; background: linear-gradient(180deg, #3a0f66, #12041f);
+  clip-path: polygon(0 100%, 0 55%, 8% 20%, 15% 60%, 24% 10%, 33% 58%, 40% 35%, 47% 70%, 53% 70%, 60% 30%, 68% 62%, 76% 8%, 85% 55%, 92% 25%, 100% 50%, 100% 100%);
+  filter: drop-shadow(0 -2px 0 rgb(var(--pink))) drop-shadow(0 0 10px rgb(var(--pink))); }
+/* the road plane: 3500 px deep, tilted 62 degrees, seen with a 1400 px perspective from its near edge, so its far edge
+   lands on the horizon (about 47 % of the screen up) */
+.fsi-road { position: absolute; left: -60%; right: -60%; bottom: 0; height: 3500px; transform-origin: 50% 100%; transform: perspective(1400px) rotateX(62deg);
+  background:
+    linear-gradient(90deg, transparent 41.6%, rgb(var(--cyan)) 41.6% 41.9%, transparent 41.9% 58.1%, rgb(var(--cyan)) 58.1% 58.4%, transparent 58.4%),
+    linear-gradient(rgb(255 255 255 / 0) 0 55%, rgb(255 240 250 / .85) 55%) 50% 0 / 10px 90px repeat-y,
+    linear-gradient(rgb(var(--pink) / 0) 0 90%, rgb(var(--pink)) 90%) 0 0 / 100% 64px,
+    linear-gradient(90deg, rgb(var(--pink) / 0) 0 95%, rgb(var(--pink) / .8) 95%) 0 0 / 90px 100%,
+    linear-gradient(90deg, #120320 41.6%, #0a0214 41.6% 58.4%, #120320 58.4%);
+  -webkit-mask: linear-gradient(transparent, #000 12%); mask: linear-gradient(transparent, #000 12%); animation: fsiRoad .22s linear infinite; }
+@keyframes fsiRoad { to { background-position: 0 0, 50% 90px, 0 64px, 0 0, 0 0; } }
+.fsi-streaks { position: absolute; inset: 0; mix-blend-mode: screen; }
+.fsi-streaks i { position: absolute; left: 100%; height: 3px; width: 40%; border-radius: 3px; background: linear-gradient(90deg, transparent, rgb(var(--cyan)) 70%, #fff); filter: blur(1px); animation: trail .5s linear infinite; }
+.fsi-streaks i:nth-child(odd) { background: linear-gradient(90deg, transparent, rgb(var(--pink)) 70%, #fff); }
+.fsi-streaks i:nth-child(1) { top: 58%; } .fsi-streaks i:nth-child(2) { top: 66%; animation-delay: -.2s; } .fsi-streaks i:nth-child(3) { top: 74%; animation-delay: -.35s; animation-duration: .4s; }
+.fsi-streaks i:nth-child(4) { top: 84%; animation-delay: -.1s; } .fsi-streaks i:nth-child(5) { top: 92%; animation-delay: -.3s; animation-duration: .35s; }
+.fsi-streaks i:nth-child(6) { top: 62%; animation-delay: -.42s; } .fsi-streaks i:nth-child(7) { top: 79%; animation-delay: -.05s; animation-duration: .45s; } .fsi-streaks i:nth-child(8) { top: 88%; animation-delay: -.25s; }
+.fsi-car { position: absolute; left: 0; top: 330px; width: 780px; height: 780px; }
+.fsi-car img { position: relative; z-index: 1; width: 100%; height: 100%;
+  -webkit-mask: linear-gradient(90deg, #000 66%, transparent 97%), linear-gradient(180deg, #000 78%, transparent 99%); -webkit-mask-composite: source-in;
+  mask: linear-gradient(90deg, #000 66%, transparent 97%), linear-gradient(180deg, #000 78%, transparent 99%); mask-composite: intersect; filter: drop-shadow(0 30px 20px rgb(0 0 0 / .6)) drop-shadow(0 0 30px rgb(var(--pink) / .7)); animation: fsiBob .16s ease-in-out infinite alternate; }
+@keyframes fsiBob { to { transform: translateY(-5px) rotate(-.4deg); } }
+.fsi-car .trail { opacity: 1; width: 260%; left: 62%; top: 40%; height: 28%; } .fsi-car .trail i { height: 14px; border-radius: 14px; }
+.fsi-car .lights { opacity: .6; width: 120%; right: 80%; top: 50%; height: 40%; filter: blur(14px); background: linear-gradient(270deg, rgb(200 250 255 / .7), rgb(120 230 255 / .25) 45%, rgb(0 229 255 / 0)); }
+.fsi-flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
