@@ -132,8 +132,7 @@ tail fins).
 
 ## Tools and commands
 
-- Seamless music loop: `math-sdk\env\Scripts\python.exe toolsudio_loop.py audio-src
-ight-drive\music-unlooped\<song>.mp3 night-drive-webssets\<song>.mp3`
+- Seamless music loop: `math-sdk\env\Scripts\python.exe tools\audio_loop.py audio-src\night-drive\music-unlooped\<song>.mp3 night-drive-web\assets\<song>.mp3`
   (finds the best-matching phrase, cuts there, crossfades the seam; the game skips the MP3 padding).
 - Paint (image-gen skill): `math-sdk\env\Scripts\python.exe tools\imagegen\gen.py <name> @night-drive\prompts\<file>.txt --aspect 1:1 --bg green --n 2`
   The takes land in `imagegen-out/<name>/` (not in git: copy the picks into `night-drive/concept/`).
