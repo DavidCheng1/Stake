@@ -1,7 +1,7 @@
 # Night Drive: concept for our next Stake Engine slot
 
 Working title **Night Drive**: an original 1980s neon coastal-city night, a getaway car on a palm boulevard,
-synthwave. Status: concept art (November 2026). No math, no frontend yet.
+synthwave. Status: concept art, round 2 (November 2026). No math, no frontend yet. Goal: **a 3-star game**.
 
 ## Prompt for Claude (to paste on the home machine)
 
@@ -9,8 +9,12 @@ synthwave. Status: concept art (November 2026). No math, no frontend yet.
 > pictures in `night-drive/concept/` first. The concept and the decisions so far are written there. Ghost Duels is
 > done (resubmitted), so leave it as it is.
 >
-> Next steps:
-> 1. Paint the reel grid again with the image-gen skill: `night-drive/prompts/nd-grid2.txt`, 4:3, green backdrop,
+> Round 2 is painted (`night-drive/concept/round2/`, see "Round 2" below): the 5 x 5 grid, the background and all
+> 12 symbols. Next steps:
+> 0. Paint the wild again: the car in `round2/sym-wild.webp` looks like a real supercar (a Countach). It must be our
+>    own design: rounder, retro-futuristic, a bubble canopy, unmistakably ours. Then check the free-spins draft below
+>    with me, and the math after that.
+> 1. (done in round 2) Paint the reel grid again with the image-gen skill: `night-drive/prompts/nd-grid2.txt`, 4:3, green backdrop,
 >    2 takes. It must have square cells (5 wide, 4 tall) and open cells (the game tints them in CSS). Keep the art-deco
 >    chrome corners of `concept/grid-first-try.webp`. Show it over `concept/keyart.webp` as a mock-up.
 > 2. Paint the full symbol set in **style B** (cartoon cel, see "Style B" below), one symbol per picture on a green
@@ -33,7 +37,7 @@ synthwave. Status: concept art (November 2026). No math, no frontend yet.
 
 - **Theme:** an original 80s neon coastal city at night: palms, ocean, a synthwave sun, art-deco hotels with neon
   (abstract signs, no readable names), chrome, light trails. Colours: hot pink, cyan, sunset orange, deep violet.
-- **Layout:** 5 x 4, 1024 ways. Simple to read, simple math. **The reel grid is its own picture, without a
+- **Layout:** 5 x 5 (the user's choice), left-to-right ways (3125). Simple to read, simple math. **The reel grid is its own picture, without a
   dashboard.** The controls (spin, bet, balance) are our own HTML UI, not painted into the board.
 - **Symbol style: B, 80s cartoon cel** (`concept/symbols-A-vs-B.webp`). Flat 2-tone cel shading, thick black
   outlines, a clear silhouette, a limited palette. Style A (airbrush) and the first sheet
@@ -43,6 +47,31 @@ synthwave. Status: concept art (November 2026). No math, no frontend yet.
   DeLorean). We design our own.
 - **Board mood:** `concept/board-mood.webp` (neon frame over the boulevard). It is for the feeling only: its painted
   dashboard is not used.
+
+## Round 2 (2026-11-26): 5 x 5, background, symbol set
+
+`concept/round2/`:
+- `mockup.webp`: background + grid + symbols on 5 x 5.
+- `background.webp`: the chosen background. Its calm middle (sun, sea) sits behind the grid. Palms, waves, neon and
+  light trails are painted apart, so they can be animated (a seamless loop video with tools/video/loop.py, like
+  Ghost Duels' VS field).
+- `grid-5x5.webp`: square open cells. The glass tint comes from CSS.
+- `sym-*.webp` (the driver and the tape are in `concept/symbol-B-*.webp`): the set in style B.
+  - **High:** driver, captain, club owner, DJ.
+  - **Mid:** speedboat, cassette, flamingo, briefcase.
+  - **Low:** sunglasses, roller skate, neon palm, neon heart.
+  - **Wild:** the getaway car. Redo it: it looks like a real car.
+  - **Scatter:** the sunset badge.
+- The prompts are `prompts/nd-grid3.txt`, `prompts/nd-bg.txt` and `prompts/nd-sym-*.txt`. `bash night-drive/paint.sh`
+  paints the whole batch.
+- **Every symbol gets real animation:** an idle loop and a win clip (Gemini image_to_video from the still, keyed into
+  sprite sheets like `tools/sprites/symanim.py`, which needs a path option for this game). About $0.42 a symbol.
+
+**Inspiration: Paperclip Gaming** (Stake-exclusive studio). We take principles, never their designs:
+- few features, made very well;
+- wilds with multipliers as the heart of the game;
+- a living, animated world behind the reels;
+- vibrant, clear themes.
 
 ## Game idea (draft, nothing fixed)
 
