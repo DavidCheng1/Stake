@@ -67,7 +67,9 @@ A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.se
 The math is a **placeholder in the browser**. `simulate(n, buys, boost)` in the console gives about 96 %: free spins
 about every 176 spins, 45 % of the RTP; Drive-By about every 33 spins; Chase 81×, Super Chase 250×. Chance ×3
 (`BOOST` in game.js: sunset weight 1.97, 2× the bet per spin) starts free spins about every 55 spins. Test hook:
-`window.__force = "driveby"` or `"chase"` before a spin. Not in it yet:
+`window.__force = "driveby"`, `"chase"` or `"tease"` (two sunsets, the anticipation without a third) before a spin.
+Anticipation: with two sunsets on the board, the reels still to come spin on as a blur and stop one by one
+(1.5 s each, slowing), the world darkens and the reel about to stop glows (sound `tease`). Not in it yet:
 - the real math (math-sdk) and the RGS;
 - social wording (`social=true`) and currencies;
 - portrait layout;

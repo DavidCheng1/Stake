@@ -60,6 +60,8 @@ function baseSpin(boost = false) {
   // test hook: window.__force = "driveby" or "chase" makes the next spin show it (prototype only)
   const force = window.__force; window.__force = null;
   if (force === "chase") for (const [c, r] of [[0, 1], [2, 3], [4, 0]]) grid[c][r] = { id: "scatter" };
+  // "tease": two sunsets on reels 1 and 2 and none after, so the anticipation runs and ends without a third
+  if (force === "tease") for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) { if (grid[c][r].id === "scatter") grid[c][r] = { id: "heart" }; if (c <= 1 && r === 2 - c) grid[c][r] = { id: "scatter" }; }
   if (force === "driveby" || Math.random() < DRIVEBY) {
     const r = rnd(ROWS), cols = [1, 2, 3, 4].sort(() => Math.random() - .5).slice(0, 2 + rnd(3)).sort((a, b) => b - a), under = {};
     for (const c of cols) { under[c] = grid[c][r]; grid[c][r] = { id: "wild", m: pickW(MULTS) }; }
@@ -125,7 +127,7 @@ addEventListener("resize", fit); fit();
 // ---------- Sound: one output (the mute covers everything); the music crossfades between the base and The Chase ----------
 const sound = (() => {
   let ctx = null, master, musicBus, sfxBus, muted = false, cur = null, curName = null, mv = .7, sv = .8;
-  const buf = {}, SFX = ["click", "spin", "land", "win", "winbig", "wild", "scatter", "driveby", "carmove", "nitro", "chase", "bigwin", "chaseover"];
+  const buf = {}, SFX = ["click", "spin", "land", "win", "winbig", "wild", "scatter", "driveby", "carmove", "nitro", "chase", "bigwin", "chaseover", "tease"];
   const load = (name, url) => fetch(url).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(d => { buf[name] = d; if (name === curName && !cur) start(name); }).catch(() => {});
   function init() {
     if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
@@ -211,7 +213,8 @@ for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) { const d = docume
 function symEl(cell) {
   const d = document.createElement("div"); d.className = "sym " + cell.id; d.dataset.id = cell.id;
   const img = new Image(); img.src = `assets/sym/${cell.id}.webp`; img.alt = ""; d.appendChild(img);
-  if (cell.id === "wild") { const m = document.createElement("span"); m.className = "mult"; m.textContent = "×" + cell.m; d.appendChild(m); }
+  if (cell.id === "wild") { const m = document.createElement("span"); m.className = "mult"; m.dataset.m = cell.m; m.innerHTML = `<b>×${cell.m}</b>`; d.appendChild(m); }
+  if (cell.id === "scatter") { const r = document.createElement("i"); r.className = "rays"; d.prepend(r); const t = document.createElement("b"); t.className = "fs-tag"; t.textContent = "Free Spins"; d.appendChild(t); }
   return d;
 }
 // the first board: one of each
@@ -241,20 +244,50 @@ async function dropOut(skip = () => false) {
   }
   await Promise.all(anims);
 }
+// the new symbols fall in reel by reel. Anticipation: once two sunsets are on the board (base game), the reels
+// still to come keep spinning as a blur and stop one at a time, slower and slower, on the real result
 async function dropIn(grid, skip = () => false, under = {}) {
-  const anims = []; let scat = 0;
-  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
-    if (skip(c, r)) continue;
-    const cell = under[c + "," + r] || grid[c][r], el = symEl(cell); cells[c][r].replaceChildren(el);
-    const delay = (c * 80 + (4 - r) * 26) / pace();
-    anims.push(el.animate([{ transform: "translateY(-260%)", opacity: 0 }, { opacity: 1, offset: .08 }, { transform: "translateY(6%) scale(1.05,.92)", offset: .7 }, { transform: "none", opacity: 1 }],
-      { duration: 430 / pace(), delay, easing: "cubic-bezier(.4,0,.6,1)", fill: "backwards" }).finished);
-    if (cell.id === "wild") sound.play("wild", .7, 1, delay + 300 / pace());
-    if (cell.id === "scatter") sound.play("scatter", .9, 1 + .12 * scat++, delay + 300 / pace());
+  const st = { scat: 0 }; let seen = 0, from = COLS;
+  if (!game.classList.contains("chasing")) for (let c = 0; c < COLS; c++) { if (seen >= 2) { from = c; break; } if (grid[c].some(x => x.id === "scatter")) seen++; }
+  const strips = [];
+  for (let c = from; c < COLS; c++) strips[c] = blurStrip(c);
+  await dropCols(grid, skip, under, 0, from, st, false);
+  if (from >= COLS) return;
+  game.classList.add("teasing");
+  for (let c = from, k = 0; c < COLS; c++, k++) {
+    const s = strips[c]; s.el.classList.add("focus");
+    const beam = document.createElement("div"); beam.className = "tease-beam"; beam.style.left = `calc(${cellPct(c, 0)[0]}% - 7.8%)`; board.appendChild(beam);
+    sound.play("tease", .85, 1 + .08 * k);
+    for (let i = 0; i < 12; i++) { s.anim.playbackRate = 1 - .065 * i; await sleep(1500 / 12); }
+    s.el.remove(); beam.remove();
+    await dropCols(grid, skip, under, c, c + 1, st, true);
   }
-  for (let c = 0; c < COLS; c++) sound.play("land", .45, .94 + c * .03, (c * 80 + 300) / pace());
+  game.classList.remove("teasing");
+}
+// a reel still to come, spinning as a blur of random symbols
+function blurStrip(c) {
+  const el = document.createElement("div"); el.className = "reel-blur"; el.style.gridColumn = c + 1; el.style.gridRow = "1 / 6";
+  const inner = document.createElement("div"), ids = [...PAYING, "scatter", "wild"], pick = Array.from({ length: 6 }, () => ids[rnd(ids.length)]);
+  for (const id of [...pick, ...pick]) { const im = new Image(); im.src = `assets/sym/${id}.webp`; im.alt = ""; inner.appendChild(im); }
+  el.appendChild(inner); cellsEl.appendChild(el);
+  const anim = inner.animate([{ transform: "translateY(-50%)" }, { transform: "translateY(0)" }], { duration: 240, iterations: Infinity });
+  return { el, anim };
+}
+async function dropCols(grid, skip, under, from, to, st, slow) {
+  const anims = [], dur = (slow ? 620 : 430) / pace();
+  for (let c = from; c < to; c++) {
+    for (let r = 0; r < ROWS; r++) {
+      if (skip(c, r)) continue;
+      const cell = under[c + "," + r] || grid[c][r], el = symEl(cell); cells[c][r].replaceChildren(el);
+      const delay = ((c - from) * 80 + (4 - r) * 26) / pace(), land = delay + dur * .7;
+      anims.push(el.animate([{ transform: "translateY(-260%)", opacity: 0 }, { opacity: 1, offset: .08 }, { transform: "translateY(6%) scale(1.05,.92)", offset: .7 }, { transform: "none", opacity: 1 }],
+        { duration: dur, delay, easing: slow ? "cubic-bezier(.2,.6,.3,1)" : "cubic-bezier(.4,0,.6,1)", fill: "backwards" }).finished);
+      if (cell.id === "wild") sound.play("wild", .7, 1, land);
+      if (cell.id === "scatter") { const n = st.scat++; sound.play("scatter", .8 + .15 * Math.min(n, 2), 1 + .12 * n, land); setTimeout(() => el.classList.add("hit"), land); }
+    }
+    sound.play("land", slow ? .7 : .45, .94 + c * .03, ((c - from) * 80) / pace() + dur * .7);
+  }
   await Promise.all(anims);
-  if (grid.flat().some(x => x.id === "scatter")) grid.flat().forEach((x, i) => {}); // scatters glow by CSS
 }
 // a win: the cells that make it glow, the rest dims, the amount floats over the board
 async function showWins(grid, ev, carEls) {

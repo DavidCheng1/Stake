@@ -66,6 +66,11 @@
       "name": "chaseover",
       "s": 2.2,
       "prompt": "a warm resolving synth chord with a soft shimmer tail, the bonus round ends"
+    },
+    {
+      "name": "tease",
+      "s": 1.6,
+      "prompt": "a tense rising analog synth riser with a fast ticking pulse, suspense building up as a slot reel slows down, ends unresolved, smooth"
     }
   ],
   "music": [
