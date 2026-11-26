@@ -130,6 +130,13 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
 .driveby { position: absolute; width: 22%; height: 17%; z-index: 4; pointer-events: none; }
 .driveby img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 16px rgb(var(--pink))); }
 .driveby .trail { opacity: 1; width: 190%; } .driveby .lights { opacity: 1; }
+/* the supercar in side profile (assets/sidecar.webm, a filmed loop with alpha: wheels spinning, suspension, exhaust
+   flames; the still is the poster and the fallback). It races along a row over the frame. The car's body fills
+   x 4-95 %, y 23-80 % of its picture. */
+.sidecar { position: absolute; left: 100%; width: 50%; aspect-ratio: 16 / 9; z-index: 7; pointer-events: none; }
+.sidecar video { position: relative; z-index: 1; width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 14px rgb(var(--pink) / .8)) drop-shadow(0 10px 10px rgb(0 0 0 / .5)); }
+.sidecar .trail { opacity: 1; left: 84%; top: 40%; height: 30%; width: 150%; } .sidecar .trail i { height: 8px; border-radius: 8px; }
+.sidecar .lights { opacity: 1; right: 93%; top: 46%; height: 26%; width: 70%; }
 
 /* controls: glass buttons, a dark pill over each value (balance, win, bet), the spin cluster on the right */
 .gbtn { width: 96px; height: 96px; border-radius: 26px; border: 2px solid rgb(255 255 255 / .28); background: rgb(20 12 40 / .62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);

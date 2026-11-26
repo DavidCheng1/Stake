@@ -61,6 +61,8 @@ function baseSpin(boost = false) {
   // test hook: window.__force = "driveby" or "chase" makes the next spin show it (prototype only)
   const force = window.__force; window.__force = null;
   if (force === "chase") for (const [c, r] of [[0, 1], [2, 3], [4, 0]]) grid[c][r] = { id: "scatter" };
+  // "line": three cars in the middle row
+  if (force === "line") for (const c of [1, 2, 3]) grid[c][2] = { id: "wild", m: 2 };
   // "tease": two sunsets on reels 1 and 2 and none after, so the anticipation runs and ends without a third
   if (force === "tease") for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) { if (grid[c][r].id === "scatter") grid[c][r] = { id: "heart" }; if (c <= 1 && r === 2 - c) grid[c][r] = { id: "scatter" }; }
   if (force === "driveby" || Math.random() < DRIVEBY) {
@@ -337,17 +339,38 @@ async function showWins(grid, ev, carEls) {
   cells.flat().forEach(el => el.classList.remove("win", "dim"));
 }
 // Drive-By: a car speeds across the row from the right and the cells it passes turn into cars
+// ---------- The supercar in side profile races along a row: in a Drive-By, and whenever 3 or more cars stand in
+// one row. Its nose passes column c at the returned time, so the cells can react as it goes by. ----------
+const SIDE = { w: 50, from: 100, to: -54 }; SIDE.nose = .04 * SIDE.w; // in board %: the picture's width, its left edge at start and end; the nose sits 4 % into it
+function sideRun(r, onPass, ms = 1250) {
+  const el = document.createElement("div"); el.className = "sidecar";
+  const v = document.createElement("video"); v.muted = true; v.loop = true; v.playsInline = true; v.poster = "assets/sidecar.webp"; v.src = "assets/sidecar.webm";
+  el.append(...carFx(), v);
+  el.style.top = `calc(${cellPct(0, r)[1]}% - ${SIDE.w * 9 / 16 * .515}%)`; board.appendChild(el); v.play().catch(() => {});
+  const dur = ms / pace();
+  sound.play("driveby", .95); sound.play("carmove", .6, 1.1, 60);
+  for (let c = 0; c < COLS; c++) { // linear motion: the nose reaches the cell's centre when left + nose = x
+    const x = cellPct(c, r)[0], k = (SIDE.from - (x - SIDE.nose)) / (SIDE.from - SIDE.to);
+    setTimeout(() => onPass?.(c), dur * k);
+  }
+  return el.animate([{ left: SIDE.from + "%" }, { left: SIDE.to + "%" }], { duration: dur, easing: "linear", fill: "forwards" }).finished.then(() => el.remove());
+}
+// a row of 3 or more cars: the supercar races along it and every car it passes flashes
+const flashCell = el => el?.animate([{ transform: "scale(1)", filter: "brightness(1)" }, { transform: "scale(1.22)", filter: "brightness(2.4)", offset: .35 }, { transform: "none", filter: "brightness(1)" }], { duration: 520 / pace() });
+async function carLines(rows, carAt) {
+  if (!rows.length) return;
+  say(rows.length > 1 ? "Car lines!" : "Car line!");
+  await Promise.all(rows.map((r, i) => sleep(i * 260).then(() => sideRun(r, c => flashCell(carAt(c, r))))));
+}
+const wildRows = grid => [0, 1, 2, 3, 4].filter(r => grid.filter(col => col[r].id === "wild").length >= 3);
+// Drive-By: the supercar races along the row and the cells it passes turn into cars
 async function driveBy(d) {
-  say("Drive-By!"); sound.play("driveby", .9);
-  const car = document.createElement("div"); car.className = "driveby"; const img = new Image(); img.src = "assets/sym/wild.webp"; car.append(...carFx(), img);
-  const [, y] = cellPct(0, d.r); car.style.top = `calc(${y}% - 8.5%)`; board.appendChild(car);
-  const dur = 1100 / pace();
-  car.animate([{ left: "100%" }, { left: "-24%" }], { duration: dur, easing: "cubic-bezier(.3,.1,.7,.9)", fill: "forwards" }).finished.then(() => car.remove());
-  for (const c of d.cols) setTimeout(() => {
+  say("Drive-By!");
+  await sideRun(d.r, c => {
+    if (!d.cols.includes(c)) return;
     const el = symEl(lastGrid[c][d.r]); cells[c][d.r].replaceChildren(el);
     el.animate([{ transform: "scale(1)", filter: "brightness(1)" }, { transform: "scale(1.3) rotate(-8deg)", filter: "brightness(3)", offset: .4 }, { transform: "none", filter: "brightness(1)" }], { duration: 500 / pace() });
-  }, dur * (1 - (cellPct(c, 0)[0] - 11.6) / 76.8) * .95);
-  await sleep(1300);
+  });
 }
 let lastGrid = null;
 // ---------- The win screen. The count climbs through the tiers the win reaches (Big 20×, Mega 50×, Epic 100×, Max
@@ -439,6 +462,7 @@ async function spin(fromAuto = false) {
   await dropIn(res.grid, () => false, under);
   board.classList.remove("spinning");
   if (res.driveby) await driveBy(res.driveby);
+  await carLines(wildRows(res.grid).filter(r => r !== res.driveby?.r), (c, r) => res.grid[c][r].id === "wild" ? cells[c][r].querySelector(".sym") : null);
   let won = Math.min(res.ev.total, MAX_WIN);
   if (won > 0) { say(res.ev.wins.map(w => `${w.len}× ${w.id}`).join(" · ")); await showWins(res.grid, res.ev); }
   if (res.fs) { say(`${res.scatters} sunsets: The Chase!`); await sleep(700); won += await chase(res.fs, false, MAX_WIN - won); }
@@ -599,6 +623,7 @@ async function chase(spins, superMode, room) {
     board.classList.add("spinning"); sound.play("spin", .45);
     await dropOut(skip);
     for (const k of occupied) { const [c, r] = k.split(",").map(Number); cells[c][r].replaceChildren(); }
+    const rowCount = () => [0, 1, 2, 3, 4].map(r => st.cars.filter(car => car.r === r).length), before = rowCount();
     const step = chaseSpin(st); $("fsLeft").textContent = st.left;
     await dropIn(step.grid, skip);
     board.classList.remove("spinning");
@@ -610,6 +635,9 @@ async function chase(spins, superMode, room) {
       el.animate([{ transform: "scale(1.5)", filter: "brightness(3)" }, { transform: "none", filter: "brightness(1)" }], { duration: 420 / pace() });
     }
     if (step.landed.length) await sleep(350);
+    // a new row of 3 or more cars: the supercar races along it
+    const after = rowCount(), lines = after.map((n, r) => n >= 3 && before[r] < 3 ? r : -1).filter(r => r >= 0);
+    await carLines(lines, (c, r) => { const car = st.cars.find(x => x.c === c && x.r === r); return car ? carEls.get(car.id) : null; });
     const w = Math.min(step.ev.total, room - total);
     if (w > 0) { await showWins(step.grid, step.ev, [...carEls.values()]); total += w; await countTo($("fsWin"), (total - w) * bet(), total * bet(), 400); }
     else await sleep(350);

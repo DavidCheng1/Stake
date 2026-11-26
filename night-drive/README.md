@@ -70,6 +70,10 @@ A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.se
 - every win pays at least 0.10× the bet (`MIN_WIN`), so no win shows as 0.00; pay scale K 0.038, The Chase 76×,
   Super Chase 235×;
 - fonts (bundled, SIL OFL, `assets/fonts`): Audiowide for labels, buttons and numbers, Mr Dafoe (script) for accents;
+- the supercar in side profile (`assets/sidecar.webm`, a filmed loop with alpha from `prompts/nd-sidecar.txt` take 01
+  and `prompts/nd-sidecar-video.txt`; `sidecar.webp` is its still): it races along a row in a Drive-By and whenever 3 or
+  more cars stand in one row (base game, and each new line in The Chase); the cars it passes flash. Test hook
+  `window.__force = "line"`;
 - the win screen (Big 20×, Mega 50×, Epic 100×, Max Win at the cap): painted titles in `assets/win/` (prompts
   `prompts/nd-win-*.txt`), a striped synthwave sun, a neon floor, sparks; the count climbs through the tiers, a tap
   skips to the end, a second tap closes it;
