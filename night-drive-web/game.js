@@ -127,8 +127,19 @@ addEventListener("resize", fit); fit();
 // ---------- Sound: one output (the mute covers everything); the music crossfades between the base and The Chase ----------
 const sound = (() => {
   let ctx = null, master, musicBus, sfxBus, muted = false, cur = null, curName = null, mv = .7, sv = .8;
-  const buf = {}, SFX = ["click", "spin", "land", "win", "winbig", "wild", "scatter", "driveby", "carmove", "nitro", "chase", "bigwin", "chaseover", "tease"];
-  const load = (name, url) => fetch(url).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(d => { buf[name] = d; if (name === curName && !cur) start(name); }).catch(() => {});
+  const buf = {}, SFX = ["click", "spin", "land", "win", "winbig", "wild", "scatter", "driveby", "carmove", "nitro", "chase", "bigwin", "chaseover", "tease", "stop", "pluck"];
+  const lead = {}, span = {};
+  // MP3 puts a little silence before (and after) every sound: sounds skip it so they play right on time, and the songs
+  // loop between their first and last real sample, so the loop has no gap (tools/audio_loop.py made them seamless)
+  function edges(d) {
+    const x = d.getChannelData(0); let a = 0, b = x.length - 1;
+    while (a < b && Math.abs(x[a]) < 1e-3) a++; while (b > a && Math.abs(x[b]) < 1e-3) b--;
+    return [a / d.sampleRate, (b + 1) / d.sampleRate];
+  }
+  const load = (name, url) => fetch(url).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(d => {
+    buf[name] = d; span[name] = edges(d); lead[name] = Math.max(0, span[name][0] - .002);
+    if (name === curName && !cur) start(name);
+  }).catch(() => {});
   function init() {
     if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
     ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -140,11 +151,12 @@ const sound = (() => {
   function play(name, vol = 1, rate = 1, delay = 0) {
     if (!ctx || !buf[name]) return;
     const s = ctx.createBufferSource(), g = ctx.createGain(); s.buffer = buf[name]; s.playbackRate.value = rate; g.gain.value = vol;
-    s.connect(g).connect(sfxBus); s.start(ctx.currentTime + delay / 1000);
+    s.connect(g).connect(sfxBus); s.start(ctx.currentTime + delay / 1000, lead[name] || 0);
   }
   function start(name) {
     const s = ctx.createBufferSource(), g = ctx.createGain(); s.buffer = buf[name]; s.loop = true; g.gain.value = 0;
-    s.connect(g).connect(musicBus); s.start(); g.gain.linearRampToValueAtTime(1, ctx.currentTime + 1.2); cur = { s, g };
+    [s.loopStart, s.loopEnd] = span[name];
+    s.connect(g).connect(musicBus); s.start(0, s.loopStart); g.gain.linearRampToValueAtTime(1, ctx.currentTime + 1.2); cur = { s, g };
   }
   function music(name) {
     if (!ctx || name === curName) return; curName = name;
@@ -214,7 +226,7 @@ function symEl(cell) {
   const d = document.createElement("div"); d.className = "sym " + cell.id; d.dataset.id = cell.id;
   const img = new Image(); img.src = `assets/sym/${cell.id}.webp`; img.alt = ""; d.appendChild(img);
   if (cell.id === "wild") { const m = document.createElement("span"); m.className = "mult"; m.dataset.m = cell.m; m.innerHTML = `<b>×${cell.m}</b>`; d.appendChild(m); }
-  if (cell.id === "scatter") { const r = document.createElement("i"); r.className = "rays"; d.prepend(r); const t = document.createElement("b"); t.className = "fs-tag"; t.textContent = "Free Spins"; d.appendChild(t); }
+  if (cell.id === "scatter") { const r = document.createElement("i"); r.className = "neon-ring"; const t = document.createElement("b"); t.className = "fs-neon"; t.textContent = "FS"; d.append(r, t); }
   return d;
 }
 // the first board: one of each
@@ -273,6 +285,7 @@ function blurStrip(c) {
   const anim = inner.animate([{ transform: "translateY(-50%)" }, { transform: "translateY(0)" }], { duration: 240, iterations: Infinity });
   return { el, anim };
 }
+const NOTES = [1, 1.189, 1.335, 1.498, 1.782]; // A C D E G: the landing pluck of reels 1 to 5
 async function dropCols(grid, skip, under, from, to, st, slow) {
   const anims = [], dur = (slow ? 620 : 430) / pace();
   for (let c = from; c < to; c++) {
@@ -285,7 +298,8 @@ async function dropCols(grid, skip, under, from, to, st, slow) {
       if (cell.id === "wild") sound.play("wild", .7, 1, land);
       if (cell.id === "scatter") { const n = st.scat++; sound.play("scatter", .8 + .15 * Math.min(n, 2), 1 + .12 * n, land); setTimeout(() => el.classList.add("hit"), land); }
     }
-    sound.play("land", slow ? .7 : .45, .94 + c * .03, ((c - from) * 80) / pace() + dur * .7);
+    const t = ((c - from) * 80) / pace() + dur * .7;
+    sound.play("stop", slow ? 1 : .8, .97 + c * .02, t); sound.play("pluck", slow ? .5 : .32, NOTES[c], t);
   }
   await Promise.all(anims);
 }
@@ -309,7 +323,7 @@ async function showWins(grid, ev, carEls) {
 // Drive-By: a car speeds across the row from the right and the cells it passes turn into cars
 async function driveBy(d) {
   say("Drive-By!"); sound.play("driveby", .9);
-  const car = document.createElement("div"); car.className = "driveby"; const img = new Image(); img.src = "assets/sym/wild.webp"; car.appendChild(img);
+  const car = document.createElement("div"); car.className = "driveby"; const img = new Image(); img.src = "assets/sym/wild.webp"; car.append(...carFx(), img);
   const [, y] = cellPct(0, d.r); car.style.top = `calc(${y}% - 8.5%)`; board.appendChild(car);
   const dur = 1100 / pace();
   car.animate([{ left: "100%" }, { left: "-24%" }], { duration: dur, easing: "cubic-bezier(.3,.1,.7,.9)", fill: "forwards" }).finished.then(() => car.remove());
@@ -372,6 +386,24 @@ async function finish(won) {
   say(won > 0 ? `Win ${money(won * bet())}` : "Press Spin");
   setBusy(false);
 }
+// a car's light trails and headlight beam
+function carFx() { const t = document.createElement("div"); t.className = "trail"; t.innerHTML = "<i></i><i></i><i></i>"; const l = document.createElement("div"); l.className = "lights"; return [t, l]; }
+// a car drives one reel left: it pulls away nose up, light trails stream from its tail and its headlights come on, then
+// it brakes into the new cell (nose dips, settles). Off the board (Nitro) it floors it and is gone.
+function driveCar(el, to) {
+  const exit = to < 0, from = parseFloat(el.style.left), dest = exit ? -45 : to * PITCH, dur = (exit ? 760 : 640) / pace();
+  el.style.left = dest + "%";
+  el.animate([{ left: from + "%" }, { left: dest + "%" }], { duration: dur, easing: exit ? "cubic-bezier(.45,0,.9,.5)" : "cubic-bezier(.55,0,.2,1)" });
+  el.querySelector(".sym").animate(exit
+    ? [{ transform: "none" }, { transform: "translateY(-6%) rotate(5deg) scale(1.1)", offset: .3 }, { transform: "translateY(-4%) rotate(3deg) scale(1.1)" }]
+    : [{ transform: "none" }, { transform: "translateY(-6%) rotate(5deg) scale(1.08)", offset: .22 }, { transform: "translateY(-3%) rotate(1deg) scale(1.06)", offset: .68 },
+       { transform: "translateY(3%) rotate(-5deg) scale(1.02)", offset: .86 }, { transform: "none" }], { duration: dur, easing: "ease-out" });
+  el.querySelector(".trail").animate([{ width: "0%", opacity: 0 }, { width: exit ? "240%" : "140%", opacity: 1, offset: .35 }, { width: "120%", opacity: .9, offset: .72 }, { width: "30%", opacity: 0 }],
+    { duration: dur + 260 / pace(), easing: "ease-out" });
+  el.querySelector(".lights").animate([{ opacity: 0 }, { opacity: 1, offset: .12 }, { opacity: 1, offset: .8 }, { opacity: 0 }], { duration: dur });
+  if (exit) el.animate([{ opacity: 1 }, { opacity: 1, offset: .55 }, { opacity: 0 }], { duration: dur, fill: "forwards" });
+  return new Promise(r => setTimeout(r, dur + 60));
+}
 // The Chase: cars stay and drive one reel left before every spin; a car leaving the board gives one more spin
 async function chase(spins, superMode, room) {
   sound.play("chase", .9); sound.music("music-chase"); cheer();
@@ -383,12 +415,12 @@ async function chase(spins, superMode, room) {
   while (st.left > 0 && total < room) {
     if (st.cars.length) {
       const exits = chaseMove(st); sound.play("carmove", .6);
+      const drives = [];
       for (const [id, el] of carEls) {
-        const car = el._car; el.classList.add("moving"); el.style.left = (car.c * PITCH) + "%";
-        if (car.c < 0) { el.classList.add("gone"); carEls.delete(id); setTimeout(() => el.remove(), 700); }
+        const car = el._car; drives.push(driveCar(el, car.c));
+        if (car.c < 0) { carEls.delete(id); drives[drives.length - 1].then(() => el.remove()); }
       }
-      await sleep(600);
-      carEls.forEach(el => el.classList.remove("moving"));
+      await Promise.all(drives);
       for (const car of exits) { const [x, y] = cellPct(0, car.r); floatText(x, y, "Nitro +1 spin", "nitro"); sound.play("nitro", .8); }
       if (exits.length) { $("fsLeft").textContent = st.left; const s = $("fsLeft"); s.classList.remove("bump"); void s.offsetWidth; s.classList.add("bump"); await sleep(500); }
     }
@@ -404,7 +436,7 @@ async function chase(spins, superMode, room) {
     for (const car of step.landed) {
       cells[car.c][car.r].replaceChildren();
       const el = document.createElement("div"); el.className = "car"; el._car = car; el.style.left = (car.c * PITCH) + "%"; el.style.top = (car.r * PITCH) + "%";
-      el.appendChild(symEl({ id: "wild", m: car.m })); carsEl.appendChild(el); carEls.set(car.id, el);
+      el.append(...carFx(), symEl({ id: "wild", m: car.m })); carsEl.appendChild(el); carEls.set(car.id, el);
       el.animate([{ transform: "scale(1.5)", filter: "brightness(3)" }, { transform: "none", filter: "brightness(1)" }], { duration: 420 / pace() });
     }
     if (step.landed.length) await sleep(350);

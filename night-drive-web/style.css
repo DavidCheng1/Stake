@@ -74,26 +74,31 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
 .tease-beam { position: absolute; top: 10.6%; height: 79.3%; width: 15.6%; z-index: 6; pointer-events: none; border-radius: 12px; mix-blend-mode: screen;
   box-shadow: 0 0 0 4px rgb(var(--sun)), 0 0 40px 12px rgb(var(--sun) / .8), inset 0 0 44px rgb(var(--sun) / .75); animation: teaseGlow .35s ease-in-out infinite alternate; }
 .sym.wild { filter: drop-shadow(0 0 10px rgb(var(--pink) / .9)); }
-/* the sunset is the free-spin symbol: sun rays turn behind it, it pulses, and a gold tag says what it is */
-.sym.scatter > img { position: relative; z-index: 1; filter: drop-shadow(0 0 10px rgb(var(--sun))); animation: scatterPulse 1.1s ease-in-out infinite alternate; }
-@keyframes scatterPulse { to { transform: scale(1.07); filter: drop-shadow(0 0 22px rgb(var(--sun))) brightness(1.12); } }
-.rays { position: absolute; inset: -24%; border-radius: 50%; z-index: 0; pointer-events: none;
-  background: radial-gradient(circle, rgb(255 190 80 / .85) 0 30%, transparent 62%), repeating-conic-gradient(from 0deg, rgb(255 220 120) 0 10deg, rgb(255 46 150 / .75) 10deg 14deg, transparent 14deg 24deg);
-  -webkit-mask: radial-gradient(circle, #000 36%, transparent 70%); mask: radial-gradient(circle, #000 36%, transparent 70%); animation: raysSpin 7s linear infinite; }
-@keyframes raysSpin { to { transform: rotate(360deg); } }
-.fs-tag { position: absolute; left: 50%; bottom: -7%; transform: translateX(-50%); z-index: 3; white-space: nowrap; font: 900 15px/1 var(--ui); text-transform: uppercase; letter-spacing: .04em;
-  padding: 4px 8px 5px; border-radius: 8px; color: #3a1500; background: linear-gradient(180deg, #fff1a0, #ffcc22 50%, #f29b00); border: 2px solid #fff6c4; box-shadow: 0 2px 0 #7a2b00, 0 0 12px rgb(255 190 40 / .8); }
-.sym.scatter.hit .rays { animation: raysSpin 7s linear infinite, raysHit .7s ease-out; }
-@keyframes raysHit { 0% { inset: -10%; opacity: 0; } 30% { inset: -45%; opacity: 1; filter: brightness(1.8); } 100% { inset: -24%; } }
-.sym.scatter.hit > img { animation: scatterPulse 1.1s ease-in-out infinite alternate, scatterHit .6s ease-out; }
-@keyframes scatterHit { 30% { transform: scale(1.35); filter: drop-shadow(0 0 40px rgb(var(--sun))) brightness(1.8); } }
+/* the sunset is the free-spin symbol: a neon tube ring round it that hums and flickers like real neon, and FS in neon
+   letters; when it lands the tube switches on (a stutter, then full light) */
+.sym.scatter > img { position: relative; z-index: 1; animation: scatterPulse 1.4s ease-in-out infinite alternate; }
+@keyframes scatterPulse { to { transform: scale(1.04); } }
+.neon-ring { position: absolute; inset: -1%; border-radius: 50%; z-index: 2; pointer-events: none; border: 3px solid #ffe6f4;
+  box-shadow: 0 0 3px #fff, 0 0 8px rgb(var(--pink)), 0 0 18px rgb(var(--pink)), 0 0 34px rgb(var(--pink) / .7), inset 0 0 8px rgb(var(--pink)), inset 0 0 18px rgb(var(--pink) / .55);
+  animation: neonHum 5.3s linear infinite; }
+.fs-neon { position: absolute; left: 50%; bottom: -9%; transform: translateX(-50%) rotate(-7deg); z-index: 3; pointer-events: none;
+  font: italic 800 38px/1 "Trebuchet MS", var(--ui); letter-spacing: .04em; color: #f2feff;
+  text-shadow: 0 0 2px #fff, 0 0 5px rgb(var(--cyan)), 0 0 10px rgb(var(--cyan)), 0 0 20px rgb(var(--cyan)), 0 0 34px rgb(var(--cyan) / .8);
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / .8)); animation: neonHum 4.1s linear infinite; animation-delay: -1.7s; }
+/* real neon: steady light with a faint hum, now and then a quick stutter */
+@keyframes neonHum { 0%, 100% { opacity: 1; } 41% { opacity: 1; } 42% { opacity: .35; } 43% { opacity: 1; } 44.5% { opacity: .5; } 46% { opacity: 1; }
+  77% { opacity: .92; } 78% { opacity: 1; } }
+.sym.scatter.hit .neon-ring, .sym.scatter.hit .fs-neon { animation: neonOn .7s steps(1, end), neonHum 5.3s linear .7s infinite; }
+@keyframes neonOn { 0% { opacity: 0; } 15% { opacity: .8; } 22% { opacity: .1; } 38% { opacity: 1; } 46% { opacity: .3; } 60%, 100% { opacity: 1; } }
+.sym.scatter.hit > img { animation: scatterPulse 1.4s ease-in-out infinite alternate, scatterHit .5s ease-out; }
+@keyframes scatterHit { 35% { transform: scale(1.18); } }
 
 /* anticipation: with two sunsets on the board, the reels still to come spin on as a blur and stop one by one, slowly;
    the world darkens, the sunsets on the board burn brighter, the reel about to stop glows */
 .bg, .bgv, .boss { transition: filter .5s, opacity .8s; }
 .game.teasing .bg, .game.teasing .bgv, .game.teasing .boss { filter: brightness(.42) saturate(.8); }
 .game.teasing .cell:not(:has(.scatter)) { filter: brightness(.5) saturate(.7); }
-.game.teasing .sym.scatter > img { animation-duration: .35s; }
+.game.teasing .sym.scatter > img { animation-duration: .35s; } .game.teasing .neon-ring { animation: none; opacity: 1; filter: brightness(1.4); }
 .reel-blur { position: relative; overflow: hidden; z-index: 3; border-radius: 8px; }
 .reel-blur > div { display: grid; gap: 0; filter: blur(3px) brightness(1.15); }
 .reel-blur::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(10 4 24 / .85), transparent 22%, transparent 78%, rgb(10 4 24 / .85)); }
@@ -103,20 +108,23 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
 
 /* the cars of The Chase: they sit over the cells and drive one reel left each spin */
 .cars { pointer-events: none; z-index: 4; }
-.car { position: absolute; width: 17.04%; height: 17.04%; transition: left .55s cubic-bezier(.5,0,.3,1), opacity .4s; }
-.car .sym { position: absolute; inset: 3%; filter: drop-shadow(0 0 12px rgb(var(--pink))); }
-.car::before { content: ""; position: absolute; top: 30%; height: 40%; left: 40%; width: 0; border-radius: 99px; opacity: 0; transition: width .55s, opacity .3s;
-  background: linear-gradient(90deg, rgb(var(--cyan) / .9), rgb(var(--pink) / .7), transparent); filter: blur(4px); }
-.car.moving::before { width: 160%; opacity: 1; }
-.car.gone { opacity: 0; }
+.car { position: absolute; width: 17.04%; height: 17.04%; }
+.car .sym { position: absolute; inset: 3%; z-index: 1; filter: drop-shadow(0 0 12px rgb(var(--pink))); }
+/* a driving car: neon light trails stream from its tail, its headlights throw a beam ahead (the car faces left) */
+.trail { position: absolute; left: 60%; top: 36%; height: 32%; width: 0; z-index: 0; display: grid; align-content: space-between; pointer-events: none; opacity: 0; }
+.trail i { height: 7px; border-radius: 7px; background: linear-gradient(90deg, #fff, rgb(var(--pink)) 22%, rgb(var(--pink) / 0)); box-shadow: 0 0 8px rgb(var(--pink)), 0 0 18px rgb(var(--pink) / .7); }
+.trail i:nth-child(2) { margin-left: 14%; background: linear-gradient(90deg, #fff, rgb(var(--cyan)) 22%, rgb(var(--cyan) / 0)); box-shadow: 0 0 8px rgb(var(--cyan)), 0 0 18px rgb(var(--cyan) / .7); }
+.lights { position: absolute; right: 74%; top: 40%; width: 95%; height: 44%; z-index: 0; opacity: 0; pointer-events: none; mix-blend-mode: screen; filter: blur(4px);
+  background: linear-gradient(270deg, rgb(255 250 220 / .8), rgb(255 250 220 / 0)); clip-path: polygon(100% 38%, 100% 62%, 0 100%, 0 0); }
 
 .floats { position: absolute; inset: 0; pointer-events: none; z-index: 6; }
 .float { position: absolute; transform: translate(-50%, -50%); font: 900 46px/1 var(--ui); color: #fff; white-space: nowrap;
   text-shadow: 0 0 14px rgb(var(--pink)), 0 0 30px rgb(var(--pink) / .7), 0 3px 0 #2a0430; animation: floatUp 1.4s ease-out forwards; }
 .float.nitro { color: #c9fbff; text-shadow: 0 0 14px rgb(var(--cyan)), 0 0 30px rgb(var(--cyan) / .8), 0 3px 0 #02303a; }
 @keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, -20%) scale(.6); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -140%) scale(1); } }
-.driveby { position: absolute; width: 22%; height: 17%; z-index: 4; pointer-events: none; filter: drop-shadow(0 0 16px rgb(var(--pink))); }
-.driveby img { width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1); }
+.driveby { position: absolute; width: 22%; height: 17%; z-index: 4; pointer-events: none; }
+.driveby img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 16px rgb(var(--pink))); }
+.driveby .trail { opacity: 1; width: 190%; } .driveby .lights { opacity: 1; }
 
 /* controls: glass buttons, a dark pill over each value (balance, win, bet), the spin cluster on the right */
 .gbtn { width: 96px; height: 96px; border-radius: 26px; border: 2px solid rgb(255 255 255 / .28); background: rgb(20 12 40 / .62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
@@ -146,14 +154,14 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
 .spin-dome { position: absolute; inset: 13px; border-radius: 50%; display: grid; place-items: center;
   background: radial-gradient(circle at 50% 30%, #ff9ad6 0%, #ff3ea6 32%, #d4097a 62%, #6e0348 100%);
   box-shadow: inset 0 0 0 3px #4a0233, inset 0 -14px 22px rgb(60 0 40 / .75), inset 0 10px 16px rgb(255 220 240 / .45), 0 0 0 2px rgb(255 255 255 / .35); }
-.spin-dome svg { width: 104px; height: 104px; filter: drop-shadow(0 4px 0 #5a0238) drop-shadow(0 0 8px rgb(255 255 255 / .35)); }
+.spin-dome svg { width: 100px; height: 100px; filter: drop-shadow(0 4px 0 #5a0238) drop-shadow(0 0 8px rgb(255 255 255 / .35)); }
 .spin-gloss { position: absolute; left: 26%; top: 15%; width: 48%; height: 24%; border-radius: 50%; pointer-events: none;
   background: linear-gradient(180deg, rgb(255 255 255 / .75), rgb(255 255 255 / 0)); }
 .spin:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08); }
 .spin:active:not(:disabled) { transform: translateY(9px); box-shadow: 0 3px 0 #3a0230, 0 8px 14px rgb(0 0 0 / .6), 0 0 40px rgb(var(--pink) / .75); }
 .spin:disabled { filter: grayscale(.6) brightness(.72); cursor: default; }
 .spin.go:disabled { filter: none; }
-.spin.go svg { animation: spinIcon .8s linear infinite; } @keyframes spinIcon { to { transform: rotate(360deg); } }
+.spin.go svg { animation: spinIcon .6s linear infinite; } @keyframes spinIcon { to { transform: rotate(360deg); } }
 .msg { position: absolute; left: 50%; top: 884px; pointer-events: none; transform: translateX(-50%); font: 700 24px var(--ui); letter-spacing: .06em; text-transform: uppercase; color: #ffd2ec; text-shadow: 0 0 10px rgb(var(--pink)), 0 2px 0 #000; z-index: 7; white-space: nowrap; }
 
 /* the menu: game info, music and effects volume, sound on or off */

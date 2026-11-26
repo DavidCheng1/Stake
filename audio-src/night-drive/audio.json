@@ -71,6 +71,16 @@
       "name": "tease",
       "s": 1.6,
       "prompt": "a tense rising analog synth riser with a fast ticking pulse, suspense building up as a slot reel slows down, ends unresolved, smooth"
+    },
+    {
+      "name": "stop",
+      "s": 0.5,
+      "prompt": "a crisp punchy short thud as a slot reel stops and the symbols land, a tight analog synth kick with a soft click on top, dry, very short, satisfying"
+    },
+    {
+      "name": "pluck",
+      "s": 0.6,
+      "prompt": "a single short bright analog synth pluck note in A, clean and round, soft attack click, quick decay, one note only"
     }
   ],
   "music": [
