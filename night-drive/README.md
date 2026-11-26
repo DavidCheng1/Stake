@@ -63,6 +63,11 @@ A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.se
 - every bonus is confirmed with its cost first, and ends on a summary that waits for Continue (it goes on by
   itself after 3.5 s in autoplay);
 - sound, the filmed symbol animations, the animated background, the main character's videos.
+- the win screen (Big 20×, Mega 50×, Epic 100×, Max Win at the cap): painted titles in `assets/win/` (prompts
+  `prompts/nd-win-*.txt`), a striped synthwave sun, a neon floor, sparks; the count climbs through the tiers, a tap
+  skips to the end, a second tap closes it;
+- the way into The Chase inside the grid: the symbols are pulled into the vanishing point, a neon warp tunnel, the
+  car blasts out, a flash, the title in the grid; during The Chase a neon road runs under the reels.
 
 The math is a **placeholder in the browser**. `simulate(n, buys, boost)` in the console gives about 96 %: free spins
 about every 176 spins, 45 % of the RTP; Drive-By about every 33 spins; Chase 81×, Super Chase 250×. Chance ×3

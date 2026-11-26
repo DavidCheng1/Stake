@@ -81,6 +81,21 @@
       "name": "pluck",
       "s": 0.6,
       "prompt": "a single short bright analog synth pluck note in A, clean and round, soft attack click, quick decay, one note only"
+    },
+    {
+      "name": "tierup",
+      "s": 1.8,
+      "prompt": "a big punchy 1980s synth impact hit with a bright rising brass synth stab and shimmering sparkle tail, a slot win level up, triumphant"
+    },
+    {
+      "name": "count",
+      "s": 3.0,
+      "prompt": "a fast rolling ticking synth arpeggio loop climbing up, like a counter racing up, steady, seamless, bright but soft"
+    },
+    {
+      "name": "warp",
+      "s": 2.5,
+      "prompt": "a smooth rising synth whoosh speeding up into a hyperspace warp with a soft car engine rev underneath, moderate volume, clean, no distortion, ending in a gentle bright shimmer"
     }
   ],
   "music": [

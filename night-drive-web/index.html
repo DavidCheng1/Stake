@@ -28,12 +28,13 @@
     <div class="boss" id="boss" aria-hidden="true"><img src="assets/boss.webp" alt=""><video id="bossIdle" muted loop playsinline></video><video id="bossLaugh" muted playsinline></video></div>
 
     <div class="board" id="board">
-      <div class="glass"></div>
+      <div class="glass"><div class="road"></div></div>
       <div class="cells" id="cells"></div>
       <div class="cars" id="cars"></div>
       <img class="frame" src="assets/grid.webp" alt="">
       <img class="frame glow" src="assets/grid.webp" alt="" aria-hidden="true">
       <div class="runner" aria-hidden="true"></div>
+      <canvas class="warp" id="warp" width="660" height="658" hidden></canvas>
       <div class="floats" id="floats"></div>
     </div>
 
@@ -121,6 +122,16 @@
         <p class="small">Malfunction voids all wins and plays. A consistent internet connection is required. In the event of a disconnection, reload the game to finish any uncompleted rounds. The expected return is calculated over many plays. The game display is not representative of any physical device and is for illustrative purposes only. Winnings are settled according to the amount received from the Remote Game Server and not from events within the web browser.</p>
         <p class="small">Prototype: placeholder math, demo balance.</p>
       </div>
+    </div>
+    <!-- the win screen: Big, Mega, Epic, Max Win; the count climbs through the tiers -->
+    <div class="winscreen" id="winscreen" hidden data-tier="big">
+      <div class="ws-sun"></div>
+      <div class="ws-floor"></div>
+      <canvas class="ws-fx" id="wsFx" width="1920" height="1080"></canvas>
+      <div class="ws-title" id="wsTitle"><img id="wsImg" alt=""><i class="ws-shine"></i></div>
+      <div class="ws-amt" id="wsAmt">0.00</div>
+      <div class="ws-x" id="wsX"></div>
+      <p class="ws-skip">Tap to skip</p>
     </div>
     <div class="overlay" id="overlay" hidden><div class="ov-in"><h1 id="ovTitle"></h1><p id="ovSub"></p><div class="ov-amt" id="ovAmt"></div><button class="ov-go" id="ovGo" hidden>Continue</button></div></div>
 

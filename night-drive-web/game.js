@@ -127,7 +127,7 @@ addEventListener("resize", fit); fit();
 // ---------- Sound: one output (the mute covers everything); the music crossfades between the base and The Chase ----------
 const sound = (() => {
   let ctx = null, master, musicBus, sfxBus, muted = false, cur = null, curName = null, mv = .7, sv = .8;
-  const buf = {}, SFX = ["click", "spin", "land", "win", "winbig", "wild", "scatter", "driveby", "carmove", "nitro", "chase", "bigwin", "chaseover", "tease", "stop", "pluck"];
+  const buf = {}, SFX = ["click", "spin", "land", "win", "winbig", "wild", "scatter", "driveby", "carmove", "nitro", "chase", "bigwin", "chaseover", "tease", "stop", "pluck", "tierup", "count", "warp"];
   const lead = {}, span = {};
   // MP3 puts a little silence before (and after) every sound: sounds skip it so they play right on time, and the songs
   // loop between their first and last real sample, so the loop has no gap (tools/audio_loop.py made them seamless)
@@ -164,7 +164,15 @@ const sound = (() => {
     if (buf[name]) start(name);
   }
   return { init, play, music, toggle() { muted = !muted; if (master) master.gain.value = muted ? 0 : 1; return muted; },
-    setMusic(v) { mv = v; if (musicBus) musicBus.gain.value = .3 * v; }, setSfx(v) { sv = v; if (sfxBus) sfxBus.gain.value = .75 * v; } };
+    setMusic(v) { mv = v; if (musicBus) musicBus.gain.value = .3 * v; },
+    // a sound that repeats until the returned function stops it; the music ducking under big moments
+    loop(name, vol = 1, rate = 1) {
+      if (!ctx || !buf[name]) return () => {};
+      const s = ctx.createBufferSource(), g = ctx.createGain(); s.buffer = buf[name]; s.loop = true; [s.loopStart, s.loopEnd] = span[name]; s.playbackRate.value = rate; g.gain.value = vol;
+      s.connect(g).connect(sfxBus); s.start(0, s.loopStart);
+      return () => { g.gain.setTargetAtTime(0, ctx.currentTime, .04); s.stop(ctx.currentTime + .3); };
+    },
+    duck(on) { if (musicBus) musicBus.gain.setTargetAtTime(.3 * mv * (on ? .3 : 1), ctx.currentTime, .2); }, setSfx(v) { sv = v; if (sfxBus) sfxBus.gain.value = .75 * v; } };
 })();
 
 // ---------- Filmed symbol animations (sprite sheets from tools/sprites/symanim.py --game nd): an idle loop now and
@@ -334,12 +342,68 @@ async function driveBy(d) {
   await sleep(1300);
 }
 let lastGrid = null;
-async function bigWin(x, amount) {
-  const t = x >= 100 ? "Epic Win" : x >= 50 ? "Mega Win" : "Big Win";
-  sound.play("bigwin", .9); cheer();
-  const ov = $("overlay"); $("ovTitle").textContent = t; $("ovSub").textContent = ""; ov.hidden = false;
-  let skip = false; const go = () => { skip = true; }; ov.addEventListener("pointerdown", go, { once: true });
-  await countTo($("ovAmt"), 0, amount, skip ? 1 : 2200); await sleep(skip ? 0 : 900); ov.hidden = true; ov.removeEventListener("pointerdown", go);
+// ---------- The win screen. The count climbs through the tiers the win reaches (Big 20×, Mega 50×, Epic 100×, Max
+// Win at the cap), each tier taking the same time; a new tier slams its title in with a burst. A tap (or Space) jumps
+// to the end, a second one closes it; in autoplay it closes by itself. ----------
+const TIERS = [["big", 20], ["mega", 50], ["epic", 100], ["max", MAX_WIN]];
+const ws = $("winscreen"), wsFx = $("wsFx").getContext("2d");
+TIERS.forEach(([t]) => { const im = new Image(); im.src = `assets/win/${t}.webp`; });
+let sparks = [], fxOn = false;
+function burst(n, rgb, x = 960, y = 465, speed = 1) {
+  for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = (4 + Math.random() * 14) * speed;
+    sparks.push({ x: x + Math.cos(a) * 200 * Math.random(), y: y + Math.sin(a) * 60 * Math.random(), vx: Math.cos(a) * v, vy: Math.sin(a) * v * .7 - 3, life: 1, decay: .008 + Math.random() * .014, size: 2 + Math.random() * 4, rgb }); }
+}
+function runFx() {
+  if (fxOn) return; fxOn = true;
+  const tick = () => {
+    if (ws.hidden) { fxOn = false; sparks = []; wsFx.clearRect(0, 0, 1920, 1080); return; }
+    wsFx.clearRect(0, 0, 1920, 1080); wsFx.globalCompositeOperation = "lighter";
+    if (Math.random() < .5) sparks.push({ x: Math.random() * 1920, y: 1100, vx: (Math.random() - .5) * 1.5, vy: -2 - Math.random() * 4, life: 1, decay: .006, size: 1.5 + Math.random() * 2.5, rgb: getComputedStyle(ws).getPropertyValue("--c").trim().replace(/ /g, ",") });
+    for (const p of sparks) {
+      p.x += p.vx; p.y += p.vy; p.vy += .12; p.vx *= .985; p.life -= p.decay;
+      const r = p.size * (1 + (1 - p.life));
+      const g = wsFx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 4); g.addColorStop(0, `rgba(255,255,255,${p.life})`); g.addColorStop(.25, `rgba(${p.rgb},${p.life * .9})`); g.addColorStop(1, `rgba(${p.rgb},0)`);
+      wsFx.fillStyle = g; wsFx.beginPath(); wsFx.arc(p.x, p.y, r * 4, 0, Math.PI * 2); wsFx.fill();
+    }
+    sparks = sparks.filter(p => p.life > 0 && p.y < 1200);
+    wsFx.globalCompositeOperation = "source-over"; requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+let wsTap = null;
+ws.addEventListener("pointerdown", () => wsTap?.());
+async function winScreen(x, amount) {
+  const reach = TIERS.filter(([, at], i) => i === 0 || x >= at);
+  const pts = [0, ...reach.slice(1).map(([, at]) => at), x]; // the count runs pts[i] -> pts[i + 1] under tier i
+  sound.duck(true); sound.play("bigwin", .9); cheer();
+  ws.hidden = false; runFx();
+  let tier = -1, skip = false;
+  const setTier = i => {
+    tier = i; const t = reach[i][0]; ws.dataset.tier = t;
+    $("wsImg").src = `assets/win/${t}.webp`; $("wsTitle").style.setProperty("--img", `url(assets/win/${t}.webp)`);
+    const el = $("wsTitle"); el.classList.remove("slam"); void el.offsetWidth; el.classList.add("slam");
+    const rgb = getComputedStyle(ws).getPropertyValue("--c").trim().replace(/ /g, ",");
+    burst(i ? 140 : 90, rgb); burst(40, "255,255,255", 960, 465, .7);
+    if (i) { sound.play("tierup", .9); cheer(); }
+  };
+  wsTap = () => { skip = true; };
+  setTier(0);
+  const seg = 1900 / pace(), t0 = performance.now(); let stopCount = sound.loop("count", .35);
+  while (true) {
+    const el = (performance.now() - t0) / seg, i = Math.min(reach.length - 1, Math.floor(el));
+    const done = skip || el >= reach.length;
+    const k = done ? 1 : el - i, seg_i = done ? reach.length - 1 : i;
+    const v = done ? x : pts[seg_i] + (pts[seg_i + 1] - pts[seg_i]) * (seg_i === reach.length - 1 ? 1 - (1 - k) ** 2 : k);
+    while (tier < seg_i) setTier(tier + 1);
+    $("wsAmt").textContent = money(v * bet()); $("wsX").textContent = `×${v.toFixed(v < 100 ? 2 : 0)}`;
+    if (done) break;
+    await new Promise(requestAnimationFrame);
+  }
+  stopCount(); sound.play("winbig", .7);
+  const a = $("wsAmt"); a.classList.remove("bump"); void a.offsetWidth; a.classList.add("bump");
+  burst(120, "255,204,34");
+  await new Promise(res => { const t = setTimeout(res, (autoOn ? 1800 : 3200) / pace()); wsTap = () => { clearTimeout(t); res(); }; });
+  wsTap = null; ws.hidden = true; sound.duck(false);
 }
 // the end of a bonus: the total waits for Continue (in autoplay it goes on by itself after a few seconds)
 async function summary(title, amount) {
@@ -380,11 +444,65 @@ async function buy(kind) {
   await finish(won);
 }
 async function finish(won) {
-  if (won >= 20) await bigWin(won, won * bet());
+  if (won >= TIERS[0][1]) await winScreen(won, won * bet());
   balance += won * bet(); updateHud();
   if (won > 0) await countTo($("win"), 0, won * bet(), 500);
   say(won > 0 ? `Win ${money(won * bet())}` : "Press Spin");
   setBusy(false);
+}
+// ---------- The way into The Chase, inside the grid ----------
+// a neon warp tunnel on a canvas over the cells: streaks fly out of the vanishing point, faster and faster
+function warp(ms) {
+  const cv = $("warp"), g = cv.getContext("2d"), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, K = W * .07;
+  const COL = ["255,46,150", "0,229,255", "255,255,255", "255,154,60"];
+  const stars = Array.from({ length: 240 }, () => ({ a: Math.random() * Math.PI * 2, r: .2 + Math.random() * .9, z: .05 + Math.random(), c: COL[rnd(COL.length)] }));
+  cv.hidden = false; cv.style.opacity = 1; g.fillStyle = "rgb(8,3,20)"; g.fillRect(0, 0, W, H);
+  const t0 = performance.now(), dur = ms / pace();
+  return new Promise(res => {
+    const tick = now => {
+      const t = Math.min(1, (now - t0) / dur), sp = .006 + .055 * Math.min(1, t * 1.4) ** 2;
+      g.globalCompositeOperation = "source-over"; g.fillStyle = "rgba(8,3,20,.3)"; g.fillRect(0, 0, W, H);
+      g.globalCompositeOperation = "lighter";
+      const gl = g.createRadialGradient(cx, cy, 0, cx, cy, 40 + W * .45 * t); gl.addColorStop(0, `rgba(255,210,240,${.55 * t})`); gl.addColorStop(1, "rgba(255,46,150,0)");
+      g.fillStyle = gl; g.fillRect(0, 0, W, H);
+      for (const s of stars) {
+        const z0 = s.z; s.z -= sp;
+        if (s.z <= .03) { s.z = 1 + Math.random() * .2; s.a = Math.random() * Math.PI * 2; continue; }
+        const R0 = K * s.r / z0, R1 = K * s.r / s.z;
+        g.strokeStyle = `rgba(${s.c},${Math.min(1, (1.1 - s.z) * 1.3)})`; g.lineWidth = .8 + (1 - s.z) * 3.2;
+        g.beginPath(); g.moveTo(cx + Math.cos(s.a) * R0, cy + Math.sin(s.a) * R0); g.lineTo(cx + Math.cos(s.a) * R1, cy + Math.sin(s.a) * R1); g.stroke();
+      }
+      if (t < 1) return requestAnimationFrame(tick);
+      cv.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450 / pace(), fill: "forwards" }).finished.then(() => { cv.hidden = true; res(); });
+    };
+    requestAnimationFrame(tick);
+  });
+}
+async function warpIn(title, sub) {
+  sound.play("warp", .9); sound.duck(true);
+  const pulls = [];
+  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
+    const s = cells[c][r].firstElementChild; if (!s) continue;
+    pulls.push(s.animate([{ transform: "none", opacity: 1 }, { transform: `translate(${(2 - c) * 121.7}%, ${(2 - r) * 121.7}%) scale(.05) rotate(${(c - 2) * 50 + (r - 2) * 20}deg)`, opacity: 0 }],
+      { duration: 620 / pace(), delay: Math.hypot(c - 2, r - 2) * 70 / pace(), easing: "cubic-bezier(.6,0,.9,.45)", fill: "forwards" }).finished.then(() => s.remove()));
+  }
+  const tunnel = warp(2300);
+  await sleep(500);
+  // the car comes out of the tunnel at you
+  const car = new Image(); car.src = "assets/sym/wild.webp"; car.className = "warp-car"; board.appendChild(car);
+  await car.animate([{ transform: "translate(-50%,-50%) scale(.04)", opacity: 0 }, { opacity: 1, offset: .25 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1, offset: .72 },
+    { transform: "translate(-50%,-50%) scale(3.2)", opacity: 0 }], { duration: 1300 / pace(), easing: "cubic-bezier(.55,0,.85,.55)" }).finished;
+  car.remove(); await Promise.all(pulls);
+  const fl = document.createElement("div"); fl.className = "grid-flash"; board.appendChild(fl);
+  fl.animate([{ opacity: 0 }, { opacity: .95, offset: .2 }, { opacity: 0 }], { duration: 600 / pace() }).finished.then(() => fl.remove());
+  game.classList.add("chasing");
+  await tunnel;
+  const gt = document.createElement("div"); gt.className = "grid-title"; gt.innerHTML = `<h2></h2><p></p>`; gt.querySelector("h2").textContent = title; gt.querySelector("p").textContent = sub;
+  board.appendChild(gt);
+  gt.animate([{ transform: "scale(2.2)", opacity: 0, filter: "blur(10px)" }, { transform: "scale(.95)", opacity: 1, filter: "blur(0)", offset: .6 }, { transform: "none", opacity: 1 }], { duration: 520 / pace(), easing: "ease-out" });
+  await new Promise(res => { const t = setTimeout(res, 1600 / pace()); board.addEventListener("pointerdown", () => { clearTimeout(t); res(); }, { once: true }); });
+  await gt.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(.9)" }], { duration: 300 / pace(), fill: "forwards" }).finished; gt.remove();
+  sound.duck(false);
 }
 // a car's light trails and headlight beam
 function carFx() { const t = document.createElement("div"); t.className = "trail"; t.innerHTML = "<i></i><i></i><i></i>"; const l = document.createElement("div"); l.className = "lights"; return [t, l]; }
@@ -407,11 +525,10 @@ function driveCar(el, to) {
 // The Chase: cars stay and drive one reel left before every spin; a car leaving the board gives one more spin
 async function chase(spins, superMode, room) {
   sound.play("chase", .9); sound.music("music-chase"); cheer();
-  await banner(superMode ? "Super Chase" : "The Chase", `${spins} free spins`);
+  await warpIn(superMode ? "Super Chase" : "The Chase", `${spins} free spins`);
   game.classList.add("chasing"); $("fsTitle").textContent = superMode ? "Super Chase" : "The Chase";
   const st = { cars: [], left: spins, super: superMode }; let total = 0; const carEls = new Map();
   $("fsLeft").textContent = st.left; $("fsWin").textContent = money(0);
-  await dropOut();
   while (st.left > 0 && total < room) {
     if (st.cars.length) {
       const exits = chaseMove(st); sound.play("carmove", .6);
@@ -445,8 +562,9 @@ async function chase(spins, superMode, room) {
     else await sleep(350);
   }
   await sleep(400);
-  carEls.forEach(el => el.remove()); carsEl.replaceChildren();
-  sound.play("chaseover", .8);
+  for (const el of carEls.values()) driveCar(el, -1);
+  await sleep(800); carsEl.replaceChildren();
+  sound.play("chaseover", .8); board.classList.add("flash"); setTimeout(() => board.classList.remove("flash"), 500);
   await summary(superMode ? "Super Chase complete" : "Chase complete", total * bet());
   sound.music("music-base");
   game.classList.remove("chasing");
@@ -555,6 +673,7 @@ addEventListener("keydown", e => {
   if (e.code !== "Space") return;
   e.preventDefault();
   if (introOpen) return closeIntro();
+  if (!ws.hidden) return wsTap?.();
   if (!$("ovGo").hidden) return $("ovGo").click();
   if (autoOn) return stopAuto("Autoplay stopped");
   if ([$("confirm"), bonusDlg, $("info"), autoMenu, menu].some(d => !d.hidden)) return;
