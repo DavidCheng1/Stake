@@ -16,10 +16,9 @@
 
     <img class="logo" src="assets/logo.webp" alt="Night Drive">
 
-    <div class="buys" id="buys">
-      <button class="buy" data-buy="chase"><img src="assets/sym/scatter.webp" alt=""><span><b>The Chase</b><small>10 free spins</small><em id="costChase"></em></span></button>
-      <button class="buy super" data-buy="super"><img src="assets/sym/wild.webp" alt=""><span><b>Super Chase</b><small>every car ×3 or more</small><em id="costSuper"></em></span></button>
-    </div>
+    <!-- the bonus button with the logo: it opens the bonus menu (The Chase, Super Chase, Chance ×3) -->
+    <button class="bonus-btn" id="bonusBtn" aria-haspopup="dialog"><img src="assets/logo.webp" alt=""><span>Bonus</span></button>
+    <div class="boost-tag" id="boostTag" hidden><b>Chance ×3 on</b><span><span id="boostCost"></span> per spin</span><button id="boostOff">Turn off</button></div>
     <div class="fspanel" id="fspanel">
       <h3 id="fsTitle">The Chase</h3>
       <div class="fsLeft"><span id="fsLeft">10</span><small>spins left</small></div>
@@ -38,22 +37,71 @@
       <div class="floats" id="floats"></div>
     </div>
 
-    <div class="bar">
-      <button class="ibtn" id="infoBtn" aria-label="Game info">i</button>
-      <div class="box"><small>Balance</small><span id="bal">0.00</span></div>
-      <div class="box bet"><small>Bet</small><button id="betMinus" aria-label="Lower bet">−</button><span id="bet">1.00</span><button id="betPlus" aria-label="Raise bet">+</button></div>
-      <button class="spin" id="spin" aria-label="Spin"><svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 0 1 7.4 5H17l3.5 4 3.5-4h-2.5A10 10 0 0 0 2.3 9.5l1.9.6A8 8 0 0 1 12 4Zm0 16a8 8 0 0 1-7.4-5H7l-3.5-4L0 15h2.5a10 10 0 0 0 19.2 0l-1.9-.6A8 8 0 0 1 12 20Z"/></svg></button>
-      <div class="box win"><small>Win</small><span id="win">0.00</span></div>
-      <button class="ibtn auto" id="autoBtn" aria-label="Autoplay" aria-pressed="false" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></svg><span class="auto-left" id="autoLeft" hidden></span></button>
-      <button class="turbo" id="turbo" aria-pressed="false">Turbo</button>
-      <button class="ibtn" id="muteBtn" aria-label="Sound on" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z"/></svg></button>
+    <!-- bottom left: the menu (game info, music, effects, sound off) and the balance -->
+    <button class="gbtn menu-btn" id="menuBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M3 6h18v2.2H3zm0 4.9h18v2.2H3zm0 4.9h18V18H3z"/></svg></button>
+    <div class="stat bal"><small>Balance</small><span id="bal">0.00</span></div>
+    <div class="menu" id="menu" hidden>
+      <button class="m-row" id="infoBtn"><i class="m-ico">i</i>Game info</button>
+      <label class="m-row"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3v10.6A3.5 3.5 0 1 0 11 17V7h6V3H9Z"/></svg><span class="vh">Music volume</span><input type="range" id="musicVol" min="0" max="100" value="70"></label>
+      <label class="m-row"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z"/></svg><span class="vh">Effects volume</span><input type="range" id="sfxVol" min="0" max="100" value="80"></label>
+      <button class="m-row" id="muteBtn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z"/></svg><span id="muteText">Sound on</span></button>
     </div>
+
+    <!-- under the board: messages and the win -->
     <div class="msg" id="msg">Press Spin</div>
+    <div class="stat win"><small>Win</small><span id="win">0.00</span></div>
+
+    <!-- bottom right: autoplay, spin, turbo and the bet -->
+    <div class="ctrl">
+      <button class="gbtn auto" id="autoBtn" aria-label="Autoplay" aria-pressed="false" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></svg><span class="auto-left" id="autoLeft" hidden></span></button>
+      <button class="spin" id="spin" aria-label="Spin"><svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 0 1 7.4 5H17l3.5 4 3.5-4h-2.5A10 10 0 0 0 2.3 9.5l1.9.6A8 8 0 0 1 12 4Zm0 16a8 8 0 0 1-7.4-5H7l-3.5-4L0 15h2.5a10 10 0 0 0 19.2 0l-1.9-.6A8 8 0 0 1 12 20Z"/></svg></button>
+      <button class="gbtn turbo" id="turbo" aria-label="Turbo" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg></button>
+    </div>
+    <div class="stat bet"><small>Bet</small><div class="bet-row"><button id="betMinus" aria-label="Lower bet"><svg viewBox="0 0 24 24"><path d="M15.5 4 7.5 12l8 8 1.8-1.8L11.1 12l6.2-6.2Z"/></svg></button><span id="bet">1.00</span><button id="betPlus" aria-label="Raise bet"><svg viewBox="0 0 24 24"><path d="m8.5 4 8 8-8 8-1.8-1.8 6.2-6.2-6.2-6.2Z"/></svg></button></div></div>
+
     <div class="auto-menu" id="autoMenu" role="dialog" aria-label="Choose autoplay" hidden>
       <h3>Autoplay</h3>
       <p>Number of spins</p>
       <div class="am-grid"><button data-n="10">10</button><button data-n="25">25</button><button data-n="50">50</button><button data-n="100">100</button><button data-n="250">250</button><button data-n="1000">1000</button><button data-n="Infinity">∞</button></div>
       <div class="am-foot"><button id="amStart" class="am-start" disabled>Start</button><button id="amClose" class="am-close" aria-label="Close">×</button></div>
+    </div>
+
+    <!-- the bonus menu: two bonuses for a price, and the Chance ×3 switch -->
+    <div class="dlg" id="bonusDlg" hidden role="dialog" aria-modal="true" aria-labelledby="bonusTitle">
+      <div class="bonus-in">
+        <button class="close" id="bonusClose" aria-label="Close">×</button>
+        <h2 id="bonusTitle">Bonus</h2>
+        <div class="offers">
+          <div class="offer">
+            <img src="assets/sym/scatter.webp" alt="">
+            <h3>The Chase</h3><p>Starts 10 free spins right away.</p>
+            <div class="price" id="costChase"></div>
+            <button class="go" data-buy="chase">Get</button>
+          </div>
+          <div class="offer super">
+            <img src="assets/sym/wild.webp" alt="">
+            <h3>Super Chase</h3><p>10 free spins, every car ×3 or more.</p>
+            <div class="price" id="costSuper"></div>
+            <button class="go" data-buy="super">Get</button>
+          </div>
+          <div class="offer boost">
+            <div class="x3"><img src="assets/sym/scatter.webp" alt=""><b>×3</b></div>
+            <h3>Chance ×3</h3><p>Sunsets land more often: The Chase starts about 3× as often.</p>
+            <div class="price"><span id="costBoost"></span><small>per spin</small></div>
+            <button class="go" id="boostToggle" aria-pressed="false">Turn on</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- every bonus is confirmed first, with its cost -->
+    <div class="dlg confirm" id="confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="cfTitle" aria-describedby="cfText">
+      <div class="confirm-in">
+        <h3 id="cfTitle"></h3>
+        <p id="cfText"></p>
+        <div class="cf-cost" id="cfCost"></div>
+        <div class="cf-btns"><button class="cf-no" id="cfNo">Cancel</button><button class="cf-yes" id="cfYes">Confirm</button></div>
+      </div>
     </div>
 
     <div class="dlg" id="info" hidden role="dialog" aria-modal="true" aria-labelledby="infoTitle">
@@ -63,14 +111,41 @@
         <div class="rules">
           <section><h3>Getaway Car</h3><p>The car is <b>wild</b>: it stands in for every symbol but the sunset. It carries <b>×2, ×3 or ×5</b>; cars in one win multiply.</p></section>
           <section><h3>Drive-By</h3><p>Now and then a car speeds across a row and leaves 2 to 4 wild cars behind.</p></section>
-          <section><h3>The Chase</h3><p><b>3, 4 or 5 sunsets</b> anywhere start 10, 12 or 15 free spins. Every car that lands stays and drives one reel to the left before each spin. A car that drives off the board gives <b>+1 spin</b> (Nitro).</p></section>
-          <section><h3>Ways</h3><p>Wins pay for 3, 4 or 5 matching symbols on neighbouring reels from the left, in any row (3125 ways). Pays below are per way at your bet.</p></section>
+          <section><h3>The Chase</h3><p><b>3, 4 or 5 sunsets</b> anywhere start 10, 12 or 15 free spins. A reel holds at most one sunset. Every car that lands stays and drives one reel to the left before each spin. A car that drives off the board gives <b>+1 spin</b> (Nitro). Sunsets don't land during The Chase, so it can't start again from inside.</p></section>
+          <section><h3>Ways</h3><p>Wins pay for 3, 4 or 5 matching symbols on neighbouring reels from the left, in any row (3125 ways). Values below are per way at your bet.</p></section>
+          <section><h3>Bonus</h3><p>The <b>Bonus</b> button opens: <b>The Chase</b> for <b id="rcChase"></b>× the bet (10 free spins), <b>Super Chase</b> for <b id="rcSuper"></b>× the bet (10 free spins, every car ×3 or more), and <b>Chance ×3</b>: while it is on, The Chase starts about 3× as often and every spin costs <b id="rcBoost"></b>× the bet. Each one shows its cost and asks you to confirm.</p></section>
+          <section><h3>Return and maximum win</h3><p>Expected return about <b>96 %</b> in every mode: base game, Chance ×3, The Chase and Super Chase. Maximum win <b>10,000×</b> the bet in every mode; a round ends when it is reached.</p></section>
+          <section class="wide"><h3>Controls</h3><p><b>Spin</b> (or the space bar) plays one round. <b>‹ ›</b> lower and raise the bet. <b>Autoplay</b> (circular arrow): choose a number of spins and press Start; press it again or the space bar to stop. <b>Turbo</b> (lightning): faster animations, same results. <b>Bonus</b>: the bonus menu. <b>Menu</b> (three lines): game info, music and effects volume, and sound on or off for every sound. A tap during a win or a message skips it.</p></section>
         </div>
         <div class="paytable" id="paytable"></div>
-        <p class="small">Prototype: placeholder math, demo balance. Maximum win 10,000× the bet.</p>
+        <p class="small">Malfunction voids all wins and plays. A consistent internet connection is required. In the event of a disconnection, reload the game to finish any uncompleted rounds. The expected return is calculated over many plays. The game display is not representative of any physical device and is for illustrative purposes only. Winnings are settled according to the amount received from the Remote Game Server and not from events within the web browser.</p>
+        <p class="small">Prototype: placeholder math, demo balance.</p>
       </div>
     </div>
-    <div class="overlay" id="overlay" hidden><div class="ov-in"><h1 id="ovTitle"></h1><p id="ovSub"></p><div class="ov-amt" id="ovAmt"></div></div></div>
+    <div class="overlay" id="overlay" hidden><div class="ov-in"><h1 id="ovTitle"></h1><p id="ovSub"></p><div class="ov-amt" id="ovAmt"></div><button class="ov-go" id="ovGo" hidden>Continue</button></div></div>
+
+    <!-- the intro: logo, three cards that explain the game, a tap to start (it also unlocks the sound) -->
+    <div class="intro" id="intro" role="dialog" aria-label="Night Drive features">
+      <img class="intro-logo" src="assets/logo.webp" alt="Night Drive">
+      <div class="cards">
+        <div class="card">
+          <h3>Getaway Car</h3>
+          <div class="pic car-pic"><img src="assets/sym/wild.webp" alt=""><i>×2</i><i>×3</i><i>×5</i></div>
+          <p>The car is wild and carries ×2, ×3 or ×5. Cars in one win multiply. A Drive-By leaves 2 to 4 cars behind.</p>
+        </div>
+        <div class="card">
+          <h3>The Chase</h3>
+          <div class="pic suns"><img src="assets/sym/scatter.webp" alt=""><img src="assets/sym/scatter.webp" alt=""><img src="assets/sym/scatter.webp" alt=""></div>
+          <p>3, 4 or 5 sunsets start 10, 12 or 15 free spins. Cars stay and drive left; one that drives off gives +1 spin.</p>
+        </div>
+        <div class="card">
+          <h3>Max Win</h3>
+          <div class="pic maxwin"><b>10,000×</b><span>Max win</span></div>
+          <p>Win up to 10,000× in one round.</p>
+        </div>
+      </div>
+      <p class="intro-go">Press anywhere to continue</p>
+    </div>
     <div class="proto">Prototype: placeholder math, demo balance</div>
   </div>
 </div>

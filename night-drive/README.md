@@ -56,17 +56,22 @@ A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.se
 - the car wild with ×2/×3/×5 (cars in one win multiply);
 - Drive-By;
 - The Chase with driving cars and Nitro +1 spin;
-- both buys.
+- both buys and Chance ×3;
+- the intro (logo, three feature cards in `assets/card.webp`, prompt `prompts/nd-card.txt`, a tap starts the sound);
+- the controls: the menu (game info, music and effects volume, sound on or off), the gold Bonus button with the
+  logo, spin with autoplay and turbo beside it, and the bet with arrows;
+- every bonus is confirmed with its cost first, and ends on a summary that waits for Continue (it goes on by
+  itself after 3.5 s in autoplay);
+- sound, the filmed symbol animations, the animated background, the main character's videos.
 
-The math is a **placeholder in the browser**. `simulate()` in the console gives about 96 %: free spins about every
-190 spins, 43 % of the RTP; Drive-By about every 33 spins; Chase 83×, Super Chase 260×. Test hook:
+The math is a **placeholder in the browser**. `simulate(n, buys, boost)` in the console gives about 96 %: free spins
+about every 176 spins, 45 % of the RTP; Drive-By about every 33 spins; Chase 81×, Super Chase 250×. Chance ×3
+(`BOOST` in game.js: sunset weight 1.97, 2× the bet per spin) starts free spins about every 55 spins. Test hook:
 `window.__force = "driveby"` or `"chase"` before a spin. Not in it yet:
 - the real math (math-sdk) and the RGS;
-- sound;
-- the filmed symbol animations (the symbols move with CSS only);
-- the animated background loop;
+- social wording (`social=true`) and currencies;
 - portrait layout;
-- the Stake review checks.
+- the Stake review checks (`tools/review/run_review.py`).
 
 The wild is now our own car (`prompts/nd-sym-wild2.txt`, take 01: bubble canopy, a light bar instead of headlights,
 tail fins).

@@ -15,6 +15,8 @@ const PRICE = { chase: 81, super: 250 }; // buy prices × bet, from simulate(): 
 const PAYING = Object.keys(PAY);
 const WEIGHT = { driver: 3, captain: 3, owner: 3, dj: 3, boat: 5, tape: 5, flamingo: 5, briefcase: 5, shades: 9, skate: 9, palm: 9, heart: 9 };
 const W_WILD = 1.6, W_WILD_FS = 2.2, W_SCATTER = 1.27;
+// Chance ×3: the sunset weight that makes The Chase start 3× as often, and the price per spin that keeps it at ~96 %
+const BOOST = { w: 1.97, cost: 2 }; // simulate(), 2026-11-26: free spins about every 55 spins instead of 176 (×3.2), ~96 % at 2× the bet
 const MULTS = [[2, 6], [3, 3], [5, 1]], MULTS_SUPER = [[3, 5], [4, 3], [5, 2]];
 const FS_FOR = { 3: 10, 4: 12, 5: 15 };
 const DRIVEBY = 0.03;
@@ -23,17 +25,17 @@ const TIER = id => ["driver", "captain", "owner", "dj"].includes(id) ? "255 46 1
 const rnd = n => Math.floor(Math.random() * n);
 const pickW = pairs => { let t = 0; for (const [, w] of pairs) t += w; let x = Math.random() * t; for (const [v, w] of pairs) { if ((x -= w) < 0) return v; } return pairs[pairs.length - 1][0]; };
 const SYM_PAIRS = Object.entries(WEIGHT);
-function randCell(c, fs, superMode, noScatter = false) {
+function randCell(c, fs, superMode, noScatter = false, boost = false) {
   const pairs = SYM_PAIRS.slice();
   if (c > 0) pairs.push(["wild", fs ? W_WILD_FS : W_WILD]); // cars land on reels 2 to 5
-  if (!fs && !noScatter) pairs.push(["scatter", W_SCATTER]);
+  if (!fs && !noScatter) pairs.push(["scatter", boost ? BOOST.w : W_SCATTER]);
   const id = pickW(pairs);
   return id === "wild" ? { id, m: pickW(superMode ? MULTS_SUPER : MULTS) } : { id };
 }
 // at most one sunset per reel: a second one in the same reel is drawn again without the sunset
-const newGrid = (fs, superMode) => Array.from({ length: COLS }, (_, c) => {
+const newGrid = (fs, superMode, boost = false) => Array.from({ length: COLS }, (_, c) => {
   let seen = false;
-  return Array.from({ length: ROWS }, () => { const cell = randCell(c, fs, superMode, seen); if (cell.id === "scatter") seen = true; return cell; });
+  return Array.from({ length: ROWS }, () => { const cell = randCell(c, fs, superMode, seen, boost); if (cell.id === "scatter") seen = true; return cell; });
 });
 
 // left-to-right ways; a car counts as its ×, so cars in one way multiply. Ways made of cars only don't pay.
@@ -53,8 +55,8 @@ function evaluate(grid) {
   }
   return { total, wins };
 }
-function baseSpin() {
-  const grid = newGrid(false, false); let driveby = null;
+function baseSpin(boost = false) {
+  const grid = newGrid(false, false, boost); let driveby = null;
   // test hook: window.__force = "driveby" or "chase" makes the next spin show it (prototype only)
   const force = window.__force; window.__force = null;
   if (force === "chase") for (const [c, r] of [[0, 1], [2, 3], [4, 0]]) grid[c][r] = { id: "scatter" };
@@ -92,10 +94,10 @@ function chaseTotal(spins, superMode) {
   return Math.min(total, MAX_WIN);
 }
 // calibration: run in the console. RTP of the base game (with its free spins) and the buys' average win
-window.simulate = (n = 200000, buys = 20000) => {
+window.simulate = (n = 200000, buys = 20000, boost = false) => {
   let base = 0, fsWin = 0, fsCount = 0, db = 0;
   for (let i = 0; i < n; i++) {
-    const s = baseSpin(); base += Math.min(s.ev.total, MAX_WIN); if (s.driveby) db++;
+    const s = baseSpin(boost); base += Math.min(s.ev.total, MAX_WIN); if (s.driveby) db++;
     if (s.fs) { fsCount++; fsWin += chaseTotal(s.fs, false); }
   }
   let ch = 0, su = 0;
@@ -109,6 +111,7 @@ const $ = id => document.getElementById(id);
 const game = $("game"), cellsEl = $("cells"), carsEl = $("cars"), floatsEl = $("floats"), board = $("board");
 const PITCH = 20.74; // % of the cell area per cell (17.04 % cell + 3.7 % gap)
 let balance = 1000, betIdx = 2, busy = false, turbo = false;
+let boostOn = false, autoOn = false, autoLeft = 0, autoChoice = 0; // Chance ×3 switch; autoplay
 const BETS = [0.2, 0.4, 1, 2, 5, 10, 20, 50, 100];
 const bet = () => BETS[betIdx];
 const money = v => v.toFixed(2);
@@ -121,15 +124,15 @@ addEventListener("resize", fit); fit();
 
 // ---------- Sound: one output (the mute covers everything); the music crossfades between the base and The Chase ----------
 const sound = (() => {
-  let ctx = null, master, musicBus, sfxBus, muted = false, cur = null, curName = null;
+  let ctx = null, master, musicBus, sfxBus, muted = false, cur = null, curName = null, mv = .7, sv = .8;
   const buf = {}, SFX = ["click", "spin", "land", "win", "winbig", "wild", "scatter", "driveby", "carmove", "nitro", "chase", "bigwin", "chaseover"];
   const load = (name, url) => fetch(url).then(r => r.arrayBuffer()).then(b => ctx.decodeAudioData(b)).then(d => { buf[name] = d; if (name === curName && !cur) start(name); }).catch(() => {});
   function init() {
     if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     master = ctx.createGain(); master.gain.value = muted ? 0 : 1; master.connect(ctx.destination);
-    musicBus = ctx.createGain(); musicBus.gain.value = .3; musicBus.connect(master);
-    sfxBus = ctx.createGain(); sfxBus.gain.value = .75; sfxBus.connect(master);
+    musicBus = ctx.createGain(); musicBus.gain.value = .3 * mv; musicBus.connect(master);
+    sfxBus = ctx.createGain(); sfxBus.gain.value = .75 * sv; sfxBus.connect(master);
     SFX.forEach(n => load(n, `assets/sfx/${n}.mp3`)); ["music-base", "music-chase"].forEach(n => load(n, `assets/${n}.mp3`));
   }
   function play(name, vol = 1, rate = 1, delay = 0) {
@@ -146,7 +149,8 @@ const sound = (() => {
     if (cur) { const old = cur; old.g.gain.cancelScheduledValues(ctx.currentTime); old.g.gain.setValueAtTime(old.g.gain.value, ctx.currentTime); old.g.gain.linearRampToValueAtTime(0, ctx.currentTime + 1); old.s.stop(ctx.currentTime + 1.1); cur = null; }
     if (buf[name]) start(name);
   }
-  return { init, play, music, toggle() { muted = !muted; if (master) master.gain.value = muted ? 0 : 1; return muted; } };
+  return { init, play, music, toggle() { muted = !muted; if (master) master.gain.value = muted ? 0 : 1; return muted; },
+    setMusic(v) { mv = v; if (musicBus) musicBus.gain.value = .3 * v; }, setSfx(v) { sv = v; if (sfxBus) sfxBus.gain.value = .75 * v; } };
 })();
 
 // ---------- Filmed symbol animations (sprite sheets from tools/sprites/symanim.py --game nd): an idle loop now and
@@ -213,9 +217,17 @@ function symEl(cell) {
 // the first board: one of each
 (() => { const ids = [...PAYING, "scatter", "scatter"]; for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) cells[c][r].appendChild(symEl(c && (c + r) % 7 === 3 ? { id: "wild", m: 2 + (r % 2) } : { id: ids[(c * 5 + r) % ids.length] })); })();
 
-function updateHud() { $("bal").textContent = money(balance); $("bet").textContent = money(bet()); $("costChase").textContent = money(PRICE.chase * bet()); $("costSuper").textContent = money(PRICE.super * bet()); }
+// a spin costs the bet, or BOOST.cost × the bet while Chance ×3 is on
+const spinCost = () => bet() * (boostOn ? BOOST.cost : 1);
+function updateHud() {
+  $("bal").textContent = money(balance); $("bet").textContent = money(bet());
+  $("costChase").textContent = money(PRICE.chase * bet()); $("costSuper").textContent = money(PRICE.super * bet()); $("costBoost").textContent = money(BOOST.cost * bet());
+  $("boostCost").textContent = money(spinCost()); $("boostTag").hidden = !boostOn;
+  $("rcChase").textContent = PRICE.chase; $("rcSuper").textContent = PRICE.super; $("rcBoost").textContent = BOOST.cost;
+  const lock = busy || autoOn; $("betMinus").disabled = lock || betIdx === 0; $("betPlus").disabled = lock || betIdx === BETS.length - 1;
+}
 updateHud();
-function setBusy(b) { busy = b; $("spin").disabled = b || autoOn; $("spin").classList.toggle("go", b); document.querySelectorAll(".buy").forEach(x => x.disabled = b || autoOn); }
+function setBusy(b) { busy = b; const lock = b || autoOn; $("spin").disabled = lock; $("spin").classList.toggle("go", b); $("bonusBtn").disabled = lock; $("boostOff").disabled = lock; updateHud(); }
 async function countTo(el, from, to, ms) { const t0 = performance.now(); ms /= pace(); while (true) { const k = Math.min(1, (performance.now() - t0) / ms); el.textContent = money(from + (to - from) * k); if (k >= 1) break; await new Promise(requestAnimationFrame); } }
 function floatText(x, y, text, cls = "") { const f = document.createElement("div"); f.className = "float " + cls; f.textContent = text; f.style.left = x + "%"; f.style.top = y + "%"; floatsEl.appendChild(f); setTimeout(() => f.remove(), 1500); }
 const cellPct = (c, r) => [11.6 + 76.8 * (c * PITCH + 8.52) / 100, 11.9 + 76.7 * (r * PITCH + 8.52) / 100]; // board % of a cell's centre
@@ -282,6 +294,13 @@ async function bigWin(x, amount) {
   let skip = false; const go = () => { skip = true; }; ov.addEventListener("pointerdown", go, { once: true });
   await countTo($("ovAmt"), 0, amount, skip ? 1 : 2200); await sleep(skip ? 0 : 900); ov.hidden = true; ov.removeEventListener("pointerdown", go);
 }
+// the end of a bonus: the total waits for Continue (in autoplay it goes on by itself after a few seconds)
+async function summary(title, amount) {
+  const ov = $("overlay"), go = $("ovGo"); $("ovTitle").textContent = title; $("ovSub").textContent = amount > 0 ? "Total win" : "No win this time"; $("ovAmt").textContent = money(amount);
+  go.hidden = false; ov.hidden = false; setTimeout(() => go.focus(), 50);
+  await new Promise(res => { let t = 0; const done = () => { clearTimeout(t); go.removeEventListener("click", done); res(); }; go.addEventListener("click", done); if (autoOn) t = setTimeout(done, 3500); });
+  sound.play("click", .5); go.hidden = true; ov.hidden = true;
+}
 async function banner(title, sub, ms = 1900) {
   const ov = $("overlay"); $("ovTitle").textContent = title; $("ovSub").textContent = sub; $("ovAmt").textContent = ""; ov.hidden = false;
   await new Promise(res => { const t = setTimeout(res, ms / pace()); ov.addEventListener("pointerdown", () => { clearTimeout(t); res(); }, { once: true }); });
@@ -290,10 +309,11 @@ async function banner(title, sub, ms = 1900) {
 
 // ---------- Rounds ----------
 async function spin(fromAuto = false) {
-  if (busy || balance < bet() || (autoOn && !fromAuto)) return;
-  setBusy(true); balance -= bet(); updateHud(); $("win").textContent = money(0); say("Good luck!");
+  if (busy || introOpen || (autoOn && !fromAuto)) return;
+  if (balance < spinCost()) { say("Not enough balance"); return; }
+  setBusy(true); balance -= spinCost(); updateHud(); $("win").textContent = money(0); say("Good luck!");
   sound.init(); sound.music("music-base"); sound.play("spin", .6);
-  const res = baseSpin(); lastGrid = res.grid;
+  const res = baseSpin(boostOn); lastGrid = res.grid;
   board.classList.add("spinning");
   await dropOut();
   const under = {}; if (res.driveby) for (const c of res.driveby.cols) under[c + "," + res.driveby.r] = res.driveby.under[c];
@@ -307,7 +327,7 @@ async function spin(fromAuto = false) {
 }
 async function buy(kind) {
   const cost = PRICE[kind] * bet();
-  if (busy || balance < cost) return;
+  if (busy || autoOn || balance < cost) return;
   sound.init(); setBusy(true); balance -= cost; updateHud(); $("win").textContent = money(0);
   const won = await chase(10, kind === "super", MAX_WIN);
   await finish(won);
@@ -362,7 +382,7 @@ async function chase(spins, superMode, room) {
   await sleep(400);
   carEls.forEach(el => el.remove()); carsEl.replaceChildren();
   sound.play("chaseover", .8);
-  await banner("Chase over", `${money(total * bet())}`, 2200);
+  await summary(superMode ? "Super Chase complete" : "Chase complete", total * bet());
   sound.music("music-base");
   game.classList.remove("chasing");
   return total;
@@ -374,20 +394,77 @@ function paytable() {
     d.innerHTML = `<img src="assets/sym/${id}.webp" alt=""><div>${[5, 4, 3].map(n => `<b>${n}</b> ${money(PAY[id][n - 3] * K * bet())}`).join("<br>")}</div>`; return d;
   }));
 }
-$("infoBtn").addEventListener("click", () => { sound.init(); sound.play("click", .5); paytable(); $("info").hidden = false; });
+$("infoBtn").addEventListener("click", () => { sound.init(); sound.play("click", .5); closeMenu(); paytable(); $("info").hidden = false; });
 $("infoClose").addEventListener("click", () => { sound.play("click", .5); $("info").hidden = true; });
 $("info").addEventListener("click", e => { if (e.target === $("info")) $("info").hidden = true; });
-$("muteBtn").addEventListener("click", () => { sound.init(); const m = sound.toggle(); $("muteBtn").setAttribute("aria-pressed", m); $("muteBtn").setAttribute("aria-label", m ? "Sound off" : "Sound on"); });
+$("muteBtn").addEventListener("click", () => { sound.init(); const m = sound.toggle(); $("muteBtn").setAttribute("aria-pressed", m); $("muteText").textContent = m ? "Sound off" : "Sound on"; });
+// ---------- The menu (bottom left): game info, music and effects volume, sound on or off ----------
+const menu = $("menu");
+function closeMenu() { menu.hidden = true; $("menuBtn").setAttribute("aria-expanded", false); }
+$("menuBtn").addEventListener("click", () => { sound.init(); sound.play("click", .5); const open = menu.hidden; menu.hidden = !open; $("menuBtn").setAttribute("aria-expanded", open); });
+document.addEventListener("pointerdown", e => { if (!menu.hidden && !menu.contains(e.target) && !$("menuBtn").contains(e.target)) closeMenu(); });
+for (const [id, set] of [["musicVol", v => sound.setMusic(v)], ["sfxVol", v => sound.setSfx(v)]]) {
+  const el = $(id), upd = () => { el.style.setProperty("--v", el.value + "%"); set(el.value / 100); };
+  el.addEventListener("input", upd); el.addEventListener("change", () => { sound.init(); sound.play("click", .5); }); upd();
+}
+
+// ---------- Confirmation: every bonus (the two bonuses and Chance ×3) shows its cost and waits for Confirm ----------
+function ask(title, text, cost, yes = "Confirm") {
+  const dlg = $("confirm"); $("cfTitle").textContent = title; $("cfText").textContent = text; $("cfCost").textContent = cost; $("cfYes").textContent = yes; dlg.hidden = false;
+  setTimeout(() => $("cfNo").focus(), 30);
+  return new Promise(res => {
+    const done = v => { dlg.hidden = true; $("cfYes").onclick = $("cfNo").onclick = dlg.onclick = null; sound.play("click", .5); res(v); };
+    $("cfYes").onclick = () => done(true); $("cfNo").onclick = () => done(false); dlg.onclick = e => { if (e.target === dlg) done(false); };
+  });
+}
+
+// ---------- The bonus menu: The Chase, Super Chase (a price each) and the Chance ×3 switch ----------
+const bonusDlg = $("bonusDlg");
+function openBonus() {
+  for (const b of bonusDlg.querySelectorAll("[data-buy]")) { const short = balance < PRICE[b.dataset.buy] * bet(); b.disabled = short; b.textContent = short ? "Not enough balance" : "Get"; }
+  $("boostToggle").setAttribute("aria-pressed", boostOn); $("boostToggle").textContent = boostOn ? "Turn off" : "Turn on";
+  bonusDlg.hidden = false;
+}
+const closeBonus = () => { bonusDlg.hidden = true; };
+$("bonusBtn").addEventListener("click", () => { if (busy || autoOn) return; sound.init(); sound.play("click", .5); openBonus(); });
+$("bonusClose").addEventListener("click", () => { sound.play("click", .5); closeBonus(); });
+bonusDlg.addEventListener("click", e => { if (e.target === bonusDlg) closeBonus(); });
+for (const b of bonusDlg.querySelectorAll("[data-buy]")) b.addEventListener("click", async () => {
+  const kind = b.dataset.buy, cost = PRICE[kind] * bet(); sound.play("click", .5);
+  if (busy || autoOn || balance < cost) return;
+  const ok = await ask(kind === "super" ? "Super Chase" : "The Chase", kind === "super" ? "10 free spins, every car ×3 or more. Start it for" : "10 free spins. Start it for", money(cost));
+  if (!ok) return;
+  closeBonus(); buy(kind);
+});
+function setBoost(on) { boostOn = on; updateHud(); $("boostToggle").setAttribute("aria-pressed", on); $("boostToggle").textContent = on ? "Turn off" : "Turn on"; say(on ? `Chance ×3 on: ${money(spinCost())} per spin` : "Chance ×3 off"); }
+$("boostToggle").addEventListener("click", async () => {
+  sound.play("click", .5);
+  if (busy || autoOn) return;
+  if (boostOn) { setBoost(false); return; }
+  const ok = await ask("Chance ×3", `The Chase starts about 3× as often. While it is on, every spin costs ${BOOST.cost}× the bet:`, `${money(BOOST.cost * bet())} per spin`, "Turn on");
+  if (!ok) return;
+  setBoost(true); closeBonus();
+});
+$("boostOff").addEventListener("click", () => { if (busy || autoOn) return; sound.play("click", .5); setBoost(false); });
+
+// ---------- The intro: three cards, then a tap anywhere (it also starts the sound) ----------
+let introOpen = true;
+const intro = $("intro");
+function closeIntro() {
+  if (!introOpen) return; introOpen = false;
+  sound.init(); sound.music("music-base"); sound.play("click", .5);
+  intro.classList.add("out"); setTimeout(() => { intro.hidden = true; }, 500);
+}
+intro.addEventListener("click", closeIntro);
 // ---------- Autoplay: pick a number of spins, then Start (the confirmation step); the button shows the spins left
 // and stops the run when pressed ----------
-let autoOn = false, autoLeft = 0, autoChoice = 0;
 const autoBtn = $("autoBtn"), autoMenu = $("autoMenu");
 function showAuto() { $("autoLeft").hidden = !autoOn; $("autoLeft").textContent = autoLeft === Infinity ? "∞" : autoLeft; autoBtn.setAttribute("aria-pressed", autoOn); }
 function stopAuto(msg) { autoOn = false; autoLeft = 0; showAuto(); setBusy(busy); if (msg) say(msg); }
 async function runAuto() {
   autoOn = true; autoLeft = autoChoice; showAuto(); setBusy(busy);
   while (autoOn && autoLeft > 0) {
-    if (balance < bet()) { stopAuto("Not enough balance"); break; }
+    if (balance < spinCost()) { stopAuto("Not enough balance"); break; }
     await spin(true);
     if (autoLeft !== Infinity) autoLeft--; showAuto();
     if (autoLeft <= 0) { stopAuto("Autoplay ended"); break; }
@@ -398,7 +475,7 @@ autoBtn.addEventListener("click", () => {
   sound.init(); sound.play("click", .5);
   if (autoOn) { stopAuto("Autoplay stopped"); return; }
   if (busy) return;
-  const open = autoMenu.hidden; autoMenu.hidden = !open; autoBtn.setAttribute("aria-expanded", open);
+  closeMenu(); const open = autoMenu.hidden; autoMenu.hidden = !open; autoBtn.setAttribute("aria-expanded", open);
 });
 autoMenu.querySelectorAll("[data-n]").forEach(b => b.addEventListener("click", () => {
   sound.play("click", .5); autoChoice = Number(b.dataset.n);
@@ -408,8 +485,17 @@ $("amStart").addEventListener("click", () => { sound.play("click", .5); autoMenu
 $("amClose").addEventListener("click", () => { sound.play("click", .5); autoMenu.hidden = true; autoBtn.setAttribute("aria-expanded", false); });
 
 $("spin").addEventListener("click", () => spin());
-addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); if (autoOn) stopAuto("Autoplay stopped"); else spin(); } });
-$("betMinus").addEventListener("click", () => { if (!busy && betIdx > 0) { betIdx--; updateHud(); sound.play("click", .5); } });
-$("betPlus").addEventListener("click", () => { if (!busy && betIdx < BETS.length - 1) { betIdx++; updateHud(); sound.play("click", .5); } });
+// Space: closes the intro, continues after a bonus, stops autoplay, otherwise spins; it does nothing while a menu or dialog is open
+addEventListener("keydown", e => {
+  if (e.code !== "Space") return;
+  e.preventDefault();
+  if (introOpen) return closeIntro();
+  if (!$("ovGo").hidden) return $("ovGo").click();
+  if (autoOn) return stopAuto("Autoplay stopped");
+  if ([$("confirm"), bonusDlg, $("info"), autoMenu, menu].some(d => !d.hidden)) return;
+  spin();
+});
+$("betMinus").addEventListener("click", () => { if (!busy && !autoOn && betIdx > 0) { betIdx--; updateHud(); sound.play("click", .5); if (boostOn) say(`Chance ×3 on: ${money(spinCost())} per spin`); } });
+$("betPlus").addEventListener("click", () => { if (!busy && !autoOn && betIdx < BETS.length - 1) { betIdx++; updateHud(); sound.play("click", .5); if (boostOn) say(`Chance ×3 on: ${money(spinCost())} per spin`); } });
 $("turbo").addEventListener("click", () => { turbo = !turbo; $("turbo").setAttribute("aria-pressed", turbo); sound.init(); sound.play("click", .5); });
-document.querySelectorAll(".buy").forEach(b => b.addEventListener("click", () => buy(b.dataset.buy)));
+
