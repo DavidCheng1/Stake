@@ -44,10 +44,17 @@
       <div class="box bet"><small>Bet</small><button id="betMinus" aria-label="Lower bet">−</button><span id="bet">1.00</span><button id="betPlus" aria-label="Raise bet">+</button></div>
       <button class="spin" id="spin" aria-label="Spin"><svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 0 1 7.4 5H17l3.5 4 3.5-4h-2.5A10 10 0 0 0 2.3 9.5l1.9.6A8 8 0 0 1 12 4Zm0 16a8 8 0 0 1-7.4-5H7l-3.5-4L0 15h2.5a10 10 0 0 0 19.2 0l-1.9-.6A8 8 0 0 1 12 20Z"/></svg></button>
       <div class="box win"><small>Win</small><span id="win">0.00</span></div>
+      <button class="ibtn auto" id="autoBtn" aria-label="Autoplay" aria-pressed="false" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></svg><span class="auto-left" id="autoLeft" hidden></span></button>
       <button class="turbo" id="turbo" aria-pressed="false">Turbo</button>
       <button class="ibtn" id="muteBtn" aria-label="Sound on" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4Z"/></svg></button>
     </div>
     <div class="msg" id="msg">Press Spin</div>
+    <div class="auto-menu" id="autoMenu" role="dialog" aria-label="Choose autoplay" hidden>
+      <h3>Autoplay</h3>
+      <p>Number of spins</p>
+      <div class="am-grid"><button data-n="10">10</button><button data-n="25">25</button><button data-n="50">50</button><button data-n="100">100</button><button data-n="250">250</button><button data-n="1000">1000</button><button data-n="Infinity">∞</button></div>
+      <div class="am-foot"><button id="amStart" class="am-start" disabled>Start</button><button id="amClose" class="am-close" aria-label="Close">×</button></div>
+    </div>
 
     <div class="dlg" id="info" hidden role="dialog" aria-modal="true" aria-labelledby="infoTitle">
       <div class="dlg-in">

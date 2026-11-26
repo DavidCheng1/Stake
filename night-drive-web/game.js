@@ -10,11 +10,11 @@ const PAY = {
   boat: [.3, .8, 2], tape: [.3, .7, 1.8], flamingo: [.25, .6, 1.5], briefcase: [.25, .6, 1.4],
   shades: [.12, .3, .7], skate: [.12, .3, .7], palm: [.1, .25, .6], heart: [.1, .25, .6],
 };
-const K = 0.0420; // pay scale: the base game with its free spins returns about 96 % (simulate(), 2026-11-26: free spins 43 % of it)
-const PRICE = { chase: 83, super: 260 }; // buy prices × bet, from simulate(): average bonus ÷ 0.96, rounded
+const K = 0.0407; // pay scale: the base game with its free spins returns about 96 % (simulate(), 2026-11-26: one sunset per reel at most; free spins about every 176 spins, 45 % of the RTP)
+const PRICE = { chase: 81, super: 250 }; // buy prices × bet, from simulate(): average bonus ÷ 0.96, rounded
 const PAYING = Object.keys(PAY);
 const WEIGHT = { driver: 3, captain: 3, owner: 3, dj: 3, boat: 5, tape: 5, flamingo: 5, briefcase: 5, shades: 9, skate: 9, palm: 9, heart: 9 };
-const W_WILD = 1.6, W_WILD_FS = 2.2, W_SCATTER = 1.0;
+const W_WILD = 1.6, W_WILD_FS = 2.2, W_SCATTER = 1.27;
 const MULTS = [[2, 6], [3, 3], [5, 1]], MULTS_SUPER = [[3, 5], [4, 3], [5, 2]];
 const FS_FOR = { 3: 10, 4: 12, 5: 15 };
 const DRIVEBY = 0.03;
@@ -23,14 +23,18 @@ const TIER = id => ["driver", "captain", "owner", "dj"].includes(id) ? "255 46 1
 const rnd = n => Math.floor(Math.random() * n);
 const pickW = pairs => { let t = 0; for (const [, w] of pairs) t += w; let x = Math.random() * t; for (const [v, w] of pairs) { if ((x -= w) < 0) return v; } return pairs[pairs.length - 1][0]; };
 const SYM_PAIRS = Object.entries(WEIGHT);
-function randCell(c, fs, superMode) {
+function randCell(c, fs, superMode, noScatter = false) {
   const pairs = SYM_PAIRS.slice();
   if (c > 0) pairs.push(["wild", fs ? W_WILD_FS : W_WILD]); // cars land on reels 2 to 5
-  if (!fs) pairs.push(["scatter", W_SCATTER]);
+  if (!fs && !noScatter) pairs.push(["scatter", W_SCATTER]);
   const id = pickW(pairs);
   return id === "wild" ? { id, m: pickW(superMode ? MULTS_SUPER : MULTS) } : { id };
 }
-const newGrid = (fs, superMode) => Array.from({ length: COLS }, (_, c) => Array.from({ length: ROWS }, () => randCell(c, fs, superMode)));
+// at most one sunset per reel: a second one in the same reel is drawn again without the sunset
+const newGrid = (fs, superMode) => Array.from({ length: COLS }, (_, c) => {
+  let seen = false;
+  return Array.from({ length: ROWS }, () => { const cell = randCell(c, fs, superMode, seen); if (cell.id === "scatter") seen = true; return cell; });
+});
 
 // left-to-right ways; a car counts as its ×, so cars in one way multiply. Ways made of cars only don't pay.
 function evaluate(grid) {
@@ -209,7 +213,7 @@ function symEl(cell) {
 
 function updateHud() { $("bal").textContent = money(balance); $("bet").textContent = money(bet()); $("costChase").textContent = money(PRICE.chase * bet()); $("costSuper").textContent = money(PRICE.super * bet()); }
 updateHud();
-function setBusy(b) { busy = b; $("spin").disabled = b; $("spin").classList.toggle("go", b); document.querySelectorAll(".buy").forEach(x => x.disabled = b); }
+function setBusy(b) { busy = b; $("spin").disabled = b || autoOn; $("spin").classList.toggle("go", b); document.querySelectorAll(".buy").forEach(x => x.disabled = b || autoOn); }
 async function countTo(el, from, to, ms) { const t0 = performance.now(); ms /= pace(); while (true) { const k = Math.min(1, (performance.now() - t0) / ms); el.textContent = money(from + (to - from) * k); if (k >= 1) break; await new Promise(requestAnimationFrame); } }
 function floatText(x, y, text, cls = "") { const f = document.createElement("div"); f.className = "float " + cls; f.textContent = text; f.style.left = x + "%"; f.style.top = y + "%"; floatsEl.appendChild(f); setTimeout(() => f.remove(), 1500); }
 const cellPct = (c, r) => [11.6 + 76.8 * (c * PITCH + 8.52) / 100, 11.9 + 76.7 * (r * PITCH + 8.52) / 100]; // board % of a cell's centre
@@ -283,8 +287,8 @@ async function banner(title, sub, ms = 1900) {
 }
 
 // ---------- Rounds ----------
-async function spin() {
-  if (busy || balance < bet()) return;
+async function spin(fromAuto = false) {
+  if (busy || balance < bet() || (autoOn && !fromAuto)) return;
   setBusy(true); balance -= bet(); updateHud(); $("win").textContent = money(0); say("Good luck!");
   sound.init(); sound.music("music-base"); sound.play("spin", .6);
   const res = baseSpin(); lastGrid = res.grid;
@@ -372,8 +376,37 @@ $("infoBtn").addEventListener("click", () => { sound.init(); sound.play("click",
 $("infoClose").addEventListener("click", () => { sound.play("click", .5); $("info").hidden = true; });
 $("info").addEventListener("click", e => { if (e.target === $("info")) $("info").hidden = true; });
 $("muteBtn").addEventListener("click", () => { sound.init(); const m = sound.toggle(); $("muteBtn").setAttribute("aria-pressed", m); $("muteBtn").setAttribute("aria-label", m ? "Sound off" : "Sound on"); });
-$("spin").addEventListener("click", spin);
-addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); spin(); } });
+// ---------- Autoplay: pick a number of spins, then Start (the confirmation step); the button shows the spins left
+// and stops the run when pressed ----------
+let autoOn = false, autoLeft = 0, autoChoice = 0;
+const autoBtn = $("autoBtn"), autoMenu = $("autoMenu");
+function showAuto() { $("autoLeft").hidden = !autoOn; $("autoLeft").textContent = autoLeft === Infinity ? "∞" : autoLeft; autoBtn.setAttribute("aria-pressed", autoOn); }
+function stopAuto(msg) { autoOn = false; autoLeft = 0; showAuto(); setBusy(busy); if (msg) say(msg); }
+async function runAuto() {
+  autoOn = true; autoLeft = autoChoice; showAuto(); setBusy(busy);
+  while (autoOn && autoLeft > 0) {
+    if (balance < bet()) { stopAuto("Not enough balance"); break; }
+    await spin(true);
+    if (autoLeft !== Infinity) autoLeft--; showAuto();
+    if (autoLeft <= 0) { stopAuto("Autoplay ended"); break; }
+    await sleep(350);
+  }
+}
+autoBtn.addEventListener("click", () => {
+  sound.init(); sound.play("click", .5);
+  if (autoOn) { stopAuto("Autoplay stopped"); return; }
+  if (busy) return;
+  const open = autoMenu.hidden; autoMenu.hidden = !open; autoBtn.setAttribute("aria-expanded", open);
+});
+autoMenu.querySelectorAll("[data-n]").forEach(b => b.addEventListener("click", () => {
+  sound.play("click", .5); autoChoice = Number(b.dataset.n);
+  autoMenu.querySelectorAll("[data-n]").forEach(x => x.setAttribute("aria-pressed", x === b)); $("amStart").disabled = false;
+}));
+$("amStart").addEventListener("click", () => { sound.play("click", .5); autoMenu.hidden = true; autoBtn.setAttribute("aria-expanded", false); runAuto(); });
+$("amClose").addEventListener("click", () => { sound.play("click", .5); autoMenu.hidden = true; autoBtn.setAttribute("aria-expanded", false); });
+
+$("spin").addEventListener("click", () => spin());
+addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); if (autoOn) stopAuto("Autoplay stopped"); else spin(); } });
 $("betMinus").addEventListener("click", () => { if (!busy && betIdx > 0) { betIdx--; updateHud(); sound.play("click", .5); } });
 $("betPlus").addEventListener("click", () => { if (!busy && betIdx < BETS.length - 1) { betIdx++; updateHud(); sound.play("click", .5); } });
 $("turbo").addEventListener("click", () => { turbo = !turbo; $("turbo").setAttribute("aria-pressed", turbo); sound.init(); sound.play("click", .5); });

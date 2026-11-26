@@ -1,0 +1,6 @@
+Animate this picture: the cartoon man in the white suit standing on a flat pure green background. Static camera, 4
+seconds, the same hand-painted 1980s cartoon cel style throughout, the whole figure stays in frame at the same size
+and place. An idle loop: he stands confidently and breathes, shifts his weight a little, his jacket moves slightly,
+he glances towards us with a cocky grin and back, the cyan pocket square glows softly. He keeps holding the pistol
+pointing straight up and never fires it. It ends exactly as it starts, so it can loop. The background stays perfectly
+flat pure green the whole time, no other objects, no text.

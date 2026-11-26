@@ -3,9 +3,11 @@ audio-src/night-drive/audio.json.
 
     math-sdk\env\Scripts\python.exe tools\night_drive_audio.py [name ...] [--takes N]
 
-Every take is kept in audio-src/night-drive/takes/<name>/take-NN.mp3; the first take is copied to
-night-drive-web/assets/sfx/<name>.mp3 (music to night-drive-web/assets/<name>.mp3) unless the file is there already.
-Pick another take by copying it over. Uses the ELEVENLABS_API_KEY like tools/elevenlabs_sfx.py.
+Every take is kept in audio-src/night-drive/takes/<name>/take-NN.mp3. Music: the first take is copied to
+night-drive-web/assets/<name>.mp3 unless the file is there already. Sound effects: --finish picks the best take of
+each (not clipped, the least harsh: the smallest share of energy above 5 kHz) and finishes it into
+night-drive-web/assets/sfx/<name>.mp3: highs above 5 kHz softened (-6 dB per octave), a 5 ms fade in and a 60 ms
+fade out (no clicks), peaks at -4 dBFS. Uses the ELEVENLABS_API_KEY like tools/elevenlabs_sfx.py.
 """
 
 import json
@@ -16,7 +18,8 @@ import urllib.error
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from elevenlabs_sfx import api_key, credits_left  # noqa: E402
+from elevenlabs_sfx import SR, api_key, credits_left, decode, write_mp3  # noqa: E402
+import numpy as np  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HERE = os.path.join(ROOT, "audio-src", "night-drive")
@@ -49,8 +52,41 @@ def music(entry):
                     "loop": True, "prompt_influence": 0.6, "model_id": "eleven_text_to_sound_v3"})
 
 
+def harsh(x):
+    """Share of the energy above 5 kHz."""
+    f = np.abs(np.fft.rfft(x.mean(0))) ** 2; hz = np.fft.rfftfreq(x.shape[1], 1 / SR)
+    return float(f[hz > 5000].sum() / max(f.sum(), 1e-12))
+
+
+def finish(name):
+    d = os.path.join(HERE, "takes", name)
+    best = None
+    for t in sorted(f for f in os.listdir(d) if f.endswith(".mp3")):
+        x = decode(os.path.join(d, t)); pk = float(np.abs(x).max())
+        clipped = int((np.abs(x).max(0) > .985).sum()) > 20  # real clipping: many samples at the limit, not a single peak
+        score = harsh(x) + (1 if clipped else 0) + (1 if pk < .02 else 0)  # clipped or nearly silent takes come last
+        if best is None or score < best[0]:
+            best = (score, t, x)
+    score, t, x = best
+    hz = np.fft.rfftfreq(x.shape[1], 1 / SR)
+    gain = 10 ** (-6 * np.log2(np.maximum(hz, 5000) / 5000) / 20)
+    x = np.fft.irfft(np.fft.rfft(x, axis=1) * gain, n=x.shape[1], axis=1).astype(np.float32)
+    a, b = int(.005 * SR), int(.06 * SR)
+    x[:, :a] *= np.linspace(0, 1, a, dtype=np.float32); x[:, -b:] *= np.linspace(1, 0, b, dtype=np.float32)
+    x *= 10 ** (-4 / 20) / max(float(np.abs(x).max()), 1e-6)
+    write_mp3(x, os.path.join(WEB, "sfx", name + ".mp3"))
+    print(f"{name}: {t} (highs {score:.3f})")
+
+
 def main():
     a = sys.argv[1:]
+    if "--finish" in a:
+        a.remove("--finish")
+        spec = json.load(open(os.path.join(HERE, "audio.json"), encoding="utf-8"))
+        for e in spec["sfx"]:
+            if not a or e["name"] in a:
+                finish(e["name"])
+        return
     takes = 1
     if "--takes" in a:
         i = a.index("--takes"); takes = int(a[i + 1]); del a[i:i + 2]
@@ -70,9 +106,9 @@ def main():
                 print(f"{e['name']}: failed: {err}"); break
             path = os.path.join(d, f"take-{n:02d}.mp3"); open(path, "wb").write(data)
             print(f"{e['name']} take {n}: {len(data) // 1024} KB")
-        dst = os.path.join(WEB, "sfx", e["name"] + ".mp3") if kind == "sfx" else os.path.join(WEB, e["name"] + ".mp3")
+        dst = os.path.join(WEB, e["name"] + ".mp3")
         first = os.path.join(d, "take-01.mp3")
-        if not os.path.exists(dst) and os.path.exists(first):
+        if kind == "music" and not os.path.exists(dst) and os.path.exists(first):
             shutil.copy(first, dst)
     print("credits left:", credits_left())
 

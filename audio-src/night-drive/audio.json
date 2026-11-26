@@ -1,23 +1,83 @@
 {
   "_about": "Night Drive sounds (tools/night_drive_audio.py): one entry per file in night-drive-web/assets/sfx. Palette: 1980s synthwave: analog polysynths, punchy gated-reverb drums, warm bass, shimmering arpeggios, a retro sports-car engine for the car; key of A minor at 100 BPM; polished, never harsh, no voices.",
-  "style": "1980s synthwave game sound, analog synthesizers, gated reverb, clean and polished, in A minor, no voice, no lyrics",
+  "style": "smooth, soft and warm 1980s synthwave game sound, mellow rounded analog synthesizer tones, gentle gated reverb, clean and polished, no distortion, no clipping, no harsh or piercing highs, no hiss, no noise, in A minor, no voice",
   "sfx": [
-    {"name": "click", "s": 0.5, "prompt": "a soft short analog synth blip button click, clean"},
-    {"name": "spin", "s": 0.8, "prompt": "a short rising analog synth whoosh as slot reels start spinning, sleek"},
-    {"name": "land", "s": 0.5, "prompt": "a loud punchy single 80s electronic drum hit, a deep synth tom thump with a short gated reverb tail, a slot reel slamming into place"},
-    {"name": "win", "s": 1.2, "prompt": "a bright sparkling synth arpeggio up in A major, a small win chime"},
-    {"name": "winbig", "s": 2.2, "prompt": "a bold synth brass stab followed by a fast rising arpeggio and a shimmering chord, a big win"},
-    {"name": "wild", "s": 1.2, "prompt": "a retro sports car engine revs once with a bright electric neon zap, a wild symbol landing"},
-    {"name": "scatter", "s": 1.4, "prompt": "a shimmering bell-like synth chime with a soft rising sparkle, a special symbol landing"},
-    {"name": "driveby", "s": 1.8, "prompt": "a sports car speeding past from right to left with a doppler whoosh and a synth swell"},
-    {"name": "carmove", "s": 0.7, "prompt": "a short tire chirp and a quick synth swoosh as a car moves one step"},
-    {"name": "nitro", "s": 1.4, "prompt": "a turbo boost whoosh and blow-off with an ascending synth zap, a bonus spin gained"},
-    {"name": "chase", "s": 3.0, "prompt": "a sports car engine roars to life, a big gated drum hit and a heroic synth chord stab, the bonus round begins"},
-    {"name": "bigwin", "s": 4.5, "prompt": "a triumphant 80s synthwave fanfare: gated drums, soaring lead synth melody and a big bright chord"},
-    {"name": "chaseover", "s": 2.2, "prompt": "a warm resolving synth chord with a soft shimmer tail, the bonus round ends"}
+    {
+      "name": "click",
+      "s": 0.5,
+      "prompt": "a soft short analog synth blip button click, clean"
+    },
+    {
+      "name": "spin",
+      "s": 0.8,
+      "prompt": "a short rising analog synth whoosh as slot reels start spinning, sleek"
+    },
+    {
+      "name": "land",
+      "s": 0.5,
+      "prompt": "a loud punchy single 80s electronic drum hit, a deep synth tom thump with a short gated reverb tail, a slot reel slamming into place"
+    },
+    {
+      "name": "win",
+      "s": 1.2,
+      "prompt": "a bright sparkling synth arpeggio up in A major, a small win chime"
+    },
+    {
+      "name": "winbig",
+      "s": 2.2,
+      "prompt": "a warm gentle synth brass swell followed by a soft rising arpeggio and a shimmering chord, a big win, moderate volume, smooth"
+    },
+    {
+      "name": "wild",
+      "s": 1.2,
+      "prompt": "a retro sports car engine revs once with a bright electric neon zap, a wild symbol landing"
+    },
+    {
+      "name": "scatter",
+      "s": 1.4,
+      "prompt": "a shimmering bell-like synth chime with a soft rising sparkle, a special symbol landing"
+    },
+    {
+      "name": "driveby",
+      "s": 1.8,
+      "prompt": "a sports car gliding past from right to left with a soft smooth doppler whoosh and a mellow synth swell, moderate volume"
+    },
+    {
+      "name": "carmove",
+      "s": 0.7,
+      "prompt": "a short tire chirp and a quick synth swoosh as a car moves one step"
+    },
+    {
+      "name": "nitro",
+      "s": 1.4,
+      "prompt": "a turbo boost whoosh and blow-off with an ascending synth zap, a bonus spin gained"
+    },
+    {
+      "name": "chase",
+      "s": 3.0,
+      "prompt": "a sports car engine roars to life, a big gated drum hit and a heroic synth chord stab, the bonus round begins"
+    },
+    {
+      "name": "bigwin",
+      "s": 4.5,
+      "prompt": "a triumphant 80s synthwave fanfare: gated drums, soaring lead synth melody and a big bright chord"
+    },
+    {
+      "name": "chaseover",
+      "s": 2.2,
+      "prompt": "a warm resolving synth chord with a soft shimmer tail, the bonus round ends"
+    }
   ],
   "music": [
-    {"name": "music-base", "ms": 60000, "prompt": "Loopable instrumental background music for a 1980s neon night-drive slot game: synthwave at 100 BPM in A minor, punchy gated-reverb drums, a driving analog bass arpeggio, warm lush pads, a catchy memorable lead synth melody, retro and cool, a night drive along an ocean boulevard under neon lights. Medium energy, no big build-ups, no drops, so it can play for an hour. Seamless loop. Instrumental only, no vocals."},
-    {"name": "music-chase", "ms": 45000, "prompt": "Loopable instrumental music for the free-spins chase of a 1980s neon slot game: fast exciting synthwave at 124 BPM in A minor, driving four-on-the-floor gated drums, pulsing bass, urgent arpeggios, a heroic lead synth, a car chase at night. High constant energy, no breakdown. Seamless loop. Instrumental only, no vocals."}
+    {
+      "name": "music-base",
+      "ms": 60000,
+      "prompt": "Loopable instrumental background music for a 1980s neon night-drive slot game: synthwave at 100 BPM in A minor, punchy gated-reverb drums, a driving analog bass arpeggio, warm lush pads, a catchy memorable lead synth melody, retro and cool, a night drive along an ocean boulevard under neon lights. Medium energy, no big build-ups, no drops, so it can play for an hour. Seamless loop. Instrumental only, no vocals."
+    },
+    {
+      "name": "music-chase",
+      "ms": 45000,
+      "prompt": "Loopable instrumental music for the free-spins chase of a 1980s neon slot game: fast exciting synthwave at 124 BPM in A minor, driving four-on-the-floor gated drums, pulsing bass, urgent arpeggios, a heroic lead synth, a car chase at night. High constant energy, no breakdown. Seamless loop. Instrumental only, no vocals."
+    }
   ]
 }
