@@ -380,6 +380,10 @@ html, body { margin: 0; height: 100%; background: #0b0614; overflow: hidden; fon
    speeds up, the car blasts out of it, a flash, the title; during The Chase a neon road runs under the reels ---------- */
 .warp { position: absolute; left: 11.6%; top: 11.9%; width: 76.8%; height: 76.7%; z-index: 4; border-radius: 6px; pointer-events: none; }
 .warp[hidden] { display: none; }
+/* the free-spins clip in the grid: a video window over the reels, inside the frame, with a neon edge */
+.grid-clip { position: absolute; left: 11.6%; top: 11.9%; width: 76.8%; height: 76.7%; z-index: 6; object-fit: cover; border-radius: 6px; pointer-events: none;
+  box-shadow: 0 0 0 3px rgb(var(--pink)), 0 0 0 6px rgb(12 4 26), 0 0 0 8px rgb(var(--cyan) / .8), 0 0 34px rgb(var(--pink) / .7); }
+.grid-clip[hidden] { display: none; }
 .warp-car { position: absolute; left: 50%; top: 50%; width: 40%; z-index: 4; pointer-events: none; filter: drop-shadow(0 0 30px rgb(var(--pink))); }
 .grid-flash { position: absolute; left: 11.6%; top: 11.9%; width: 76.8%; height: 76.7%; z-index: 4; background: #fff; pointer-events: none; border-radius: 6px; }
 .grid-title { position: absolute; left: 11.6%; top: 11.9%; width: 76.8%; height: 76.7%; z-index: 6; display: grid; place-content: center; text-align: center; pointer-events: none; }

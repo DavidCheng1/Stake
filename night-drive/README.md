@@ -75,7 +75,8 @@ A first playable look. Serve it with `math-sdk\env\Scripts\python.exe -m http.se
   skips to the end, a second tap closes it;
 - the start of The Chase: a filmed clip (`assets/fsi.webm`, Gemini Omni from `prompts/nd-fsintro.txt` take 02 and
   `prompts/nd-fsintro-video2.txt` take 04, with the car's own picture as a second reference so it stays our cartoon car):
-  the getaway car comes at us down a neon boulevard and roars past; the built scene in the page is the fallback;
+  the getaway car comes at us down a neon boulevard and roars past. It plays inside the grid (`assets/fsi-grid.webm`,
+  cropped square, `gridPass()`); the full-screen version (`fsi.webm`, `carPass()`) and the built scene are fallbacks;
   then the way in inside the grid: the symbols are pulled into the vanishing point, a neon warp tunnel, the
   car blasts out, a flash, the title in the grid; during The Chase a neon road runs under the reels.
 

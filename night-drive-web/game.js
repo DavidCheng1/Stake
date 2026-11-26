@@ -488,6 +488,22 @@ function warp(ms) {
 }
 // the getaway car tears past in front of us on a neon highway: it races in from the right, holds the middle for a
 // heartbeat, then floors it out to the left; the picture shakes as it passes, a white flash cuts back to the grid
+// the free-spins clip in the grid (assets/fsi-grid.webm, the car pass cropped square): it opens out of the middle of
+// the reels, the car comes at us and roars past, a flash; the full-screen version below is the fallback
+const gridClip = $("gridClip"); gridClip.src = "assets/fsi-grid.webm"; gridClip.load(); gridClip.addEventListener("error", () => {});
+async function gridPass() {
+  const v = gridClip;
+  if (v.readyState < 3 || v.error) return carPass();
+  v.hidden = false; v.currentTime = 0; v.playbackRate = turbo ? 1.5 : 1;
+  v.animate([{ transform: "scale(.2)", opacity: 0, filter: "brightness(3)" }, { transform: "scale(1.03)", opacity: 1, filter: "brightness(1.3)", offset: .7 }, { transform: "none", opacity: 1, filter: "none" }],
+    { duration: 420 / pace(), easing: "cubic-bezier(.2,.9,.3,1.1)" });
+  try { await v.play(); } catch { v.hidden = true; return carPass(); }
+  sound.play("carmove", .7, .9, 150 / pace()); sound.play("driveby", 1, 1, 1500 / pace()); setTimeout(cheer, 1900 / pace());
+  await new Promise(res => { const tick = () => (v.currentTime >= 3.3 || v.ended || v.paused) ? res() : requestAnimationFrame(tick); requestAnimationFrame(tick); });
+  board.classList.add("flash"); setTimeout(() => board.classList.remove("flash"), 450 / pace());
+  await v.animate([{ opacity: 1, filter: "brightness(1)" }, { opacity: 0, filter: "brightness(4)" }], { duration: 220 / pace(), fill: "forwards" }).finished;
+  v.pause(); v.hidden = true; v.getAnimations().forEach(a => a.cancel());
+}
 const fsiv = $("fsiv"); fsiv.src = "assets/fsi.webm"; fsiv.load(); fsiv.addEventListener("error", () => {});
 // the filmed clip: the car comes at us down the neon boulevard and roars past on the left (assets/fsi.webm, Gemini
 // Omni); it is cut with a flash once the car has gone. Without the clip the built scene below plays instead.
@@ -528,7 +544,7 @@ async function warpIn(title, sub) {
   }
   const tunnel = warp(1800);
   await sleep(700);
-  await carPass();
+  await gridPass();
   await Promise.all(pulls);
   const fl = document.createElement("div"); fl.className = "grid-flash"; board.appendChild(fl);
   fl.animate([{ opacity: 0 }, { opacity: .95, offset: .2 }, { opacity: 0 }], { duration: 600 / pace() }).finished.then(() => fl.remove());
