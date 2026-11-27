@@ -137,6 +137,16 @@ setInterval(() => {
   if (all.length) playSymAnim(all[rnd(all.length)], "idle");
 }, 650);
 
+// idle: every few seconds a ripple runs diagonally over the board, each symbol hops a little as it passes
+setInterval(() => {
+  if (document.hidden || busy || autoOn || loading || game.classList.contains("teasing")) return;
+  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
+    const s = cells[c][r].querySelector(".sym"); if (!s || s.classList.contains("animating")) continue;
+    s.animate([{ transform: "none", filter: "brightness(1)" }, { transform: "translateY(-5%) scale(1.06)", filter: "brightness(1.35)" }, { transform: "none", filter: "brightness(1)" }],
+      { duration: 520, delay: (c + r) * 70, easing: "ease-in-out" });
+  }
+}, 7000);
+
 // ---------- The main character: his idle loop and his laugh are videos with alpha (assets/boss-idle.webm,
 // boss-laugh.webm); until they exist he is the still, and cheers with a little bounce ----------
 const boss = $("boss"), bossIdle = $("bossIdle"), bossLaugh = $("bossLaugh");
@@ -274,8 +284,15 @@ async function dropCols(grid, skip, under, from, to, st, slow) {
     }
     const t = ((c - from) * 80) / pace() + dur * .7;
     sound.play("stop", slow ? 1 : .8, .97 + c * .02, t); sound.play("pluck", slow ? .5 : .32, NOTES[c], t);
+    setTimeout(() => reelStopFx(c, c === to - 1), t);
   }
   await Promise.all(anims);
+}
+// a reel lands: a light flashes down the column, the board dips a little (more on the last reel)
+function reelStopFx(c, last) {
+  const f = document.createElement("div"); f.className = "col-flash"; f.style.left = `calc(${cellPct(c, 0)[0]}% - 7.7%)`; board.appendChild(f);
+  f.animate([{ opacity: 0, transform: "scaleY(.6)" }, { opacity: 1, transform: "scaleY(1)", offset: .25 }, { opacity: 0, transform: "scaleY(1)" }], { duration: 420, easing: "ease-out" }).finished.then(() => f.remove());
+  board.animate([{ transform: "none" }, { transform: `translateY(${last ? 7 : 3}px)` }, { transform: "none" }], { duration: last ? 260 : 160, easing: "ease-out" });
 }
 // a win: the cells that make it glow, the rest dims, the amount floats over the board
 async function showWins(grid, ev, carEls) {
@@ -287,7 +304,13 @@ async function showWins(grid, ev, carEls) {
     const k = c + "," + r, el = cells[c][r];
     if (lit.has(k)) { el.classList.add("win"); el.style.setProperty("--wc", lit.get(k)); } else el.classList.add("dim");
   }
-  for (const k of lit.keys()) { const [c, r] = k.split(",").map(Number); const s = cells[c][r].querySelector(".sym"); if (s) playSymAnim(s, "win"); }
+  for (const k of lit.keys()) {
+    const [c, r] = k.split(",").map(Number), s = cells[c][r].querySelector(".sym"), d = c * 90 / pace();
+    if (s) { playSymAnim(s, "win"); s.animate([{ scale: 1 }, { scale: 1.22 }, { scale: 1 }], { duration: 420, delay: d, easing: "cubic-bezier(.3,1.6,.5,1)" }); }
+    const ring = document.createElement("div"); ring.className = "shock"; const [x, y] = cellPct(c, r);
+    ring.style.left = x + "%"; ring.style.top = y + "%"; ring.style.setProperty("--wc", lit.get(k)); floatsEl.appendChild(ring);
+    ring.animate([{ scale: .5, opacity: 0 }, { scale: .9, opacity: 1, offset: .15 }, { scale: 2.1, opacity: 0 }], { duration: 750, delay: d, easing: "ease-out", fill: "backwards" }).finished.then(() => ring.remove());
+  }
   board.classList.add("flash"); setTimeout(() => board.classList.remove("flash"), 450 / pace());
   sound.play(ev.total >= 5 ? "winbig" : "win", .8);
   carEls?.forEach(e => { const car = e._car; const s = e.querySelector(".sym"); if (s && lit.has(car.c + "," + car.r)) playSymAnim(s, "win"); if (lit.has(car.c + "," + car.r)) e.animate([{ transform: "scale(1)" }, { transform: "scale(1.18)" }, { transform: "scale(1)" }], { duration: 700 / pace(), iterations: 2 }); });
@@ -824,7 +847,7 @@ async function boot() {
     if (j.disabledAutoplay) autoBtn.hidden = true;
     if (j.disabledTurbo) { turbo = false; $("turbo").hidden = true; }
     if (j.disabledBuyFeature) { $("bonusBtn").hidden = true; setBoost(false); }
-    loading = false; setBusy(false); updateHud();
+    loading = false; setBusy(false); updateHud(); $("win").textContent = money(0);
     if (RGS.replay) { closeIntro(); autoBtn.hidden = $("bonusBtn").hidden = $("turbo").hidden = true; return await replayLoop(s.round); }
     await introDone; // an interrupted round resumes once the player has seen the intro
     if (s.round) {
@@ -846,7 +869,7 @@ if (RGS.social) {
   document.title = RGS.socialText(document.title);
 }
 // the loader waits for the first screen's pictures, the fonts and the RGS
-LOADER.track(["assets/bg.webp", "assets/logo.webp", "assets/grid.webp", "assets/boss.webp", "assets/card.webp", "assets/mult.webp",
+LOADER.track(["assets/bg.webp", "assets/logo.webp", "assets/logo-neon.webp", "assets/grid.webp", "assets/boss.webp", "assets/card.webp", "assets/mult.webp",
   ...PAYING.map(id => `assets/sym/${id}.webp`), "assets/sym/wild.webp", "assets/sym/scatter.webp"]);
 LOADER.onGesture(() => sound.init());
 boot();
