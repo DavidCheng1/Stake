@@ -185,11 +185,13 @@ function updateHud() {
   $("costChase").textContent = money(modeOf("CHASE").cost * bet()); $("costSuper").textContent = money(modeOf("SUPER").cost * bet()); $("costBoost").textContent = money(modeOf("BOOST").cost * bet());
   $("boostCost").textContent = money(spinCost()); $("boostTag").hidden = !boostOn;
   $("rcChase").textContent = modeOf("CHASE").cost; $("rcSuper").textContent = modeOf("SUPER").cost; $("rcBoost").textContent = modeOf("BOOST").cost;
+  $("betTrack").style.setProperty("--p", BETS.length > 1 ? betIdx / (BETS.length - 1) : 0);
   const lock = busy || autoOn || loading || RGS.replay; $("betMinus").disabled = lock || betIdx === 0; $("betPlus").disabled = lock || betIdx === BETS.length - 1;
 }
 updateHud();
 function setBusy(b) { busy = b; const lock = b || autoOn || loading || RGS.replay; $("spin").disabled = lock; $("spin").classList.toggle("go", b); $("bonusBtn").disabled = lock; $("boostOff").disabled = lock; updateHud(); }
-async function countTo(el, from, to, ms) { const t0 = performance.now(); ms /= pace(); while (true) { const k = Math.min(1, (performance.now() - t0) / ms); el.textContent = money(from + (to - from) * k); if (k >= 1) break; await new Promise(requestAnimationFrame); } }
+// count-ups: the value in motion shows to the cent (the formatter keeps up to 6 decimals for exact sub-cent wins); the end value is exact
+async function countTo(el, from, to, ms) { const t0 = performance.now(); ms /= pace(); while (true) { const k = Math.min(1, (performance.now() - t0) / ms); el.textContent = money(k >= 1 ? to : RGS.roundMoney(from + (to - from) * k)); if (k >= 1) break; await new Promise(requestAnimationFrame); } }
 function floatText(x, y, text, cls = "") { const f = document.createElement("div"); f.className = "float " + cls; f.textContent = text; f.style.left = x + "%"; f.style.top = y + "%"; floatsEl.appendChild(f); setTimeout(() => f.remove(), 1500); }
 const cellPct = (c, r) => [11.6 + 76.8 * (c * PITCH + 8.52) / 100, 11.9 + 76.7 * (r * PITCH + 8.52) / 100]; // board % of a cell's centre
 
@@ -406,7 +408,7 @@ async function winScreen(x, amount) {
     const k = done ? 1 : el - i, seg_i = done ? reach.length - 1 : i;
     const v = done ? x : pts[seg_i] + (pts[seg_i + 1] - pts[seg_i]) * (seg_i === reach.length - 1 ? 1 - (1 - k) ** 2 : k);
     while (tier < seg_i) setTier(tier + 1);
-    $("wsAmt").textContent = money(v * bet()); $("wsX").textContent = `×${v.toFixed(v < 100 ? 2 : 0)}`;
+    $("wsAmt").textContent = money(done ? x * bet() : RGS.roundMoney(v * bet())); $("wsX").textContent = `×${v.toFixed(v < 100 ? 2 : 0)}`;
     if (done) break;
     await new Promise(requestAnimationFrame);
   }
@@ -869,7 +871,7 @@ if (RGS.social) {
   document.title = RGS.socialText(document.title);
 }
 // the loader waits for the first screen's pictures, the fonts and the RGS
-LOADER.track(["assets/bg.webp", "assets/logo.webp", "assets/logo-neon.webp", "assets/grid.webp", "assets/boss.webp", "assets/card.webp", "assets/mult.webp",
+LOADER.track(["assets/bg.webp", "assets/logo.webp", "assets/logo-neon.webp", "assets/studio-ink.webp", "assets/grid.webp", "assets/boss.webp", "assets/card.webp", "assets/mult.webp",
   ...PAYING.map(id => `assets/sym/${id}.webp`), "assets/sym/wild.webp", "assets/sym/scatter.webp"]);
 LOADER.onGesture(() => sound.init());
 boot();

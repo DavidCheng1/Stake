@@ -496,7 +496,7 @@ html, body { font-synthesis: none; }
 .bonus-btn { position: relative; flex: none; width: 152px; height: 152px; margin-right: 16px; padding: 0; border-radius: 24px; cursor: pointer; overflow: hidden; display: grid; place-items: center;
   border: 4px solid rgb(var(--cyan)); background: radial-gradient(circle at 50% 35%, #8ff6ff, rgb(var(--cyan)) 55%, #00a9c4);
   box-shadow: inset 0 0 0 6px #0d0b14, 0 8px 22px rgb(0 0 0 / .5), 0 0 26px rgb(var(--cyan) / .45); transition: transform .15s, filter .2s; animation: bonusGlow 2.6s ease-in-out infinite; }
-.bonus-btn img { width: 126px; filter: drop-shadow(0 3px 3px rgb(0 0 0 / .55)); transition: transform .2s; }
+.bonus-btn img { width: 118px; transition: transform .2s; }
 .bonus-btn::after { content: ""; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 40%; rotate: 18deg; pointer-events: none;
   background: linear-gradient(90deg, transparent, rgb(255 255 255 / .65), transparent); animation: btnShine 4.5s 1s ease-in-out infinite; }
 .bonus-btn:hover:not(:disabled) { transform: translateY(-3px) scale(1.04); } .bonus-btn:hover:not(:disabled) img { transform: scale(1.06) rotate(-2deg); }
@@ -505,7 +505,7 @@ html, body { font-synthesis: none; }
 @keyframes bonusGlow { 50% { box-shadow: inset 0 0 0 6px #0d0b14, 0 8px 22px rgb(0 0 0 / .5), 0 0 44px rgb(var(--cyan) / .8); } }
 @keyframes btnShine { 0% { translate: 0; } 30%, 100% { translate: 520%; } }
 .dash-bar { position: relative; width: 1030px; height: 120px; display: flex; align-items: center; padding: 0 104px 0 30px; border-radius: 18px;
-  background: linear-gradient(180deg, rgb(28 26 36 / .92), rgb(12 11 18 / .94)); border: 1px solid rgb(255 255 255 / .08);
+  background: linear-gradient(180deg, rgb(28 22 44 / .55), rgb(10 8 20 / .68)); border: 1px solid rgb(255 255 255 / .12);
   box-shadow: 0 10px 30px rgb(0 0 0 / .5), inset 0 1px 0 rgb(255 255 255 / .06); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .menu-btn { flex: none; width: 76px; height: 76px; padding: 0 12px; border: none; background: none; cursor: pointer; display: grid; place-items: center; border-radius: 14px; transition: background .2s; }
 .menu-btn svg { width: 50px; height: 40px; fill: #f2f2f4; }
@@ -516,7 +516,9 @@ html, body { font-synthesis: none; }
 .stat.bal { margin-left: 26px; min-width: 250px; justify-items: start; }
 .stat.win { flex: 1; justify-items: center; } .stat.win span { color: #fff4c8; text-shadow: 0 0 14px rgb(var(--sun) / .55); }
 .stat.bet { min-width: 220px; justify-items: center; }
-.bet-line { display: block; width: 50px; height: 5px; margin-top: 7px; border-radius: 5px; background: #f2f2f4; }
+.bet-track { position: relative; display: block; width: 150px; height: 5px; margin-top: 7px; border-radius: 5px; background: rgb(255 255 255 / .12); }
+.bet-line { position: absolute; top: 0; left: calc(var(--p, 0) * (100% - 50px)); width: 50px; height: 5px; border-radius: 5px; background: #f2f2f4;
+  box-shadow: 0 0 8px rgb(255 255 255 / .5); transition: left .3s cubic-bezier(.3, 1.3, .5, 1); }
 .bet-arrows { display: grid; gap: 4px; margin-left: 10px; }
 .bet-arrows button { width: 60px; height: 46px; padding: 0; border: none; background: none; cursor: pointer; display: grid; place-items: center; border-radius: 10px; }
 .bet-arrows svg { width: 42px; height: 42px; fill: none; stroke: #f2f2f4; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
@@ -526,7 +528,8 @@ html, body { font-synthesis: none; }
 .spin { position: relative; flex: none; width: 190px; height: 190px; margin-left: -96px; padding: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
   border: 9px solid #1d1d22; background: radial-gradient(circle at 50% 32%, #fff, #f1f2f4 55%, #d4d7dc);
   box-shadow: 0 12px 28px rgb(0 0 0 / .55), inset 0 -8px 16px rgb(0 0 0 / .12), 0 0 0 2px rgb(255 255 255 / .15); transition: transform .12s, filter .2s, box-shadow .2s; }
-.spin svg { width: 142px; height: 142px; overflow: visible; }
+.spin svg { width: 150px; height: 150px; overflow: visible; }
+.spin-ico { fill: #dadde1; stroke: #1d1d22; stroke-width: 3.6; stroke-linejoin: round; }
 .spin-ico { transform-origin: 50px 50px; transition: transform .35s cubic-bezier(.3, 1.4, .5, 1); }
 .spin:hover:not(:disabled) { transform: scale(1.04); box-shadow: 0 12px 28px rgb(0 0 0 / .55), inset 0 -8px 16px rgb(0 0 0 / .12), 0 0 26px rgb(var(--cyan) / .7); }
 .spin:hover:not(:disabled) .spin-ico { transform: rotate(40deg); }

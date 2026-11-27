@@ -59,24 +59,18 @@
     <!-- the dashboard along the bottom: the bonus square with the logo, a dark bar with the menu, balance, win and bet
          (arrows up and down), the big spin button at its end, autoplay and turbo beside it -->
     <div class="dash">
-      <button class="bonus-btn" id="bonusBtn" aria-label="Bonus" aria-haspopup="dialog"><img src="assets/logo.webp" alt="" draggable="false"></button>
+      <button class="bonus-btn" id="bonusBtn" aria-label="Bonus" aria-haspopup="dialog"><img src="assets/studio-ink.webp" alt="" draggable="false"></button>
       <div class="dash-bar">
         <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 40 32" aria-hidden="true"><rect y="1" width="40" height="5.5" rx="2.75"/><rect y="13.25" width="40" height="5.5" rx="2.75"/><rect y="25.5" width="40" height="5.5" rx="2.75"/></svg></button>
         <div class="stat bal"><small>Balance</small><span id="bal">0.00</span></div>
         <div class="stat win"><small>Win</small><span id="win">0.00</span></div>
-        <div class="stat bet"><small>Bet</small><span id="bet">1.00</span><i class="bet-line"></i></div>
+        <div class="stat bet"><small>Bet</small><span id="bet">1.00</span><i class="bet-track" id="betTrack"><i class="bet-line"></i></i></div>
         <div class="bet-arrows">
           <button id="betPlus" aria-label="Raise bet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 15.5 12 8l7.5 7.5"/></svg></button>
           <button id="betMinus" aria-label="Lower bet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 8.5 12 16l7.5-7.5"/></svg></button>
         </div>
       </div>
-      <button class="spin" id="spin" aria-label="Spin"><svg viewBox="0 0 100 100" aria-hidden="true">
-        <defs>
-          <g id="spinO"><path d="M20.5 55.2A30 30 0 0 1 75 36" fill="none" stroke="#1d1d22" stroke-width="20" stroke-linecap="round"/><path d="M86 30 64 42 83 50Z" fill="#1d1d22" stroke="#1d1d22" stroke-width="8" stroke-linejoin="round"/></g>
-          <g id="spinF"><path d="M20.5 55.2A30 30 0 0 1 75 36" fill="none" stroke="#d9dce0" stroke-width="11" stroke-linecap="round"/><path d="M86 30 64 42 83 50Z" fill="#d9dce0"/></g>
-        </defs>
-        <g class="spin-ico"><use href="#spinO"/><use href="#spinO" transform="rotate(180 50 50)"/><use href="#spinF"/><use href="#spinF" transform="rotate(180 50 50)"/></g>
-      </svg></button>
+      <button class="spin" id="spin" aria-label="Spin"><svg viewBox="0 0 100 100" aria-hidden="true"><g class="spin-ico"><path id="spinArrow" d="M17.23 56.97 A33.5 33.5 0 0 1 74.90 27.58 L80.47 22.57 L76.74 46.24 L59.66 41.30 L65.23 36.28 A20.5 20.5 0 0 0 29.95 54.26 Z"/><use href="#spinArrow" transform="rotate(180 50 50)"/></g></svg></button>
       <div class="side-btns">
         <button class="rbtn auto" id="autoBtn" aria-label="Autoplay" aria-pressed="false" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 8.2 10.7h-2.3A6.3 6.3 0 1 1 12 5.7c1.8 0 3.3.7 4.5 1.8L13.4 10.6h7.1V3.5l-2.4 2.4A8.4 8.4 0 0 0 12 3.5Z"/><path d="M10 8.6v6.8l5.4-3.4Z"/></svg><span class="auto-left" id="autoLeft" hidden></span></button>
         <button class="rbtn turbo" id="turbo" aria-label="Turbo" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.6 2 4.6 13.6h6.2L9.6 22l9.2-11.8h-6.3Z"/></svg></button>
@@ -149,7 +143,7 @@
           <section><h3>Bonus</h3><p>The <b>Bonus</b> button opens: <b>The Chase</b> for <b id="rcChase"></b>× the bet (10 free spins), <b>Super Chase</b> for <b id="rcSuper"></b>× the bet (10 free spins, every car ×3 or more), and <b>Chance ×3</b>: while it is on, The Chase starts about 3× as often and every spin costs <b id="rcBoost"></b>× the bet. Each one shows its cost and asks you to confirm.</p></section>
           <section class="wide"><h3>Return and maximum win</h3><p>The expected return (RTP) and the maximum win of every mode; a round ends when the maximum win is reached.</p>
             <table class="modes" id="modesTable"><thead><tr><th>Mode</th><th>Cost</th><th>RTP</th><th>Max win</th></tr></thead><tbody></tbody></table></section>
-          <section class="wide"><h3>Controls</h3><p><b>Spin</b> (the big white button with two arrows, or the space bar) plays one round. The arrows <b>˅ ˄</b> next to the bet lower and raise the bet. <b>Autoplay</b> (the round button with a circular arrow and a play sign): choose a number of spins and press Start; press it again or the space bar to stop. <b>Turbo</b> (the round button with a lightning bolt): faster animations, same results. While Chance ×3 is on, its tag on the left shows the price per spin and <b>Turn off</b> switches it off. <b>Bonus</b> (the square with the logo, left of the bar): the bonus menu. <b>Menu</b> (three lines): game info, music and effects volume, and sound on or off for every sound. A tap during a win or a message skips it.</p></section>
+          <section class="wide"><h3>Controls</h3><p><b>Spin</b> (the big white button with two arrows, or the space bar) plays one round. The arrows <b>˅ ˄</b> next to the bet lower and raise the bet; the line under it shows where the bet sits between the lowest and the highest. <b>Autoplay</b> (the round button with a circular arrow and a play sign): choose a number of spins and press Start; press it again or the space bar to stop. <b>Turbo</b> (the round button with a lightning bolt): faster animations, same results. While Chance ×3 is on, its tag on the left shows the price per spin and <b>Turn off</b> switches it off. <b>Bonus</b> (the square with the studio logo, left of the bar): the bonus menu. <b>Menu</b> (three lines): game info, music and effects volume, and sound on or off for every sound. A tap during a win or a message skips it.</p></section>
         </div>
         <div class="paytable" id="paytable"></div>
         <p class="small">Malfunction voids all wins and plays. A consistent internet connection is required. In the event of a disconnection, reload the game to finish any uncompleted rounds. The expected return is calculated over many plays. The game display is not representative of any physical device and is for illustrative purposes only. Winnings are settled according to the amount received from the Remote Game Server and not from events within the web browser.</p>
