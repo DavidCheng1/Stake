@@ -61,6 +61,10 @@ The first version for the Stake Engine dashboard (see `_UPLOAD_NIGHT_DRIVE/HOW_T
   round, replay, social wording, error dialog. Local test:
   `math-sdk\env\Scripts\python.exe tools\mock_rgs.py --web night-drive-web --publish math-sdk/games/night_drive/library/publish_files --game night_drive`
   (`/force/bonus`, `/force/driveby`, ... in rgs_url).
+- **Portrait** (a window taller than wide): the stage is 1080 wide and 1920 to 2400 tall (it grows with the phone; the
+  extra height, `--dy`, goes between logo, board and dashboard). `.game.port` in style.css: logo and character on top,
+  the board full width, the dashboard in two rows (bar; bonus, Chance x3 tag, spin, autoplay/turbo), the bonus boxes
+  stacked as wide cards, the intro cards two over one, rules in one column.
 - **Review** `math-sdk\env\Scripts\python.exe tools\review\run_review.py --profile tools\review\games\night_drive.json --port 8096`.
 - **Package** `math-sdk\env\Scripts\python.exe tools\release\package.py night_drive night-drive-web "Night Drive" --out _UPLOAD_NIGHT_DRIVE`,
   cover art from `night-drive/cover/`.

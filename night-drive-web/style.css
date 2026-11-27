@@ -656,3 +656,69 @@ html, body { font-synthesis: none; }
 .offer p { min-height: 64px; margin: 0 0 4px; font-size: 22px; line-height: 1.4; color: #efe6ff; opacity: 1; text-shadow: 0 2px 4px #000; }
 .offer .go { position: relative; overflow: hidden; margin-top: 8px; width: 82%; }
 .offer.super .go:not([aria-pressed="true"]) { background: linear-gradient(180deg, #fffbe0, #ffd84a 45%, #ff9d1f); }
+
+
+/* ---------- portrait (phones held upright): a 1080x1920 stage. The logo top left and the character top right, the
+   board full width under them, the message, then the dashboard in two rows: the bar (menu, balance, win, bet) and
+   below it the bonus square, the Chance x3 tag, the big spin button and autoplay/turbo. Menus and dialogs stack. ---------- */
+.game.port { width: 1080px; height: 1920px; }
+.port .logo { left: 24px; top: calc(40px + var(--dy, 0px) * .3); width: 500px; }
+.port.chasing .logo { opacity: 0; transition: opacity .4s; }
+.port .boss { left: auto; right: -40px; bottom: auto; top: calc(10px + var(--dy, 0px) * .3); height: 640px; width: 360px; }
+.port .board { left: 10px; top: calc(420px + var(--dy, 0px) * .55); width: 1060px; height: 1058px; }
+.port .msg { top: calc(1484px + var(--dy, 0px) * .55); font-size: 30px; }
+.port .fspanel { left: 24px; top: calc(40px + var(--dy, 0px) * .3); width: 500px; padding: 14px 20px; }
+.port .fspanel h3 { font-size: 46px; margin: 0; } .port .fsLeft span { font-size: 110px; } .port .fsWin { margin-top: 8px; }
+.port .dash { left: 20px; right: 20px; bottom: 26px; transform: none; height: auto; display: grid; row-gap: 18px; align-items: center;
+  grid-template-columns: 160px 1fr 214px 1fr 84px; grid-template-areas: "bar bar bar bar bar" "bonus . spin . side"; }
+.port .dash-bar { grid-area: bar; width: auto; height: 124px; padding: 0 20px 0 18px; }
+.port .bonus-btn { grid-area: bonus; margin: 0; width: 160px; height: 160px; }
+.port .bonus-btn img { width: 126px; }
+.port .spin { grid-area: spin; margin: 0; width: 214px; height: 214px; }
+.port .spin svg { width: 166px; height: 166px; }
+.port .side-btns { grid-area: side; margin: 0; gap: 20px; }
+.port .rbtn { width: 84px; height: 84px; } .port .rbtn svg { width: 44px; height: 44px; }
+.port .stat.bal { margin-left: 14px; min-width: 0; flex: 1.2; }
+.port .stat.win { flex: 1; } .port .stat.bet { min-width: 0; flex: 1.1; }
+.port .stat small { font-size: 24px; } .port .stat span { font-size: 38px; } .port .stat.win span { font-size: 42px; }
+.port .bet-track { width: 130px; }
+.port .bet-arrows button { width: 66px; height: 52px; } .port .bet-arrows svg { width: 46px; height: 46px; }
+.port .boost-tag { left: 196px; top: auto; bottom: 60px; width: 264px; padding: 8px 10px; gap: 2px; }
+.port .boost-tag b { font-size: 21px; } .port .boost-tag > span { font-size: 18px; } .port .boost-tag button { font-size: 17px; padding: 5px 14px; }
+.port .menu { left: 24px; bottom: 420px; width: 620px; } .port .m-row { min-height: 100px; font-size: 34px; }
+.port .m-row svg, .port .m-ico { width: 52px; height: 52px; }
+.port .auto-menu { right: 24px; bottom: 420px; width: 760px; padding: 34px 36px; }
+.port .auto-menu h3 { font-size: 44px; } .port .auto-menu p { font-size: 26px; }
+.port .replay-bar { top: 10px; font-size: 26px; }
+/* dialogs */
+.port .bonus-in { width: 1030px; padding: 30px 30px 34px; }
+.port .bonus-in h2 { font-size: 60px; margin-bottom: 20px; }
+.port .offers { grid-template-columns: 1fr; gap: 30px; }
+.port .offer { height: 420px; }
+.port .offer-art, .port .offer.chase .offer-art, .port .offer.super .offer-art { top: 0; left: 0; width: 44%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.port .offer::before { background: linear-gradient(90deg, rgb(14 4 28 / 0) 30%, rgb(14 4 28 / .85) 42%, #0e041c 50%), radial-gradient(60% 90% at 100% 50%, rgb(var(--oc) / .2), transparent 70%); }
+.port .offer-body { left: 44%; top: 0; bottom: 0; align-content: center; padding: 16px 28px; }
+.port .offer h3 { font-size: 48px; } .port .offer p { min-height: 0; font-size: 24px; }
+.port .offer .go { width: 90%; }
+.port .dlg-in { width: 1020px; max-height: 1760px; padding: 30px 34px; }
+.port .rules { grid-template-columns: 1fr; }
+.port .rules p { font-size: 30px; } .port .rules h3 { font-size: 34px; } .port .dlg-in h2 { font-size: 52px; }
+.port .modes { font-size: 26px; } .port .modes th { font-size: 22px; }
+.port .confirm-in { width: 900px; }
+.port .overlay h1 { font-size: 104px; line-height: 1.05; max-width: 980px; }
+.port .ov-amt { font-size: 120px; }
+/* the intro: the logo, two cards on top and one under them */
+.port .intro { justify-content: center; }
+.port .intro-logo { width: 480px; }
+.port .cards { flex-wrap: wrap; justify-content: center; gap: 24px 40px; width: 1000px; margin-top: -10px; }
+/* the win screen */
+.port .ws-sun { top: calc(360px + var(--dy, 0px) * .5); }
+.port .ws-title { top: calc(560px + var(--dy, 0px) * .5); width: 1000px; margin-left: -500px; height: 420px; }
+.port .ws-amt { top: calc(1010px + var(--dy, 0px) * .5); font-size: 140px; }
+.port .ws-x { top: calc(1180px + var(--dy, 0px) * .5); }
+.port .ws-skip { bottom: 80px; }
+/* the start of The Chase (the built scene behind the filmed clip) */
+.port .fsi-sun { top: calc(520px + var(--dy, 0px) * .5); }
+.port .fsi-car { top: calc(980px + var(--dy, 0px) * .5); left: -120px; }
+.port .am-grid button { padding: 22px 0; font-size: 34px; } .port .am-foot button { font-size: 34px; }
+.port .paytable { grid-template-columns: repeat(2, 1fr); } .port .pt div { font-size: 26px; } .port .pt img { width: 110px; height: 110px; } .port .pt { grid-template-columns: 110px 1fr; }

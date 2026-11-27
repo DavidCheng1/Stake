@@ -42,7 +42,16 @@ const pace = () => turbo ? 2.75 : 1.25; // the game runs 1.25× its designed spe
 const sleep = ms => new Promise(r => setTimeout(r, ms / pace()));
 const say = t => { $("msg").textContent = RGS.socialText(t); };
 
-function fit() { const s = Math.min(innerWidth / 1920, innerHeight / 1080); game.style.transform = `translate(-50%, -50%) scale(${s})`; }
+// the stage: 1920x1080 in landscape, 1080x1920 in portrait (a window taller than wide), scaled to fit
+const STAGE = { w: 1920, h: 1080 };
+function fit() {
+  const port = innerHeight > innerWidth; game.classList.toggle("port", port);
+  // portrait grows with the phone (9:16 up to 9:20); the extra height (--dy) is shared out between logo, board and dashboard
+  STAGE.w = port ? 1080 : 1920; STAGE.h = port ? Math.round(Math.min(2400, Math.max(1920, 1080 * innerHeight / innerWidth))) : 1080;
+  game.style.height = port ? STAGE.h + "px" : ""; game.style.setProperty("--dy", (port ? STAGE.h - 1920 : 0) + "px");
+  const fx = $("wsFx"); if (fx && fx.width !== STAGE.w) { fx.width = STAGE.w; fx.height = STAGE.h; }
+  const s = Math.min(innerWidth / STAGE.w, innerHeight / STAGE.h); game.style.transform = `translate(-50%, -50%) scale(${s})`;
+}
 addEventListener("resize", fit); fit();
 
 // ---------- Sound: one output (the mute covers everything); the music crossfades between the base and The Chase ----------
@@ -371,9 +380,9 @@ function burst(n, rgb, x = 960, y = 465, speed = 1) {
 function runFx() {
   if (fxOn) return; fxOn = true;
   const tick = () => {
-    if (ws.hidden) { fxOn = false; sparks = []; wsFx.clearRect(0, 0, 1920, 1080); return; }
-    wsFx.clearRect(0, 0, 1920, 1080); wsFx.globalCompositeOperation = "lighter";
-    if (Math.random() < .5) sparks.push({ x: Math.random() * 1920, y: 1100, vx: (Math.random() - .5) * 1.5, vy: -2 - Math.random() * 4, life: 1, decay: .006, size: 1.5 + Math.random() * 2.5, rgb: getComputedStyle(ws).getPropertyValue("--c").trim().replace(/ /g, ",") });
+    if (ws.hidden) { fxOn = false; sparks = []; wsFx.clearRect(0, 0, STAGE.w, STAGE.h); return; }
+    wsFx.clearRect(0, 0, STAGE.w, STAGE.h); wsFx.globalCompositeOperation = "lighter";
+    if (Math.random() < .5) sparks.push({ x: Math.random() * STAGE.w, y: STAGE.h + 20, vx: (Math.random() - .5) * 1.5, vy: -2 - Math.random() * 4, life: 1, decay: .006, size: 1.5 + Math.random() * 2.5, rgb: getComputedStyle(ws).getPropertyValue("--c").trim().replace(/ /g, ",") });
     for (const p of sparks) {
       p.x += p.vx; p.y += p.vy; p.vy += .12; p.vx *= .985; p.life -= p.decay;
       const r = p.size * (1 + (1 - p.life));
