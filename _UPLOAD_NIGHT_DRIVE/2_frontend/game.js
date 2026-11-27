@@ -200,7 +200,9 @@ async function dropOut(skip = () => false) {
   const anims = [];
   for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
     const s = cells[c][r].firstElementChild; if (!s || skip(c, r)) continue;
-    anims.push(s.animate([{ transform: "none", opacity: 1 }, { transform: "translateY(260%)", opacity: 0 }], { duration: 260 / pace(), delay: (c * 40 + (4 - r) * 12) / pace(), easing: "ease-in", fill: "forwards" }).finished.then(() => s.remove()));
+    // a little hop up first, then down and out
+    anims.push(s.animate([{ transform: "none", opacity: 1, easing: "cubic-bezier(.2,.7,.4,1)" }, { transform: "translateY(-14%) scale(1.04)", opacity: 1, offset: .38, easing: "cubic-bezier(.6,0,.9,.6)" }, { transform: "translateY(260%)", opacity: 0 }],
+      { duration: 400 / pace(), delay: (c * 40 + (4 - r) * 12) / pace(), fill: "forwards" }).finished.then(() => s.remove()));
   }
   await Promise.all(anims);
 }
@@ -528,7 +530,7 @@ function warp(ms) {
   const t0 = performance.now(), dur = ms / pace();
   return new Promise(res => {
     const tick = now => {
-      const t = Math.min(1, (now - t0) / dur), sp = .006 + .055 * Math.min(1, t * 1.4) ** 2;
+      const t = Math.max(0, Math.min(1, (now - t0) / dur)), sp = .006 + .055 * Math.min(1, t * 1.4) ** 2;
       g.globalCompositeOperation = "source-over"; g.fillStyle = "rgba(8,3,20,.3)"; g.fillRect(0, 0, W, H);
       g.globalCompositeOperation = "lighter";
       const gl = g.createRadialGradient(cx, cy, 0, cx, cy, 40 + W * .45 * t); gl.addColorStop(0, `rgba(255,210,240,${.55 * t})`); gl.addColorStop(1, "rgba(255,46,150,0)");
@@ -691,6 +693,14 @@ async function chaseEnd(fs, amount) {
   await sleep(400);
   for (const el of fs.carEls.values()) driveCar(el, -1);
   await sleep(800); carsEl.replaceChildren();
+  // the cells the cars stood on are empty: new symbols drop into them
+  const ids = [...PAYING], fill = [];
+  for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) if (!cells[c][r].firstElementChild) {
+    const el = symEl({ id: ids[rnd(ids.length)] }); cells[c][r].appendChild(el);
+    fill.push(el.animate([{ transform: "translateY(-260%)", opacity: 0 }, { opacity: 1, offset: .1 }, { transform: "translateY(6%) scale(1.05,.92)", offset: .72 }, { transform: "none", opacity: 1 }],
+      { duration: 450, delay: c * 60, easing: "cubic-bezier(.4,0,.6,1)", fill: "backwards" }).finished);
+  }
+  await Promise.all(fill);
   sound.play("chaseover", .8); board.classList.add("flash"); setTimeout(() => board.classList.remove("flash"), 500);
   await summary(fs.superMode ? "Super Chase complete" : "Chase complete", amount * bet());
   sound.music("music-base");
@@ -871,7 +881,7 @@ if (RGS.social) {
   document.title = RGS.socialText(document.title);
 }
 // the loader waits for the first screen's pictures, the fonts and the RGS
-LOADER.track(["assets/bg.webp", "assets/logo.webp", "assets/logo-neon.webp", "assets/studio-ink.webp", "assets/grid.webp", "assets/boss.webp", "assets/card.webp", "assets/mult.webp",
+LOADER.track(["assets/bg.webp", "assets/logo.webp", "assets/logo-neon.webp", "assets/studio-ink.webp", "assets/offer-chase.webp", "assets/offer-super.webp", "assets/offer-boost.webp", "assets/grid.webp", "assets/boss.webp", "assets/card.webp", "assets/mult.webp",
   ...PAYING.map(id => `assets/sym/${id}.webp`), "assets/sym/wild.webp", "assets/sym/scatter.webp"]);
 LOADER.onGesture(() => sound.init());
 boot();

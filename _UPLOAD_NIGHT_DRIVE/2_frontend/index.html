@@ -99,23 +99,32 @@
         <button class="close" id="bonusClose" aria-label="Close">×</button>
         <h2 id="bonusTitle">Bonus</h2>
         <div class="offers">
-          <div class="offer">
-            <img src="assets/sym/scatter.webp" alt="">
-            <h3>The Chase</h3><p>Starts 10 free spins right away.</p>
-            <div class="price" id="costChase"></div>
-            <button class="go" data-buy="chase">Get</button>
+          <div class="offer chase">
+            <img class="offer-art" src="assets/offer-chase.webp" alt="" draggable="false"><i class="offer-shine"></i>
+            <span class="offer-tag">10 free spins</span>
+            <div class="offer-body">
+              <h3>The Chase</h3><p>Starts 10 free spins right away.</p>
+              <div class="price" id="costChase"></div>
+              <button class="go" data-buy="chase">Get</button>
+            </div>
           </div>
           <div class="offer super">
-            <img src="assets/sym/wild.webp" alt="">
-            <h3>Super Chase</h3><p>10 free spins, every car ×3 or more.</p>
-            <div class="price" id="costSuper"></div>
-            <button class="go" data-buy="super">Get</button>
+            <img class="offer-art" src="assets/offer-super.webp" alt="" draggable="false"><i class="offer-shine"></i>
+            <span class="offer-tag">Every car ×3+</span>
+            <div class="offer-body">
+              <h3>Super Chase</h3><p>10 free spins, every car ×3 or more.</p>
+              <div class="price" id="costSuper"></div>
+              <button class="go" data-buy="super">Get</button>
+            </div>
           </div>
           <div class="offer boost">
-            <div class="x3"><img src="assets/sym/scatter.webp" alt=""><b>×3</b></div>
-            <h3>Chance ×3</h3><p>Sunsets land more often: The Chase starts about 3× as often.</p>
-            <div class="price"><span id="costBoost"></span><small>per spin</small></div>
-            <button class="go" id="boostToggle" aria-pressed="false">Turn on</button>
+            <img class="offer-art" src="assets/offer-boost.webp" alt="" draggable="false"><i class="offer-shine"></i>
+            <span class="offer-tag">×3 chance</span>
+            <div class="offer-body">
+              <h3>Chance ×3</h3><p>Sunsets land more often: The Chase starts about 3× as often.</p>
+              <div class="price"><span id="costBoost"></span><small>per spin</small></div>
+              <button class="go" id="boostToggle" aria-pressed="false">Turn on</button>
+            </div>
           </div>
         </div>
       </div>
